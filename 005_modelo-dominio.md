@@ -1,0 +1,1347 @@
+# Bounded Contexts y Modelo de Dominio
+
+**Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
+**Versión:** 1.0  
+**Fecha:** Febrero 2026  
+**Inputs:** KB-001 (Propuesta TFM), KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales), KB-004 (RNF Base)  
+**Estado:** Validado  
+**Total BCs:** 6 (3 Core + 3 Supporting)
+
+---
+
+## Índice
+
+1. [Visión General del Dominio](#1-visión-general-del-dominio)
+2. [Identificación de Bounded Contexts](#2-identificación-de-bounded-contexts)
+3. [BC-Membresia: Gestión de Socios](#3-bc-membresia-gestión-de-socios)
+4. [BC-Tesoreria: Gestión Económica](#4-bc-tesoreria-gestión-económica)
+5. [BC-Eventos: Actividades y Participación](#5-bc-eventos-actividades-y-participación)
+6. [BC-Comunicacion: Notificaciones y Mensajería](#6-bc-comunicacion-notificaciones-y-mensajería)
+7. [BC-Documentos: Gestión Documental](#7-bc-documentos-gestión-documental)
+8. [BC-Identidad: Acceso y Autorización](#8-bc-identidad-acceso-y-autorización)
+9. [Context Map](#9-context-map)
+10. [Consideraciones Multi-Tenant](#10-consideraciones-multi-tenant)
+11. [Glosario del Dominio (Ubiquitous Language)](#11-glosario-del-dominio-ubiquitous-language)
+
+---
+
+## 1. Visión General del Dominio
+
+### 1.1 Problema de Negocio
+
+Las colectividades españolas (asociaciones culturales, cofradías, clubes deportivos, peñas festeras) gestionan su operativa con herramientas inadecuadas (Excel, papel, WhatsApp). Los tesoreros voluntarios dedican horas a tareas administrativas que deberían estar automatizadas.
+
+### 1.2 Subdominios Identificados
+
+| Subdominio | Tipo | Descripción | Bounded Context |
+|------------|------|-------------|-----------------|
+| Gestión de Membresía | **Core** | Registro, estados, tipos de socio, antigüedad | BC-Membresia |
+| Gestión Económica | **Core** | Cuotas, cobros, remesas SEPA, contabilidad | BC-Tesoreria |
+| Gestión de Actividades | **Core** | Eventos, inscripciones, asistencia | BC-Eventos |
+| Comunicación | Supporting | Notificaciones, emails, tablón de anuncios | BC-Comunicacion |
+| Gestión Documental | Supporting | Repositorio, actas, documentos oficiales | BC-Documentos |
+| Identidad y Acceso | Generic | Autenticación, autorización, roles | BC-Identidad |
+
+### 1.3 Alcance MVP
+
+Según KB-001, el MVP se centra en **2-3 bounded contexts core**:
+- ✅ **BC-Membresia** (completo)
+- ✅ **BC-Tesoreria** (completo)
+- ⚠️ **BC-Eventos** (simplificado: sin específicos de cofradías/clubes)
+- ⚠️ **BC-Comunicacion** (mínimo: notificaciones automáticas)
+- ⚠️ **BC-Documentos** (mínimo: repositorio básico)
+- ✅ **BC-Identidad** (completo: requerido para seguridad)
+
+---
+
+## 2. Identificación de Bounded Contexts
+
+### 2.1 Mapeo RF → Bounded Context
+
+| Sección RF | Bounded Context | RFs Incluidos |
+|------------|-----------------|---------------|
+| N2: Arquitectura/Acceso | BC-Identidad | N2RF01-N2RF08 |
+| N3: Socios/Miembros | BC-Membresia | N3RF01-N3RF34 |
+| N4: Tesorería/Finanzas | BC-Tesoreria | N4RF01-N4RF35 |
+| N5: Eventos | BC-Eventos | N5RF01-N5RF30 |
+| N6: Comunicación | BC-Comunicacion | N6RF01-N6RF23 |
+| N7: Gestión Documental | BC-Documentos | N7RF01-N7RF12 |
+| N8: Import/Export | Transversal | N8RF01-N8RF13 |
+| N9: Reporting | Transversal | N9RF01-N9RF12 |
+| N10: Portal Socio | Transversal (UI) | N10RF01-N10RF15 |
+| N11: Cumplimiento | Transversal | N11RF01-N11RF17 |
+| N12: Específicas | Extensiones BC | N12RF01-N12RF15 |
+| N13: Aragonés | Extensiones BC | N13RF01-N13RF04 |
+
+### 2.2 Principios de Diseño
+
+1. **Autonomía**: Cada BC puede evolucionar independientemente
+2. **Cohesión**: Conceptos relacionados permanecen juntos
+3. **Acoplamiento bajo**: Comunicación entre BCs vía Domain Events
+4. **Lenguaje ubicuo**: Cada BC tiene su propio vocabulario preciso
+
+---
+
+## 3. BC-Membresia: Gestión de Socios
+
+### 3.1 Descripción
+
+Responsable del ciclo de vida completo del socio: desde la solicitud de alta hasta la baja, incluyendo estados, tipos, antigüedad y documentación de identidad (carnets).
+
+### 3.2 Aggregates
+
+#### 3.2.1 Aggregate: Socio (Aggregate Root)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ SOCIO (Aggregate Root)                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: SocioId                                           │
+│                                                             │
+│ Value Objects:                                              │
+│   - DatosPersonales (nombre, apellidos, fechaNacimiento)    │
+│   - DatosContacto (email, telefono, direccion)              │
+│   - DocumentoIdentidad (tipo, numero)                       │
+│   - DatosBancarios (iban) [cifrado]                         │
+│   - NumeroSocio                                             │
+│                                                             │
+│ Entities:                                                   │
+│   - HistorialEstados[] (cambios de estado con fecha/motivo) │
+│   - CamposPersonalizados[] (clave-valor por tipo entidad)   │
+│                                                             │
+│ State:                                                      │
+│   - estadoActual: EstadoSocio                               │
+│   - tipoSocio: TipoSocioId                                  │
+│   - fechaAlta: Date                                         │
+│   - fechaBaja: Date?                                        │
+│                                                             │
+│ Invariants:                                                 │
+│   - DNI/NIE único dentro del tenant                         │
+│   - Email único dentro del tenant                           │
+│   - Fecha de nacimiento <= hoy - edad mínima del tipo       │
+│   - IBAN válido según algoritmo de verificación             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Comportamientos:**
+- `registrar(datos, tipo)` → valida, crea con estado Aspirante/Activo
+- `cambiarEstado(nuevoEstado, motivo)` → valida transición, registra historial
+- `cambiarTipo(nuevoTipo)` → valida elegibilidad, ajusta derechos
+- `actualizarDatos(datos)` → valida, actualiza, emite evento
+- `calcularAntiguedad()` → retorna años/meses considerando bajas
+- `verificarDerechoVoto()` → evalúa antigüedad y estado
+- `darDeBaja(tipo, motivo)` → transición a estado de baja
+
+#### 3.2.2 Aggregate: TipoSocio
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TIPO_SOCIO (Aggregate Root)                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: TipoSocioId                                       │
+│                                                             │
+│ Value Objects:                                              │
+│   - RangoEdad (minima, maxima)                              │
+│   - ConfiguracionCuota (importe, periodicidad, formula?)    │
+│                                                             │
+│ Properties:                                                 │
+│   - codigo: string                                          │
+│   - nombre: string                                          │
+│   - descripcion: string                                     │
+│   - derechoVoto: boolean                                    │
+│   - elegibleCargos: boolean                                 │
+│   - antiguedadMinimaVoto: int (años)                        │
+│   - antiguedadMinimaCargos: int (años)                      │
+│   - transicionAutomatica: TipoSocioId? (al cumplir edad)    │
+│   - activo: boolean                                         │
+│                                                             │
+│ Invariants:                                                 │
+│   - Código único dentro del tenant                          │
+│   - Edad mínima < edad máxima (si ambas definidas)          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.3 Aggregate: SolicitudAlta
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ SOLICITUD_ALTA (Aggregate Root)                             │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: SolicitudId                                       │
+│                                                             │
+│ Value Objects:                                              │
+│   - DatosSolicitante (datos personales del aspirante)       │
+│                                                             │
+│ Entities:                                                   │
+│   - DocumentoPendiente[] (tipo, entregado, fechaLimite)     │
+│   - Aval[] (avalista: SocioId, fecha) [para cofradías]      │
+│                                                             │
+│ State:                                                      │
+│   - estado: EstadoSolicitud                                 │
+│   - fechaSolicitud: Date                                    │
+│   - tipoSocioSolicitado: TipoSocioId                        │
+│   - prioridad: int (para lista de espera)                   │
+│                                                             │
+│ Invariants:                                                 │
+│   - Avales deben ser socios con antigüedad mínima           │
+│   - No puede haber solicitud duplicada (mismo DNI activa)   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.4 Aggregate: Carnet
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ CARNET (Aggregate Root)                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: CarnetId                                          │
+│                                                             │
+│ Value Objects:                                              │
+│   - CodigoQR (valor único, hash del carnet)                 │
+│                                                             │
+│ Properties:                                                 │
+│   - socioId: SocioId                                        │
+│   - ejercicioId: EjercicioId                                │
+│   - fechaEmision: Date                                      │
+│   - fechaValidez: Date                                      │
+│   - estado: EstadoCarnet (activo, anulado)                  │
+│                                                             │
+│ Invariants:                                                 │
+│   - Un socio solo puede tener un carnet activo por ejercicio│
+│   - QR único en todo el sistema                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.5 Aggregate: Ejercicio
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ EJERCICIO (Aggregate Root)                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: EjercicioId                                       │
+│                                                             │
+│ Value Objects:                                              │
+│   - PeriodoEjercicio (fechaInicio, fechaFin)                │
+│                                                             │
+│ Properties:                                                 │
+│   - nombre: string (ej: "2026", "Temporada 2025-26")        │
+│   - estado: EstadoEjercicio (preparacion, activo, cerrado)  │
+│   - ejercicioAnterior: EjercicioId?                         │
+│                                                             │
+│ Invariants:                                                 │
+│   - Solo un ejercicio activo a la vez                       │
+│   - Fechas no pueden solaparse con otros ejercicios         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 3.3 Value Objects
+
+| Value Object | Atributos | Validaciones |
+|--------------|-----------|--------------|
+| `SocioId` | uuid | UUID v4 válido |
+| `NumeroSocio` | valor: string | Formato configurable por tenant |
+| `DatosPersonales` | nombre, apellidos, fechaNacimiento | Nombre no vacío, fecha pasada |
+| `DatosContacto` | email, telefono, direccion | Email válido, teléfono formato ES |
+| `DocumentoIdentidad` | tipo (DNI/NIE/Pasaporte), numero | Algoritmo validación según tipo |
+| `DatosBancarios` | iban | IBAN válido (algoritmo mod 97) |
+| `EstadoSocio` | enum | Activo, PendientePago, Suspendido, BajaVoluntaria, BajaImpago, BajaDisciplinaria, Aspirante, Fallecido |
+| `RangoEdad` | minima, maxima | min >= 0, max > min (si definidos) |
+| `CodigoQR` | valor: string | Hash único, no predecible |
+
+### 3.4 Domain Events
+
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `SocioRegistrado` | Alta completada | socioId, tipoSocio, fecha | BC-Tesoreria (generar cuota), BC-Comunicacion (bienvenida) |
+| `SocioDadoDeBaja` | Baja cualquier tipo | socioId, tipoBaja, motivo, fecha | BC-Tesoreria (anular pendientes), BC-Comunicacion (notificar) |
+| `EstadoSocioCambiado` | Cambio de estado | socioId, estadoAnterior, estadoNuevo, motivo | BC-Tesoreria (suspender/reactivar cobros) |
+| `TipoSocioCambiado` | Cambio de categoría | socioId, tipoAnterior, tipoNuevo | BC-Tesoreria (ajustar cuota) |
+| `DatosSocioActualizados` | Modificación datos | socioId, camposModificados | BC-Tesoreria (si IBAN), BC-Comunicacion (si email) |
+| `CarnetEmitido` | Generación carnet | carnetId, socioId, ejercicioId | - |
+| `CarnetValidado` | Escaneo QR exitoso | carnetId, socioId, timestamp, ubicacion? | BC-Eventos (check-in automático) |
+| `EjercicioAbierto` | Apertura ejercicio | ejercicioId, periodo | BC-Tesoreria (generar cuotas), BC-Membresia (arrastrar socios) |
+| `EjercicioCerrado` | Cierre ejercicio | ejercicioId, estadisticas | BC-Documentos (generar memoria) |
+| `SolicitudAltaCreada` | Nueva solicitud | solicitudId, datos | BC-Comunicacion (notificar junta) |
+| `SolicitudAltaAprobada` | Aprobación | solicitudId, socioId | BC-Comunicacion (notificar aspirante) |
+
+### 3.5 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N3RF01 | Socio (DatosPersonales, DatosContacto, DatosBancarios) |
+| N3RF02-05 | Socio.CamposPersonalizados (extensión por tipo colectividad) |
+| N3RF06 | EstadoSocio (Value Object enum) |
+| N3RF07-10 | TipoSocio (Aggregate) |
+| N3RF11 | TipoSocio.configuracion (reglas) |
+| N3RF12-13 | Socio.HistorialEstados, calcularAntiguedad() |
+| N3RF14 | Domain Service: EstadisticasSocios |
+| N3RF15-19 | Ejercicio (Aggregate) |
+| N3RF20-23 | SolicitudAlta (Aggregate), workflow estados |
+| N3RF24-27 | Socio.darDeBaja(), eventos de baja |
+| N3RF28-29 | SolicitudAlta con prioridad (lista espera) |
+| N3RF30-32 | Carnet (Aggregate) |
+| N3RF33-34 | Carnet específico cofradías (PapeletaSitio - extensión) |
+
+---
+
+## 4. BC-Tesoreria: Gestión Económica
+
+### 4.1 Descripción
+
+Responsable de toda la gestión económica: definición de cuotas, generación de cargos, registro de cobros, gestión de morosidad, generación de remesas SEPA y contabilidad básica.
+
+### 4.2 Aggregates
+
+#### 4.2.1 Aggregate: CuentaSocio
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CUENTA_SOCIO (Aggregate Root)                                   │
+├─────────────────────────────────────────────────────────────────┤
+│ Identity: CuentaSocioId                                         │
+│                                                                 │
+│ References:                                                     │
+│   - socioId: SocioId (referencia a BC-Membresia)                │
+│                                                                 │
+│ Entities:                                                       │
+│   - SuscripcionCuota[] (planes de cuota activos e histórico)    │  ← AÑADIR
+│   - Cargo[] (deudas pendientes o histórico)                     │
+│   - Pago[] (cobros realizados)                                  │
+│   - MandatoSepa? (autorización domiciliación)                   │
+│                                                                 │
+│ Computed:                                                       │
+│   - saldoPendiente: Dinero                                      │
+│   - estadoMorosidad: EstadoMorosidad                            │
+│                                                                 │
+│ Invariants:                                                     │
+│   - Un socio tiene exactamente una cuenta                       │
+│   - Saldo pendiente = suma(cargos) - suma(pagos)                │
+│   - Máximo una suscripción periódica activa por plan            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.2 Entity: Cargo (dentro de CuentaSocio)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CARGO (Entity)                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ Identity: CargoId                                               │
+│                                                                 │
+│ Value Objects:                                                  │
+│   - Dinero (importeBase - antes de prorrateo)                   │
+│   - Dinero (importeFinal - importe efectivo a cobrar)           │
+│   - ConceptoCargo (descripcion, ejercicio)                      │
+│                                                                 │
+│ Properties:                                                     │
+│   - suscripcionId: SuscripcionId? (NULL si cargo manual)        │
+│   - periodoMes: int? (1-12, NULL para cargos únicos/manuales)   │
+│   - fechaEmision: Date                                          │
+│   - fechaVencimiento: Date                                      │
+│   - estado: EstadoCargo                                         │
+│   - importePagado: Dinero (para pagos parciales)                │
+│   - esProrrateo: boolean                                        │
+│   - esManual: boolean (true si cargo directo sin suscripción)   │
+│                                                                 │
+│ Invariants:                                                     │
+│   - ImporteFinal > 0                                            │
+│   - FechaVencimiento >= FechaEmision                            │
+│   - ImportePagado <= ImporteFinal                               │
+│   - Si esManual=true, suscripcionId debe ser NULL               │
+│   - Si esManual=false, suscripcionId debe existir               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.3 Entity: Pago (dentro de CuentaSocio)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PAGO (Entity)                                               │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: PagoId                                            │
+│                                                             │
+│ Value Objects:                                              │
+│   - Dinero (importe, moneda)                                │
+│   - MetodoPago (tipo, referencia)                           │
+│                                                             │
+│ Properties:                                                 │
+│   - cargoId: CargoId (cargo que liquida)                    │
+│   - fechaPago: Date                                         │
+│   - fechaRegistro: Date                                     │
+│   - registradoPor: UsuarioId                                │
+│   - justificanteId: DocumentoId? (referencia BC-Documentos) │
+│   - estado: EstadoPago                                      │
+│                                                             │
+│ Invariants:                                                 │
+│   - Importe > 0                                             │
+│   - FechaPago <= FechaRegistro                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.4 Entity: MandatoSepa (dentro de CuentaSocio)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ MANDATO_SEPA (Entity)                                       │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: MandatoId                                         │
+│                                                             │
+│ Value Objects:                                              │
+│   - ReferenciaMandato (único por acreedor)                  │
+│   - DatosBancarios (iban del deudor)                        │
+│                                                             │
+│ Properties:                                                 │
+│   - fechaFirma: Date                                        │
+│   - fechaUltimoAdeudo: Date?                                │
+│   - estado: EstadoMandato (activo, revocado, caducado)      │
+│   - documentoFirmado: DocumentoId?                          │
+│                                                             │
+│ Invariants:                                                 │
+│   - Caduca si fechaUltimoAdeudo > 36 meses                  │
+│   - Referencia única por acreedor                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.5 Aggregate: PlanCuota
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ PLAN_CUOTA (Aggregate Root)                                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Identity: PlanCuotaId                                           │
+│                                                                 │
+│ Value Objects:                                                  │
+│   - Dinero (importe)                                            │
+│   - Periodicidad (enum orientativo: Mensual, Trimestral,        │
+│                   Semestral, Anual, Personalizada)              │
+│                                                                 │
+│ Properties:                                                     │
+│   - codigo: string                                              │
+│   - nombre: string                                              │
+│   - descripcion: string?                                        │
+│   - tipo: TipoPlan (UNICA | PERIODICA)                          │
+│   - mesesCobro: int[] (ej: [1,4,7,10] para trimestral)          │
+│   - activo: boolean                                             │
+│                                                                 │
+│ Invariants:                                                     │
+│   - Código único dentro del tenant                              │
+│   - Si tipo=PERIODICA, mesesCobro no puede estar vacío          │
+│   - Si tipo=UNICA, mesesCobro debe estar vacío                  │
+│   - Importe >= 0 (puede ser 0 para planes especiales)           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.6 Entity: TipoSocioPlanCuota (Relación N:M)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TIPO_SOCIO_PLAN_CUOTA (Entity - tabla intermedia)               │
+├─────────────────────────────────────────────────────────────────┤
+│ Identity: Composite (tipoSocioId + planCuotaId)                 │
+│                                                                 │
+│ Properties:                                                     │
+│   - tipoSocioId: TipoSocioId (ref BC-Membresia)                 │
+│   - planCuotaId: PlanCuotaId                                    │
+│   - esDefault: boolean (plan por defecto para este tipo)        │
+│   - orden: int (orden de presentación en UI)                    │
+│   - activo: boolean                                             │
+│                                                                 │
+│ Invariants:                                                     │
+│   - Solo un plan puede ser default por tipo de socio            │
+│   - Orden único por tipo de socio                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.6 Aggregate: RemesaSepa
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ REMESA_SEPA (Aggregate Root)                                │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: RemesaId                                          │
+│                                                             │
+│ Value Objects:                                              │
+│   - IdentificadorAcreedor (CIF + sufijo Banco España)       │
+│   - Dinero (importeTotal)                                   │
+│                                                             │
+│ Entities:                                                   │
+│   - AdeudoSepa[] (cada cobro individual de la remesa)       │
+│                                                             │
+│ Properties:                                                 │
+│   - fechaCreacion: Date                                     │
+│   - fechaCargo: Date (fecha valor en banco)                 │
+│   - estado: EstadoRemesa                                    │
+│   - ficheroXml: string? (path al fichero generado)          │
+│                                                             │
+│ Invariants:                                                 │
+│   - FechaCargo >= FechaCreacion + 3 días hábiles            │
+│   - ImporteTotal = suma(adeudos.importe)                    │
+│   - Todos los adeudos deben tener mandato válido            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.7 Entity: SuscripcionCuota (dentro de CuentaSocio)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ SUSCRIPCION_CUOTA (Entity)                                      │
+├─────────────────────────────────────────────────────────────────┤
+│ Identity: SuscripcionId                                         │
+│                                                                 │
+│ Value Objects:                                                  │
+│   - Dinero (importeEfectivo - importe final tras descuentos)    │
+│                                                                 │
+│ Properties:                                                     │
+│   - planCuotaId: PlanCuotaId                                    │
+│   - fechaAlta: Date                                             │
+│   - fechaBaja: Date?                                            │
+│   - descuento: decimal? (porcentaje: 0.30 = 30%)                │
+│   - motivoBaja: MotivoBajaSuscripcion?                          │
+│                                                                 │
+│ Computed:                                                       │
+│   - importeEfectivo = planCuota.importe * (1 - descuento)       │
+│                                                                 │
+│ Invariants:                                                     │
+│   - fechaBaja >= fechaAlta (si existe)                          │
+│   - descuento entre 0 y 1 (si existe)                           │
+│   - Si planCuota.tipo=UNICA, fechaBaja se asigna automáticamente│
+│     al generar el cargo                                         │
+└─────────────────────────────────────────────────────────────────┘
+
+MotivoBajaSuscripcion (enum):
+  - CAMBIO_PLAN: Socio cambió a otra modalidad de pago
+  - BAJA_SOCIO: Socio dado de baja de la entidad
+  - EXENCION: Socio exento de pago
+  - FIN_CUOTA_UNICA: Cuota única completada (automático)
+```
+
+#### 4.2.8 Entity: AdeudoSepa (dentro de RemesaSepa)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ADEUDO_SEPA (Entity)                                        │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: AdeudoId                                          │
+│                                                             │
+│ Value Objects:                                              │
+│   - Dinero (importe)                                        │
+│   - SecuenciaSepa (FRST, RCUR, OOFF, FNAL)                  │
+│                                                             │
+│ Properties:                                                 │
+│   - cargoId: CargoId                                        │
+│   - mandatoId: MandatoId                                    │
+│   - estado: EstadoAdeudo                                    │
+│   - motivoDevolucion: string?                               │
+│   - fechaDevolucion: Date?                                  │
+│                                                             │
+│ Invariants:                                                 │
+│   - Secuencia correcta según historial del mandato          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2.9 Aggregate: Movimiento (Contabilidad)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ MOVIMIENTO (Aggregate Root)                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: MovimientoId                                      │
+│                                                             │
+│ Value Objects:                                              │
+│   - Dinero (importe)                                        │
+│   - CategoriaContable (cuenta según plan ENL si aplica)     │
+│                                                             │
+│ Properties:                                                 │
+│   - tipo: TipoMovimiento (ingreso, gasto)                   │
+│   - concepto: string                                        │
+│   - fecha: Date                                             │
+│   - ejercicioId: EjercicioId                                │
+│   - pagoId: PagoId? (si viene de un pago)                   │
+│   - justificanteId: DocumentoId?                            │
+│   - registradoPor: UsuarioId                                │
+│                                                             │
+│ Invariants:                                                 │
+│   - Importe > 0                                             │
+│   - Fecha dentro del ejercicio                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Value Objects
+
+| Value Object | Atributos | Validaciones |
+|--------------|-----------|--------------|
+| `Dinero` | cantidad: decimal, moneda: string | cantidad >= 0, moneda ISO 4217 (default EUR) |
+| `MetodoPago` | tipo: enum, referencia: string | Tipos: Efectivo, Transferencia, Domiciliacion, Bizum, Tarjeta |
+| `EstadoCargo` | enum | Pendiente, Pagado, PagadoParcial, Anulado |
+| `EstadoPago` | enum | Confirmado, Devuelto, Anulado |
+| `EstadoMorosidad` | enum | AlCorriente, MorosidadLeve, MorosidadGrave, Suspendido |
+| `SecuenciaSepa` | enum | FRST, RCUR, OOFF, FNAL |
+| `EstadoRemesa` | enum | Borrador, Generada, Enviada, Procesada, ConDevoluciones |
+| `IdentificadorAcreedor` | valor: string | Formato ES + 2 dígitos + sufijo (14 chars) |
+| `Periodicidad` | enum | Anual, Semestral, Trimestral, Mensual |
+
+### 4.4 Domain Events
+
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `CargoGenerado` | Creación de cargo | cargoId, socioId, importe, concepto | BC-Comunicacion (aviso) |
+| `PagoRegistrado` | Cobro confirmado | pagoId, cargoId, socioId, importe, metodo | BC-Membresia (actualizar estado si procede) |
+| `PagoDevuelto` | Devolución bancaria | pagoId, cargoId, motivo | BC-Comunicacion (notificar), BC-Membresia (marcar morosidad) |
+| `MorosidadDetectada` | Cargo vencido sin pago | socioId, cargoId, diasVencido | BC-Comunicacion (workflow avisos) |
+| `SocioSuspendidoPorImpago` | Morosidad grave | socioId, deudaTotal | BC-Membresia (cambiar estado) |
+| `RemesaGenerada` | Creación remesa | remesaId, numAdeudos, importeTotal | - |
+| `RemesaProcesada` | Confirmación banco | remesaId, adeudosOk, adeudosKo | BC-Comunicacion (resumen) |
+| `MandatoCreado` | Firma mandato SEPA | mandatoId, socioId | - |
+| `MandatoCaducado` | 36 meses sin uso | mandatoId, socioId | BC-Comunicacion (solicitar renovación) |
+
+### 4.5 Domain Services
+
+| Servicio | Responsabilidad |
+|----------|-----------------|
+| `GeneradorCuotas` | Genera cargos masivos por tipo de socio y ejercicio |
+| `CalculadorProrrateo` | Calcula cuota proporcional para altas a mitad de ejercicio |
+| `GeneradorRemesaSepa` | Crea fichero XML ISO 20022 pain.008.001.08 |
+| `GestorMorosidad` | Evalúa y ejecuta workflow de morosidad |
+| `ConciliadorPagos` | Asocia pagos de pasarela con cargos pendientes |
+
+### 4.6 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N4RF01 | PlanCuota (Aggregate), TipoSocioPlanCuota |
+| N4RF02 | Domain Service: GeneradorCargos (basado en suscripciones) |
+| N4RF03 | Domain Service: CalculadorProrrateo |
+| N4RF04-05 | SuscripcionCuota.descuento, exenciones |
+| N4RF06** | **SuscripcionCuota (selección modalidad al alta)** |
+| N4RF07** | **SuscripcionCuota.motivoBaja=CAMBIO_PLAN** |
+| N4RF08-10 | Pago (Entity), MetodoPago, EstadoPago |
+| N4RF11-12 | Pago.justificanteId, generación recibo |
+| N4RF13-15 | Domain Service: GestorMorosidad, eventos morosidad |
+| N4RF16-22 | RemesaSepa, AdeudoSepa, MandatoSepa |
+| N4RF23-26 | Integración pasarela (Application Service) |
+| N4RF27-32 | Movimiento (Aggregate), categorías contables |
+| N4RF33-37 | Extensión: CajaTurno (específico peñas) |
+
+---
+
+## 5. BC-Eventos: Actividades y Participación
+
+### 5.1 Descripción
+
+Gestiona el ciclo de vida de eventos y actividades: planificación, inscripciones, control de aforo y registro de asistencia.
+
+### 5.2 Aggregates
+
+#### 5.2.1 Aggregate: Evento
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ EVENTO (Aggregate Root)                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: EventoId                                          │
+│                                                             │
+│ Value Objects:                                              │
+│   - PeriodoEvento (fechaInicio, fechaFin)                   │
+│   - Ubicacion (direccion, coordenadas?, sala?)              │
+│   - ConfiguracionInscripcion (fechaApertura, fechaCierre,   │
+│                               requierePago, precio?)        │
+│                                                             │
+│ Entities:                                                   │
+│   - Inscripcion[] (participantes inscritos)                 │
+│                                                             │
+│ Properties:                                                 │
+│   - tipoEvento: TipoEventoId                                │
+│   - nombre: string                                          │
+│   - descripcion: string                                     │
+│   - aforo: int? (null = ilimitado)                          │
+│   - estado: EstadoEvento                                    │
+│   - ejercicioId: EjercicioId                                │
+│   - organizadorId: UsuarioId                                │
+│                                                             │
+│ Computed:                                                   │
+│   - plazasDisponibles: int                                  │
+│   - inscripcionAbierta: boolean                             │
+│                                                             │
+│ Invariants:                                                 │
+│   - FechaFin >= FechaInicio                                 │
+│   - Inscripciones.count <= Aforo (si definido)              │
+│   - FechaCierreInscripcion <= FechaInicio                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 5.2.2 Entity: Inscripcion (dentro de Evento)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ INSCRIPCION (Entity)                                        │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: InscripcionId                                     │
+│                                                             │
+│ Value Objects:                                              │
+│   - DatosInscripcion (campos configurables por evento)      │
+│                                                             │
+│ Properties:                                                 │
+│   - socioId: SocioId? (null si externo)                     │
+│   - datosExterno: DatosPersonales? (si no es socio)         │
+│   - fechaInscripcion: Date                                  │
+│   - estado: EstadoInscripcion                               │
+│   - cargoId: CargoId? (si requiere pago)                    │
+│   - asistencia: Asistencia?                                 │
+│                                                             │
+│ Invariants:                                                 │
+│   - O socioId o datosExterno, no ambos                      │
+│   - Si requierePago, cargoId debe existir                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 5.2.3 Value Object: Asistencia
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ASISTENCIA (Value Object)                                   │
+├─────────────────────────────────────────────────────────────┤
+│ Properties:                                                 │
+│   - confirmada: boolean                                     │
+│   - horaEntrada: DateTime?                                  │
+│   - metodoCheckin: MetodoCheckin (QR, Manual)               │
+│   - registradoPor: UsuarioId?                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 5.2.4 Aggregate: TipoEvento
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TIPO_EVENTO (Aggregate Root)                                │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: TipoEventoId                                      │
+│                                                             │
+│ Properties:                                                 │
+│   - codigo: string                                          │
+│   - nombre: string                                          │
+│   - color: string (para calendario)                         │
+│   - requiereInscripcion: boolean                            │
+│   - camposInscripcion: CampoFormulario[]                    │
+│   - activo: boolean                                         │
+│                                                             │
+│ Invariants:                                                 │
+│   - Código único dentro del tenant                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Domain Events
+
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `EventoCreado` | Creación evento | eventoId, tipo, fecha | BC-Comunicacion (publicar) |
+| `EventoPublicado` | Apertura inscripciones | eventoId | BC-Comunicacion (notificar socios) |
+| `EventoCancelado` | Cancelación | eventoId, motivo | BC-Comunicacion (notificar inscritos), BC-Tesoreria (reembolsos) |
+| `InscripcionRealizada` | Nueva inscripción | inscripcionId, eventoId, socioId | BC-Tesoreria (generar cargo si precio), BC-Comunicacion (confirmación) |
+| `InscripcionCancelada` | Cancelación inscripción | inscripcionId, eventoId | BC-Tesoreria (anular cargo) |
+| `AforoCompletado` | Aforo lleno | eventoId | BC-Comunicacion (activar lista espera) |
+| `AsistenciaRegistrada` | Check-in | inscripcionId, eventoId, hora | - |
+| `PlazaLiberada` | Baja de inscrito | eventoId, posicionListaEspera | BC-Comunicacion (notificar siguiente) |
+
+### 5.4 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N5RF01-02 | Evento (Aggregate), TipoEvento |
+| N5RF03-04 | Evento con calendario, exportación iCal |
+| N5RF05-09 | Inscripcion (Entity), control aforo, lista espera |
+| N5RF10-11 | ConfiguracionInscripcion, DatosInscripcion |
+| N5RF12-16 | Asistencia (VO), check-in QR/manual |
+| N5RF17-19 | Extensión: EventoComida (específico peñas) |
+| N5RF20-26 | Extensión: Procesion, Costaleros (específico cofradías) |
+| N5RF27-30 | Extensión: Competicion (específico clubes) |
+
+---
+
+## 6. BC-Comunicacion: Notificaciones y Mensajería
+
+### 6.1 Descripción
+
+Gestiona el envío de comunicaciones a socios: emails, notificaciones push, SMS y el tablón de anuncios interno. Procesa eventos de otros BCs para generar notificaciones automáticas.
+
+### 6.2 Aggregates
+
+#### 6.2.1 Aggregate: Comunicacion
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ COMUNICACION (Aggregate Root)                               │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: ComunicacionId                                    │
+│                                                             │
+│ Value Objects:                                              │
+│   - Contenido (asunto, cuerpo, formato)                     │
+│   - SegmentoDestinatarios (criterios de filtrado)           │
+│                                                             │
+│ Entities:                                                   │
+│   - Envio[] (cada envío individual a un destinatario)       │
+│                                                             │
+│ Properties:                                                 │
+│   - canal: CanalComunicacion                                │
+│   - tipo: TipoComunicacion (manual, automatica)             │
+│   - plantillaId: PlantillaId?                               │
+│   - fechaProgramada: DateTime?                              │
+│   - estado: EstadoComunicacion                              │
+│   - creadoPor: UsuarioId                                    │
+│                                                             │
+│ Invariants:                                                 │
+│   - Al menos un destinatario                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.2.2 Entity: Envio
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ENVIO (Entity)                                              │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: EnvioId                                           │
+│                                                             │
+│ Properties:                                                 │
+│   - socioId: SocioId                                        │
+│   - destino: string (email, teléfono según canal)           │
+│   - estado: EstadoEnvio                                     │
+│   - fechaEnvio: DateTime?                                   │
+│   - fechaApertura: DateTime? (tracking email)               │
+│   - errorMensaje: string?                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.2.3 Aggregate: Plantilla
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PLANTILLA (Aggregate Root)                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: PlantillaId                                       │
+│                                                             │
+│ Properties:                                                 │
+│   - codigo: string                                          │
+│   - nombre: string                                          │
+│   - canal: CanalComunicacion                                │
+│   - asunto: string (con placeholders)                       │
+│   - cuerpo: string (con placeholders)                       │
+│   - variablesDisponibles: string[]                          │
+│   - esSistema: boolean (no editable si true)                │
+│   - activa: boolean                                         │
+│                                                             │
+│ Invariants:                                                 │
+│   - Código único dentro del tenant                          │
+│   - Plantillas sistema no modificables                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.2.4 Aggregate: Anuncio
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ANUNCIO (Aggregate Root)                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: AnuncioId                                         │
+│                                                             │
+│ Properties:                                                 │
+│   - titulo: string                                          │
+│   - contenido: string                                       │
+│   - fechaPublicacion: Date                                  │
+│   - fechaExpiracion: Date?                                  │
+│   - destacado: boolean                                      │
+│   - publicadoPor: UsuarioId                                 │
+│   - estado: EstadoAnuncio                                   │
+│                                                             │
+│ Invariants:                                                 │
+│   - FechaExpiracion > FechaPublicacion (si definida)        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Domain Events (consumidos)
+
+Este BC es principalmente **consumidor** de eventos de otros BCs:
+
+| Evento Origen | Acción en BC-Comunicacion |
+|---------------|---------------------------|
+| `SocioRegistrado` | Enviar email bienvenida |
+| `CargoGenerado` | Enviar aviso de cuota próxima |
+| `MorosidadDetectada` | Iniciar workflow de avisos |
+| `EventoPublicado` | Notificar a socios según preferencias |
+| `InscripcionRealizada` | Enviar confirmación |
+| `RemesaProcesada` | Enviar resumen a tesorero |
+
+### 6.4 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N6RF01-04 | Comunicacion (Aggregate), canales |
+| N6RF05-07 | SegmentoDestinatarios, Plantilla |
+| N6RF08-09 | Envio (Entity), tracking |
+| N6RF10-16 | Plantillas sistema (notificaciones automáticas) |
+| N6RF17-23 | Extensión: Acta (específico - ver BC-Documentos) |
+
+---
+
+## 7. BC-Documentos: Gestión Documental
+
+### 7.1 Descripción
+
+Repositorio centralizado de documentos de la entidad: estatutos, actas, facturas, justificantes. Incluye gestión del libro de actas obligatorio.
+
+### 7.2 Aggregates
+
+#### 7.2.1 Aggregate: Documento
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ DOCUMENTO (Aggregate Root)                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: DocumentoId                                       │
+│                                                             │
+│ Value Objects:                                              │
+│   - MetadatosDocumento (nombre, descripcion, etiquetas)     │
+│   - ArchivoFisico (path, tamaño, mimeType, hash)            │
+│                                                             │
+│ Properties:                                                 │
+│   - categoriaId: CategoriaId                                │
+│   - fechaDocumento: Date                                    │
+│   - fechaSubida: DateTime                                   │
+│   - subidoPor: UsuarioId                                    │
+│   - version: int                                            │
+│   - documentoAnterior: DocumentoId? (para versionado)       │
+│   - estado: EstadoDocumento                                 │
+│                                                             │
+│ Invariants:                                                 │
+│   - Tamaño <= límite del tenant                             │
+│   - MimeType en lista permitida                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 7.2.2 Aggregate: Categoria
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ CATEGORIA (Aggregate Root)                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: CategoriaId                                       │
+│                                                             │
+│ Properties:                                                 │
+│   - nombre: string                                          │
+│   - descripcion: string                                     │
+│   - categoriaPadre: CategoriaId? (jerarquía)                │
+│   - orden: int                                              │
+│   - rolesAcceso: RolId[] (quién puede ver)                  │
+│   - esSistema: boolean                                      │
+│                                                             │
+│ Invariants:                                                 │
+│   - No ciclos en jerarquía                                  │
+│   - Categorías sistema no eliminables                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 7.2.3 Aggregate: Acta
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ACTA (Aggregate Root)                                       │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: ActaId                                            │
+│                                                             │
+│ Value Objects:                                              │
+│   - NumeroActa (correlativo automático)                     │
+│                                                             │
+│ Entities:                                                   │
+│   - Asistente[] (socioId, firma?)                           │
+│   - Acuerdo[] (descripcion, votacion?)                      │
+│                                                             │
+│ Properties:                                                 │
+│   - tipoReunion: TipoReunion                                │
+│   - fecha: Date                                             │
+│   - lugar: string                                           │
+│   - horaInicio: Time                                        │
+│   - horaFin: Time                                           │
+│   - ordenDelDia: string[]                                   │
+│   - estado: EstadoActa                                      │
+│   - documentoId: DocumentoId? (PDF generado)                │
+│   - firmadaPor: UsuarioId? (secretario)                     │
+│   - vistobuenoPor: UsuarioId? (presidente)                  │
+│                                                             │
+│ Invariants:                                                 │
+│   - Número correlativo único                                │
+│   - Quórum mínimo según tipo reunión                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 7.3 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N7RF01-03 | Documento (Aggregate), MetadatosDocumento |
+| N7RF04-05 | ArchivoFisico, previsualización |
+| N7RF06-07 | Búsqueda por metadatos, Categoria.rolesAcceso |
+| N7RF08 | Límite almacenamiento (configuración tenant) |
+| N7RF09-12 | Versionado, OCR, búsqueda full-text (avanzado) |
+| N6RF17-23 | Acta (Aggregate) - movido desde BC-Comunicacion |
+
+---
+
+## 8. BC-Identidad: Acceso y Autorización
+
+### 8.1 Descripción
+
+Gestiona la autenticación de usuarios, autorización basada en roles y la estructura multi-tenant. Es un BC genérico/de soporte que todos los demás BCs utilizan.
+
+### 8.2 Aggregates
+
+#### 8.2.1 Aggregate: Usuario
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ USUARIO (Aggregate Root)                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: UsuarioId                                         │
+│                                                             │
+│ Value Objects:                                              │
+│   - Credenciales (email, passwordHash)                      │
+│   - TokenRecuperacion (valor, expiracion)                   │
+│                                                             │
+│ Properties:                                                 │
+│   - nombre: string                                          │
+│   - estado: EstadoUsuario                                   │
+│   - fechaCreacion: DateTime                                 │
+│   - ultimoAcceso: DateTime?                                 │
+│   - intentosFallidos: int                                   │
+│   - bloqueadoHasta: DateTime?                               │
+│                                                             │
+│ Invariants:                                                 │
+│   - Email único global (cross-tenant)                       │
+│   - Password cumple política complejidad                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 8.2.2 Aggregate: Tenant
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TENANT (Aggregate Root)                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: TenantId                                          │
+│                                                             │
+│ Value Objects:                                              │
+│   - ConfiguracionTenant (limites, features habilitadas)     │
+│   - DatosEntidad (nombre, CIF, direccion, tipo)             │
+│                                                             │
+│ Properties:                                                 │
+│   - slug: string (identificador URL-friendly)               │
+│   - plan: PlanSuscripcion                                   │
+│   - estado: EstadoTenant                                    │
+│   - fechaAlta: Date                                         │
+│   - baseDatosId: string (conexión específica - RNF-004)     │
+│                                                             │
+│ Invariants:                                                 │
+│   - Slug único global                                       │
+│   - CIF válido y único                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 8.2.3 Aggregate: Membresia (Usuario-Tenant)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ MEMBRESIA_TENANT (Aggregate Root)                           │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: MembresiaId                                       │
+│                                                             │
+│ Properties:                                                 │
+│   - usuarioId: UsuarioId                                    │
+│   - tenantId: TenantId                                      │
+│   - rolId: RolId                                            │
+│   - socioId: SocioId? (vínculo con ficha de socio)          │
+│   - fechaAsignacion: Date                                   │
+│   - asignadoPor: UsuarioId                                  │
+│   - activo: boolean                                         │
+│                                                             │
+│ Invariants:                                                 │
+│   - Un usuario puede tener múltiples membresías (tenants)   │
+│   - Solo una membresía activa por usuario-tenant            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 8.2.4 Aggregate: Rol
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ROL (Aggregate Root)                                        │
+├─────────────────────────────────────────────────────────────┤
+│ Identity: RolId                                             │
+│                                                             │
+│ Properties:                                                 │
+│   - codigo: string                                          │
+│   - nombre: string                                          │
+│   - descripcion: string                                     │
+│   - permisos: Permiso[]                                     │
+│   - esSistema: boolean (roles predefinidos)                 │
+│   - tenantId: TenantId? (null = global)                     │
+│                                                             │
+│ Invariants:                                                 │
+│   - Roles sistema no modificables                           │
+│   - Código único dentro del tenant (o global)               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.3 Roles Predefinidos (Sistema)
+
+| Código | Nombre | Permisos Principales |
+|--------|--------|---------------------|
+| `PRESIDENTE` | Presidente/Hermano Mayor | Todo + aprobaciones críticas |
+| `SECRETARIO` | Secretario | Socios, actas, documentación |
+| `TESORERO` | Tesorero | Economía, cuotas, remesas |
+| `VOCAL` | Vocal | Según área asignada |
+| `SOCIO` | Socio | Solo lectura propia vía portal |
+
+### 8.4 Domain Events
+
+| Evento | Trigger | Payload |
+|--------|---------|---------|
+| `UsuarioCreado` | Registro | usuarioId, email |
+| `UsuarioAutenticado` | Login exitoso | usuarioId, tenantId, timestamp |
+| `AutenticacionFallida` | Login fallido | email, intentos, ip |
+| `UsuarioBloqueado` | 5 intentos fallidos | usuarioId, hasta |
+| `RolAsignado` | Cambio de rol | usuarioId, tenantId, rolAnterior, rolNuevo |
+| `TenantCreado` | Alta de entidad | tenantId, datos |
+
+### 8.5 Trazabilidad RF
+
+| RF | Elemento de Dominio |
+|----|---------------------|
+| N2RF01 | Tenant (Aggregate), aislamiento por BD |
+| N2RF02 | Usuario con múltiples MembresiaTenant |
+| N2RF03 | ConfiguracionTenant |
+| N2RF04 | Rol predefinidos (sistema) |
+| N2RF05 | Rol personalizados (tenantId != null) |
+| N2RF06 | Domain Events de auditoría |
+| N2RF07 | RolAsignado event, histórico |
+| N2RF08 | Validación edad en MembresiaTenant para cargos |
+
+---
+
+## 9. Context Map
+
+### 9.1 Diagrama de Relaciones
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                              CONTEXT MAP                                   │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│    ┌──────────────┐         ┌──────────────┐         ┌──────────────┐      │
+│    │              │         │              │         │              │      │
+│    │ BC-Identidad │◄───ACL──┤ BC-Membresia │───PUB───► BC-Tesoreria │      │
+│    │   (Generic)  │         │    (Core)    │         │    (Core)    │      │
+│    │              │         │              │         │              │      │
+│    └──────┬───────┘         └──────┬───────┘         └──────┬───────┘      │
+│           │                        │                        │              │
+│           │                        │ PUB                    │ PUB          │
+│           │                        ▼                        ▼              │
+│           │                 ┌──────────────┐         ┌──────────────┐      │
+│           │                 │              │         │              │      │
+│           └────ACL─────────►│  BC-Eventos  │◄──SUB───┤BC-Comunicac. │      │
+│                             │    (Core)    │         │ (Supporting) │      │
+│                             │              │         │              │      │
+│                             └──────┬───────┘         └──────┬───────┘      │
+│                                    │                        │              │
+│                                    │ PUB                    │              │
+│                                    ▼                        │              │
+│                             ┌──────────────┐                │              │
+│                             │              │◄───────────────┘              │
+│                             │BC-Documentos │                               │
+│                             │ (Supporting) │                               │
+│                             │              │                               │
+│                             └──────────────┘                               │
+│                                                                            │
+│  Leyenda:                                                                  │
+│    ───ACL───► : Anticorruption Layer (traduce conceptos)                   │
+│    ───PUB───► : Publisher (emite Domain Events)                            │
+│    ◄──SUB─── : Subscriber (consume Domain Events)                          │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Relaciones Detalladas
+
+| Upstream | Downstream | Tipo | Descripción |
+|----------|------------|------|-------------|
+| BC-Identidad | BC-Membresia | ACL | Membresia traduce Usuario a contexto de socio |
+| BC-Identidad | BC-Eventos | ACL | Eventos usa UsuarioId pero no conoce detalles |
+| BC-Membresia | BC-Tesoreria | Pub/Sub | Eventos de socio disparan generación de cargos |
+| BC-Membresia | BC-Comunicacion | Pub/Sub | Eventos de socio disparan notificaciones |
+| BC-Tesoreria | BC-Comunicacion | Pub/Sub | Eventos de pago/morosidad disparan avisos |
+| BC-Tesoreria | BC-Membresia | Pub/Sub | Morosidad grave cambia estado del socio |
+| BC-Eventos | BC-Tesoreria | Pub/Sub | Inscripción con precio genera cargo |
+| BC-Eventos | BC-Comunicacion | Pub/Sub | Eventos de actividad disparan notificaciones |
+| BC-Eventos | BC-Documentos | Pub/Sub | Check-in puede adjuntar justificantes |
+| BC-Comunicacion | BC-Documentos | Customer/Supplier | Comunicación solicita adjuntar documentos |
+
+### 9.3 Shared Kernel
+
+Los siguientes elementos son compartidos entre BCs (librería común):
+
+```
+shared-kernel/
+├── value-objects/
+│   ├── SocioId
+│   ├── TenantId
+│   ├── UsuarioId
+│   ├── EjercicioId
+│   ├── Dinero
+│   └── Email
+├── events/
+│   └── DomainEvent (base)
+└── interfaces/
+    └── AggregateRoot
+```
+
+---
+
+## 10. Consideraciones Multi-Tenant
+
+### 10.1 Estrategia de Aislamiento (RNF-004)
+
+Según RNF-004, el aislamiento multi-tenant se implementa por **base de datos separada**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ARQUITECTURA MULTI-TENANT                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   ┌─────────────┐      ┌─────────────────────────────────┐  │
+│   │             │      │        TENANT RESOLUTION        │  │
+│   │   Usuario   │─────►│  1. Extraer tenant de request   │  │
+│   │   Request   │      │  2. Obtener conexión BD tenant  │  │
+│   │             │      │  3. Inyectar en contexto        │  │
+│   └─────────────┘      └─────────────────────────────────┘  │
+│                                    │                        │
+│                                    ▼                        │
+│   ┌────────────────────────────────────────────────────┐    │
+│   │                   BASES DE DATOS                   │    │
+│   ├────────────────────────────────────────────────────┤    │
+│   │                                                    │    │
+│   │  ┌───────────┐  ┌──────────┐  ┌──────────┐         │    │
+│   │  │ DB-Main   │  │DB-Tenant1│  │DB-Tenant2│  ...    │    │
+│   │  │(Identidad)│  │(user_t1) │  │(user_t2) │         │    │
+│   │  └───────────┘  └──────────┘  └──────────┘         │    │
+│   │                                                    │    │
+│   │  - Usuarios     - Socios      - Socios             │    │
+│   │  - Tenants      - Cuotas      - Cuotas             │    │
+│   │  - Membresías   - Eventos     - Eventos            │    │
+│   │                 - Docs        - Docs               │    │
+│   │                                                    │    │
+│   └────────────────────────────────────────────────────┘    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 10.2 Ubicación de Datos por BC
+
+| BC | Base de Datos | Justificación |
+|----|---------------|---------------|
+| BC-Identidad | DB-Main | Cross-tenant: usuarios, tenants, membresías |
+| BC-Membresia | DB-TenantX | Datos aislados por entidad |
+| BC-Tesoreria | DB-TenantX | Datos aislados por entidad |
+| BC-Eventos | DB-TenantX | Datos aislados por entidad |
+| BC-Comunicacion | DB-TenantX | Datos aislados por entidad |
+| BC-Documentos | DB-TenantX | Datos aislados + almacenamiento ficheros |
+
+### 10.3 Referencias Cross-Tenant
+
+Las únicas referencias cross-tenant permitidas son:
+
+1. **UsuarioId** → referenciado desde membresías en DB-TenantX
+2. **TenantId** → almacenado en contexto de ejecución, no en datos
+
+Nunca se almacenan datos de un tenant en la BD de otro.
+
+---
+
+## 11. Glosario del Dominio (Ubiquitous Language)
+
+### Términos Generales
+
+| Término | Definición | BC |
+|---------|------------|-----|
+| **Socio** | Persona física que pertenece a la colectividad | Membresia |
+| **Hermano** | Sinónimo de socio en cofradías | Membresia |
+| **Peñista** | Sinónimo de socio en peñas | Membresia |
+| **Aspirante** | Persona en proceso de alta, aún no es socio pleno | Membresia |
+| **Ejercicio** | Período temporal de gestión (año natural o temporada) | Membresia |
+| **Antigüedad** | Tiempo acumulado como socio, determina derechos | Membresia |
+| **Carnet** | Documento de identificación del socio | Membresia |
+
+### Términos Económicos
+
+| Término | Definición | BC |
+|---------|------------|-----|
+| **Cuota** | Importe periódico que debe abonar el socio | Tesoreria |
+| **Cargo** | Deuda generada al socio por cualquier concepto | Tesoreria |
+| **Remesa** | Conjunto de cobros enviados al banco | Tesoreria |
+| **Mandato SEPA** | Autorización firmada para domiciliar cobros | Tesoreria |
+| **Morosidad** | Situación de impago de cuotas | Tesoreria |
+
+### Términos de Actividades
+
+| Término | Definición | BC |
+|---------|------------|-----|
+| **Evento** | Actividad organizada por la colectividad | Eventos |
+| **Inscripción** | Registro de participación en un evento | Eventos |
+| **Aforo** | Capacidad máxima de asistentes a un evento | Eventos |
+| **Check-in** | Registro de asistencia efectiva | Eventos |
+
+### Términos Organizativos
+
+| Término | Definición | BC |
+|---------|------------|-----|
+| **Junta Directiva** | Órgano de gobierno de la colectividad | Identidad |
+| **Asamblea** | Reunión de todos los socios con derecho a voto | Documentos |
+| **Acta** | Documento oficial que recoge acuerdos de reunión | Documentos |
+| **Tenant** | Cada colectividad/entidad en el sistema multi-tenant | Identidad |
+
+---
+
+## Trazabilidad
+
+### Matriz BC → Secciones RF
+
+| BC | Secciones RF | Total RFs |
+|----|--------------|-----------|
+| BC-Identidad | N2 | 8 |
+| BC-Membresia | N3 | 34 |
+| BC-Tesoreria | N4 | 35 |
+| BC-Eventos | N5 | 30 |
+| BC-Comunicacion | N6 | 23 |
+| BC-Documentos | N7 | 12 |
+| Transversal | N8, N9, N10, N11 | 57 |
+| Extensiones | N12, N13 | 19 |
+| **Total** | | **218** |
+
+### Matriz BC → RNF Relevantes
+
+| BC | RNFs Clave |
+|----|------------|
+| BC-Identidad | RNF-001 a RNF-003 (autenticación), RNF-004 (multi-tenant), RNF-013 (mínimo privilegio) |
+| BC-Membresia | RNF-006 (cifrado datos), RNF-025-030 (RGPD), RNF-035 (datos religiosos) |
+| BC-Tesoreria | RNF-006 (cifrado IBAN), RNF-018 (rendimiento masivas), RNF-042 (gestión errores) |
+| BC-Eventos | RNF-006 (aforo), RNF-015-016 (tiempos respuesta) |
+| BC-Comunicacion | RNF-010 (rate limiting), RNF-034 (privacidad diseño) |
+| BC-Documentos | RNF-009 (ficheros seguros), RNF-022 (carga ficheros), RNF-032 (retención) |
+
+---
+
+## Changelog
+
+- v1.0 (Feb 2026): Versión inicial
+  - 6 Bounded Contexts identificados (3 Core + 3 Supporting)
+  - Aggregates, Entities, Value Objects para cada BC
+  - Domain Events con productores y consumidores
+  - Context Map con relaciones
+  - Consideraciones multi-tenant según RNF-004
+  - Glosario del dominio (Ubiquitous Language)
