@@ -141,7 +141,7 @@ src/
 | `bcrypt` | Hash passwords | 5.x | RNF-006 |
 | `uuid` | Generación UUIDs | 9.x | - |
 | `date-fns` | Manipulación fechas | 3.x | - |
-| `sepa-xml` | Generación SEPA | 0.4.x | N4RF14-20 |
+| `sepa-xml` | Generación SEPA | 0.4.x | N4RF16-22 |
 
 ---
 

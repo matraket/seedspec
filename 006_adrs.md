@@ -460,7 +460,7 @@ El dominio de Associated tiene:
 | RNF-004 | Multi-tenant por BD (PostgreSQL soporta múltiples DBs) |
 | RNF-038 | Backups con pg_dump nativo |
 | RNF-066 | Migraciones con herramientas estándar |
-| N4RF14-20 | Operaciones SEPA requieren ACID |
+| N4RF16-22 | Operaciones SEPA requieren ACID |
 
 ---
 

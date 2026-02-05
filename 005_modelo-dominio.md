@@ -62,7 +62,7 @@ Según KB-001, el MVP se centra en **2-3 bounded contexts core**:
 |------------|-----------------|---------------|
 | N2: Arquitectura/Acceso | BC-Identidad | N2RF01-N2RF08 |
 | N3: Socios/Miembros | BC-Membresia | N3RF01-N3RF34 |
-| N4: Tesorería/Finanzas | BC-Tesoreria | N4RF01-N4RF35 |
+| N4: Tesorería/Finanzas | BC-Tesoreria | N4RF01-N4RF37 |
 | N5: Eventos | BC-Eventos | N5RF01-N5RF30 |
 | N6: Comunicación | BC-Comunicacion | N6RF01-N6RF23 |
 | N7: Gestión Documental | BC-Documentos | N7RF01-N7RF12 |

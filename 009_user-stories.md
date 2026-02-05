@@ -1664,7 +1664,7 @@ Scenario: Descuento personalizado adicional
 ---
 
 #### US-046: Cambio de modalidad de pago
-**RF Origen:** N4RF01  
+**RF Origen:** N4RF07  
 **Prioridad:** Should
 
 > Como **socio**,  
@@ -1951,7 +1951,7 @@ Scenario: Detalle de suscripción
 ### 3.2 Registro de Cobros
 
 #### US-053: Registro de cobros multi-método
-**RF Origen:** N4RF06  
+**RF Origen:** N4RF08  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -1996,7 +1996,7 @@ Scenario: Registro de Bizum
 ---
 
 #### US-054: Gestión de estados de pago
-**RF Origen:** N4RF07  
+**RF Origen:** N4RF09  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2032,7 +2032,7 @@ Scenario: Transición de DEVUELTO a PAGADO
 ---
 
 #### US-055: Información completa de cada cobro
-**RF Origen:** N4RF08  
+**RF Origen:** N4RF10  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2066,7 +2066,7 @@ Scenario: Auditoría de modificaciones
 ---
 
 #### US-056: Adjuntar justificantes a pagos
-**RF Origen:** N4RF09  
+**RF Origen:** N4RF11  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2098,7 +2098,7 @@ Scenario: Justificante obligatorio por método
 ---
 
 #### US-057: Generación automática de recibos
-**RF Origen:** N4RF10  
+**RF Origen:** N4RF12  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2138,7 +2138,7 @@ Scenario: Recibo con desglose de conceptos
 ### 3.3 Gestión de Morosidad
 
 #### US-058: Workflow de morosidad configurable
-**RF Origen:** N4RF11  
+**RF Origen:** N4RF13  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2178,7 +2178,7 @@ Scenario: Regularización en cualquier fase
 ---
 
 #### US-059: Plazos de morosidad configurables
-**RF Origen:** N4RF12  
+**RF Origen:** N4RF14  
 **Prioridad:** Should
 
 > Como **presidente**,  
@@ -2211,7 +2211,7 @@ Scenario: Plazos diferentes por tipo de cargo
 ---
 
 #### US-060: Documentación automática de morosidad
-**RF Origen:** N4RF13  
+**RF Origen:** N4RF15  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2248,7 +2248,7 @@ Scenario: Registro de notificaciones con acuse
 ### 3.4 Remesas SEPA
 
 #### US-061: Generación de ficheros SEPA
-**RF Origen:** N4RF14  
+**RF Origen:** N4RF16  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2289,7 +2289,7 @@ Scenario: Remesa parcial (selección de socios)
 ---
 
 #### US-062: Gestión del identificador de acreedor
-**RF Origen:** N4RF15  
+**RF Origen:** N4RF17  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2327,7 +2327,7 @@ Scenario: Alerta de identificador no configurado
 ---
 
 #### US-063: Gestión de mandatos SEPA
-**RF Origen:** N4RF16  
+**RF Origen:** N4RF18  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2368,7 +2368,7 @@ Scenario: Estados del mandato
 ---
 
 #### US-064: Tipos de secuencia SEPA automáticos
-**RF Origen:** N4RF17  
+**RF Origen:** N4RF19  
 **Prioridad:** Must
 
 > Como **sistema**,  
@@ -2403,7 +2403,7 @@ Scenario: Cobro único (OOFF)
 ---
 
 #### US-065: Control de plazos de presentación
-**RF Origen:** N4RF18  
+**RF Origen:** N4RF20  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2437,7 +2437,7 @@ Scenario: Recordatorio de envío al banco
 ---
 
 #### US-066: Gestión de devoluciones SEPA
-**RF Origen:** N4RF19  
+**RF Origen:** N4RF21  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2479,7 +2479,7 @@ Scenario: Programar reintento
 ---
 
 #### US-067: Exportación de remesa para banca online
-**RF Origen:** N4RF20  
+**RF Origen:** N4RF22  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2516,7 +2516,7 @@ Scenario: Marcado de remesa como enviada
 ### 3.5 Pasarela de Pago Online
 
 #### US-068: Generación de enlaces de pago
-**RF Origen:** N4RF21  
+**RF Origen:** N4RF23  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2554,7 +2554,7 @@ Scenario: Pago completado
 ---
 
 #### US-069: Pago mediante código QR
-**RF Origen:** N4RF22  
+**RF Origen:** N4RF24  
 **Prioridad:** Could
 
 > Como **socio**,  
@@ -2579,7 +2579,7 @@ Scenario: Pago escaneando QR
 ---
 
 #### US-070: Conciliación automática de pagos online
-**RF Origen:** N4RF23  
+**RF Origen:** N4RF25  
 **Prioridad:** Should
 
 > Como **sistema**,  
@@ -2606,7 +2606,7 @@ Scenario: Pago no conciliable
 ---
 
 #### US-071: Gestión de comisiones de pasarela
-**RF Origen:** N4RF24  
+**RF Origen:** N4RF26  
 **Prioridad:** Could
 
 > Como **tesorero**,  
@@ -2635,7 +2635,7 @@ Scenario: Comisión repercutida al socio
 ### 3.6 Contabilidad y Fiscalidad
 
 #### US-072: Libro de ingresos y gastos
-**RF Origen:** N4RF25  
+**RF Origen:** N4RF27  
 **Prioridad:** Must
 
 > Como **tesorero**,  
@@ -2682,7 +2682,7 @@ Scenario: Categorías de ingreso/gasto
 ---
 
 #### US-073: Plan de cuentas para ENL
-**RF Origen:** N4RF26  
+**RF Origen:** N4RF28  
 **Prioridad:** Could
 
 > Como **tesorero de asociación de utilidad pública**,  
@@ -2710,7 +2710,7 @@ Scenario: Fondo social en lugar de capital
 ---
 
 #### US-074: Informes contables para ENL
-**RF Origen:** N4RF27  
+**RF Origen:** N4RF29  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2751,7 +2751,7 @@ Scenario: Apartado 12 de memoria (utilidad pública)
 ---
 
 #### US-075: Alertas de obligaciones fiscales
-**RF Origen:** N4RF28  
+**RF Origen:** N4RF30  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2787,7 +2787,7 @@ Scenario: Marcar como presentado
 ---
 
 #### US-076: Control de umbrales de exención fiscal
-**RF Origen:** N4RF29  
+**RF Origen:** N4RF31  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2821,7 +2821,7 @@ Scenario: Superación de umbral
 ---
 
 #### US-077: Exportación de datos para Modelo 182
-**RF Origen:** N4RF30  
+**RF Origen:** N4RF32  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2852,7 +2852,7 @@ Scenario: Validación de NIFs
 ### 3.7 Caja por Turnos (Peñas)
 
 #### US-078: Apertura de caja por turno
-**RF Origen:** N4RF31  
+**RF Origen:** N4RF33  
 **Prioridad:** Should
 
 > Como **responsable de turno de barra**,  
@@ -2883,7 +2883,7 @@ Scenario: Fondo inicial verificado
 ---
 
 #### US-079: Registro de ventas por turno
-**RF Origen:** N4RF32  
+**RF Origen:** N4RF34  
 **Prioridad:** Should
 
 > Como **responsable de turno**,  
@@ -2915,7 +2915,7 @@ Scenario: Productos predefinidos
 ---
 
 #### US-080: Cierre de turno con arqueo
-**RF Origen:** N4RF33  
+**RF Origen:** N4RF35  
 **Prioridad:** Should
 
 > Como **responsable de turno**,  
@@ -2955,7 +2955,7 @@ Scenario: Turno sin descuadre
 ---
 
 #### US-081: Balance consolidado de evento
-**RF Origen:** N4RF34  
+**RF Origen:** N4RF36  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -2988,7 +2988,7 @@ Scenario: Detalle por turno
 ---
 
 #### US-082: Cierre económico de evento
-**RF Origen:** N4RF35  
+**RF Origen:** N4RF37  
 **Prioridad:** Should
 
 > Como **tesorero**,  
@@ -3025,7 +3025,7 @@ Scenario: Validaciones pre-cierre
 | US-043 | N4RF01 | Configuración de planes de cuota | Must |
 | US-044 | N4RF01 | Vinculación de planes a tipos de socio | Must |
 | US-045 | N4RF01 | Selección modalidad pago en alta | Must |
-| US-046 | N4RF01 | Cambio de modalidad de pago | Should |
+| US-046 | N4RF07 | Cambio de modalidad de pago | Should |
 | US-047 | N4RF02 | Generación masiva cargos periódicos | Must |
 | US-048 | N4RF03 | Prorrateo automático en altas | Should |
 | US-049 | N4RF04 | Gestión descuentos en suscripciones | Must |
@@ -3033,41 +3033,41 @@ Scenario: Validaciones pre-cierre
 | US-051 | N4RF01 | Cargo manual directo (sin suscripción) | Must |
 | US-052 | N4RF01 | Histórico suscripciones del socio | Should |
 | **Registro de Cobros** ||||
-| US-053 | N4RF06 | Registro de cobros multi-método | Must |
-| US-054 | N4RF07 | Gestión de estados de pago | Must |
-| US-055 | N4RF08 | Información completa de cobro | Must |
-| US-056 | N4RF09 | Adjuntar justificantes a pagos | Should |
-| US-057 | N4RF10 | Generación automática de recibos | Must |
+| US-053 | N4RF08 | Registro de cobros multi-método | Must |
+| US-054 | N4RF09 | Gestión de estados de pago | Must |
+| US-055 | N4RF10 | Información completa de cobro | Must |
+| US-056 | N4RF11 | Adjuntar justificantes a pagos | Should |
+| US-057 | N4RF12 | Generación automática de recibos | Must |
 | **Morosidad** ||||
-| US-058 | N4RF11 | Workflow de morosidad | Must |
-| US-059 | N4RF12 | Plazos morosidad configurables | Should |
-| US-060 | N4RF13 | Documentación automática morosidad | Should |
+| US-058 | N4RF13 | Workflow de morosidad | Must |
+| US-059 | N4RF14 | Plazos morosidad configurables | Should |
+| US-060 | N4RF15 | Documentación automática morosidad | Should |
 | **Remesas SEPA** ||||
-| US-061 | N4RF14 | Generación ficheros SEPA | Must |
-| US-062 | N4RF15 | Gestión identificador acreedor | Must |
-| US-063 | N4RF16 | Gestión de mandatos SEPA | Must |
-| US-064 | N4RF17 | Tipos secuencia SEPA automáticos | Must |
-| US-065 | N4RF18 | Control plazos presentación | Should |
-| US-066 | N4RF19 | Gestión devoluciones SEPA | Must |
-| US-067 | N4RF20 | Exportación remesa banca online | Must |
+| US-061 | N4RF16 | Generación ficheros SEPA | Must |
+| US-062 | N4RF17 | Gestión identificador acreedor | Must |
+| US-063 | N4RF18 | Gestión de mandatos SEPA | Must |
+| US-064 | N4RF19 | Tipos secuencia SEPA automáticos | Must |
+| US-065 | N4RF20 | Control plazos presentación | Should |
+| US-066 | N4RF21 | Gestión devoluciones SEPA | Must |
+| US-067 | N4RF22 | Exportación remesa banca online | Must |
 | **Pasarela Online** ||||
-| US-068 | N4RF21 | Generación enlaces de pago | Should |
-| US-069 | N4RF22 | Pago mediante código QR | Could |
-| US-070 | N4RF23 | Conciliación automática pagos | Should |
-| US-071 | N4RF24 | Gestión comisiones pasarela | Could |
+| US-068 | N4RF23 | Generación enlaces de pago | Should |
+| US-069 | N4RF24 | Pago mediante código QR | Could |
+| US-070 | N4RF25 | Conciliación automática pagos | Should |
+| US-071 | N4RF26 | Gestión comisiones pasarela | Could |
 | **Contabilidad y Fiscalidad** ||||
-| US-072 | N4RF25 | Libro de ingresos y gastos | Must |
-| US-073 | N4RF26 | Plan de cuentas ENL | Could |
-| US-074 | N4RF27 | Informes contables ENL | Should |
-| US-075 | N4RF28 | Alertas obligaciones fiscales | Should |
-| US-076 | N4RF29 | Control umbrales exención fiscal | Should |
-| US-077 | N4RF30 | Exportación datos Modelo 182 | Should |
+| US-072 | N4RF27 | Libro de ingresos y gastos | Must |
+| US-073 | N4RF28 | Plan de cuentas ENL | Could |
+| US-074 | N4RF29 | Informes contables ENL | Should |
+| US-075 | N4RF30 | Alertas obligaciones fiscales | Should |
+| US-076 | N4RF31 | Control umbrales exención fiscal | Should |
+| US-077 | N4RF32 | Exportación datos Modelo 182 | Should |
 | **Caja por Turnos** ||||
-| US-078 | N4RF31 | Apertura caja por turno | Should |
-| US-079 | N4RF32 | Registro de ventas por turno | Should |
-| US-080 | N4RF33 | Cierre de turno con arqueo | Should |
-| US-081 | N4RF34 | Balance consolidado evento | Should |
-| US-082 | N4RF35 | Cierre económico de evento | Should |
+| US-078 | N4RF33 | Apertura caja por turno | Should |
+| US-079 | N4RF34 | Registro de ventas por turno | Should |
+| US-080 | N4RF35 | Cierre de turno con arqueo | Should |
+| US-081 | N4RF36 | Balance consolidado evento | Should |
+| US-082 | N4RF37 | Cierre económico de evento | Should |
 
 **Total:** 40 User Stories (18 Must, 19 Should, 3 Could)
 
