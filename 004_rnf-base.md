@@ -148,7 +148,7 @@
 - Nombres de fichero sanitizados (sin caracteres especiales ni rutas)
 - Escaneo de malware antes de almacenamiento (recomendado)
 
-**Trazabilidad RF:** N7RF04, N4RF09
+**Trazabilidad RF:** N7RF04, N4RF10
 
 ---
 
@@ -176,7 +176,7 @@
 - Rotación de secretos sin downtime
 - Diferentes secretos por entorno (desarrollo, staging, producción)
 
-**Trazabilidad RF:** N4RF17 (Identificador Acreedor SEPA)
+**Trazabilidad RF:** N4RF18 (Identificador Acreedor SEPA)
 
 ---
 
@@ -275,7 +275,7 @@
 - Generación masiva de cuotas (500 socios): < 30 segundos
 - Exportación a Excel (1000 registros): < 15 segundos
 
-**Trazabilidad RF:** N4RF02, N4RF16, N8RF01
+**Trazabilidad RF:** N4RF02, N4RF17, N8RF01
 
 ---
 
@@ -359,7 +359,7 @@
 - Informe de Asamblea: < 10 segundos
 - Generación masiva de carnets (100): < 60 segundos (asíncrono)
 
-**Trazabilidad RF:** N3RF30, N3RF32, N4RF12, N9RF08
+**Trazabilidad RF:** N3RF30, N3RF32, N4RF13, N9RF08
 
 ---
 
@@ -615,7 +615,7 @@
 - Reintentos automáticos para operaciones idempotentes
 - Circuit breaker para servicios externos
 
-**Trazabilidad RF:** N4RF21 (Devoluciones SEPA)
+**Trazabilidad RF:** N4RF22 (Devoluciones SEPA)
 
 ---
 
@@ -874,7 +874,7 @@
 - Proporción en pirámide de testing: ~20% del total de tests
 - Tiempo de ejecución: < 10 minutos
 
-**Trazabilidad RF:** N4RF16 (SEPA), N8RF01 (Importación)
+**Trazabilidad RF:** N4RF17 (SEPA), N8RF01 (Importación)
 
 ---
 
@@ -889,7 +889,7 @@
 - Tiempo de ejecución: < 15 minutos
 - Tests estables (flaky rate < 5%)
 
-**Trazabilidad RF:** N3RF20 (Alta), N4RF08 (Cobros), N4RF16 (SEPA)
+**Trazabilidad RF:** N3RF20 (Alta), N4RF09 (Cobros), N4RF17 (SEPA)
 
 ---
 
@@ -983,8 +983,8 @@
 
 | Categoría RNF | RFs Relacionados |
 |---------------|------------------|
-| Seguridad | N2 (Acceso), N10RF13-14 (Autenticación), N4RF08 (Datos bancarios), N7 (Documentos) |
-| Rendimiento | N4RF02/16 (Masivas), N8 (Import/Export), N9 (Dashboard), N10 (Portal) |
+| Seguridad | N2 (Acceso), N10RF13-14 (Autenticación), N4RF09 (Datos bancarios), N7 (Documentos) |
+| Rendimiento | N4RF02/17 (Masivas), N8 (Import/Export), N9 (Dashboard), N10 (Portal) |
 | RGPD | N11 completo, N3RF01 (Datos personales), N10RF11 (Consentimientos) |
 | Disponibilidad | N2RF01 (Multi-tenant SaaS), Transversal |
 | Usabilidad | N10 (Portal Socio), N9 (Dashboard), Transversal |

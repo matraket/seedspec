@@ -5,7 +5,7 @@
 **Fecha:** Febrero 2026  
 **Inputs:** KB-002 (Análisis de Necesidades)
 **Estado:** Validado  
-**Total RFs:** 218
+**Total RFs:** 221
 
 ---
 
@@ -13,7 +13,7 @@
 
 1. [N2: Arquitectura y Acceso al Sistema](#n2-necesidades-de-arquitectura-y-acceso-al-sistema) (8 RFs)
 2. [N3: Gestión de Socios/Miembros](#n3-necesidades-de-gestión-de-sociosmiembros) (34 RFs)
-3. [N4: Tesorería y Finanzas](#n4-necesidades-de-tesorería-y-finanzas) (35 RFs)
+3. [N4: Tesorería y Finanzas](#n4-necesidades-de-tesorería-y-finanzas) (38 RFs)
 4. [N5: Gestión de Eventos](#n5-necesidades-de-gestión-de-eventos) (30 RFs)
 5. [N6: Comunicación](#n6-necesidades-de-comunicación) (23 RFs)
 6. [N7: Gestión Documental](#n7-necesidades-de-gestión-documental) (12 RFs)
@@ -665,7 +665,30 @@
 
 ---
 
-### N4RF08: Registro de Cobros Multi-método
+### N4RF08: Generación de Cargos Manuales
+
+**Qué es:** Funcionalidad para crear cargos puntuales directamente a uno o varios socios sin necesidad de configurar un plan de cuota ni una suscripción.
+
+**Problema que resuelve:** Existen cobros puntuales (derramas urgentes, penalizaciones, ajustes) que no encajan en la estructura de planes de cuota. Crear un PlanCuota para cada caso puntual genera sobrecarga de configuración.
+
+**Campos específicos:**
+- Socio(s) destinatario(s): selección individual o masiva
+- Concepto descriptivo del cargo
+- Importe
+- Fecha de emisión y vencimiento
+- Ejercicio fiscal
+- Sin vinculación a suscripción (suscripcionId = NULL)
+- Marcado como esManual = true
+
+**Ejemplos de uso:**
+- Derrama extraordinaria aprobada en Asamblea
+- Penalización por devolución de recibo SEPA
+- Ajuste de importe por error anterior
+- Cargo por pérdida de material/equipamiento
+
+---
+
+### N4RF09: Registro de Cobros Multi-método
 
 **Qué es:** Sistema para registrar cobros recibidos por cualquier método de pago utilizado por la entidad.
 
@@ -680,7 +703,7 @@
 
 ---
 
-### N4RF09: Estados del Pago
+### N4RF10: Estados del Pago
 
 **Qué es:** Gestión de los diferentes estados por los que puede pasar un cargo/pago.
 
@@ -695,7 +718,7 @@
 
 ---
 
-### N4RF10: Información Completa del Cobro
+### N4RF11: Información Completa del Cobro
 
 **Qué es:** Registro detallado de cada cobro con toda la información necesaria para trazabilidad.
 
@@ -711,7 +734,7 @@
 
 ---
 
-### N4RF11: Adjuntar Justificantes a Pagos
+### N4RF12: Adjuntar Justificantes a Pagos
 
 **Qué es:** Funcionalidad para adjuntar comprobantes digitales a cada movimiento económico.
 
@@ -724,7 +747,7 @@
 
 ---
 
-### N4RF12: Generación Automática de Recibos
+### N4RF13: Generación Automática de Recibos
 
 **Qué es:** Generación automática de recibo PDF para pagos en efectivo como justificante.
 
@@ -732,7 +755,7 @@
 
 ---
 
-### N4RF13: Workflow de Morosidad Configurable
+### N4RF14: Workflow de Morosidad Configurable
 
 **Qué es:** Sistema automatizado de gestión de morosidad con pasos configurables según estatutos de cada entidad.
 
@@ -749,7 +772,7 @@
 
 ---
 
-### N4RF14: Plazos de Morosidad Configurables
+### N4RF15: Plazos de Morosidad Configurables
 
 **Qué es:** Configuración de los plazos para cada paso del workflow de morosidad según estatutos.
 
@@ -757,7 +780,7 @@
 
 ---
 
-### N4RF15: Documentación de Morosidad
+### N4RF16: Documentación de Morosidad
 
 **Qué es:** Generación automática de documentos requeridos en el proceso de morosidad.
 
@@ -770,7 +793,7 @@
 
 ---
 
-### N4RF16: Generación de Ficheros SEPA
+### N4RF17: Generación de Ficheros SEPA
 
 **Qué es:** Generación de ficheros XML en formato ISO 20022 (pain.008.001.08) para remesas bancarias de adeudos directos.
 
@@ -778,7 +801,7 @@
 
 ---
 
-### N4RF17: Gestión de Identificador de Acreedor
+### N4RF18: Gestión de Identificador de Acreedor
 
 **Qué es:** Almacenamiento y validación del Identificador de Acreedor emitido por el Banco de España, obligatorio para adeudos SEPA.
 
@@ -786,7 +809,7 @@
 
 ---
 
-### N4RF18: Gestión de Mandatos SEPA
+### N4RF19: Gestión de Mandatos SEPA
 
 **Qué es:** Registro y control de mandatos SEPA firmados por cada socio, con gestión de caducidad (36 meses sin adeudos).
 
@@ -802,7 +825,7 @@
 
 ---
 
-### N4RF19: Tipos de Secuencia SEPA
+### N4RF20: Tipos de Secuencia SEPA
 
 **Qué es:** Gestión automática del tipo de secuencia correcto para cada adeudo según el histórico del mandato.
 
@@ -816,7 +839,7 @@
 
 ---
 
-### N4RF20: Control de Plazos de Presentación
+### N4RF21: Control de Plazos de Presentación
 
 **Qué es:** Alertas y validaciones para cumplir el plazo mínimo de presentación SEPA CORE (3 días hábiles de antelación).
 
@@ -824,7 +847,7 @@
 
 ---
 
-### N4RF21: Gestión de Devoluciones SEPA
+### N4RF22: Gestión de Devoluciones SEPA
 
 **Qué es:** Sistema para gestionar devoluciones de adeudos SEPA: registro, motivo, reintento, impacto en estado del socio.
 
@@ -839,7 +862,7 @@
 
 ---
 
-### N4RF22: Exportación de Remesa para Banca Online
+### N4RF23: Exportación de Remesa para Banca Online
 
 **Qué es:** Exportación del fichero SEPA generado en formato compatible para subir a la banca online de la entidad.
 
@@ -847,7 +870,7 @@
 
 ---
 
-### N4RF23: Generación de Enlaces de Pago
+### N4RF24: Generación de Enlaces de Pago
 
 **Qué es:** Creación de enlaces de pago únicos por concepto para cobros puntuales con tarjeta.
 
@@ -855,7 +878,7 @@
 
 ---
 
-### N4RF24: Pago por QR
+### N4RF25: Pago por QR
 
 **Qué es:** Generación de códigos QR que dirijan a la pasarela de pago para facilitar cobros desde móvil.
 
@@ -863,7 +886,7 @@
 
 ---
 
-### N4RF25: Conciliación Automática de Pagos Online
+### N4RF26: Conciliación Automática de Pagos Online
 
 **Qué es:** Vinculación automática de pagos recibidos vía pasarela con los cargos pendientes correspondientes.
 
@@ -871,7 +894,7 @@
 
 ---
 
-### N4RF26: Gestión de Comisiones de Pasarela
+### N4RF27: Gestión de Comisiones de Pasarela
 
 **Qué es:** Configuración de si las comisiones de pasarela las asume la entidad o se repercuten al socio.
 
@@ -879,7 +902,7 @@
 
 ---
 
-### N4RF27: Libro de Ingresos y Gastos
+### N4RF28: Libro de Ingresos y Gastos
 
 **Qué es:** Registro contable básico de ingresos y gastos categorizado para asociaciones pequeñas.
 
@@ -895,7 +918,7 @@
 
 ---
 
-### N4RF28: Plan de Cuentas ENL
+### N4RF29: Plan de Cuentas ENL
 
 **Qué es:** Plan de cuentas específico para Entidades No Lucrativas según RD 1491/2011 para asociaciones de utilidad pública.
 
@@ -909,7 +932,7 @@
 
 ---
 
-### N4RF29: Informes Contables para ENL
+### N4RF30: Informes Contables para ENL
 
 **Qué es:** Generación de informes contables requeridos para entidades no lucrativas.
 
@@ -923,7 +946,7 @@
 
 ---
 
-### N4RF30: Alertas de Obligaciones Fiscales
+### N4RF31: Alertas de Obligaciones Fiscales
 
 **Qué es:** Sistema de alertas para recordar plazos de presentación de modelos fiscales aplicables.
 
@@ -938,7 +961,7 @@
 
 ---
 
-### N4RF31: Control de Umbrales de Exención Fiscal
+### N4RF32: Control de Umbrales de Exención Fiscal
 
 **Qué es:** Monitorización de los umbrales que determinan la exención de declarar Impuesto de Sociedades.
 
@@ -952,7 +975,7 @@
 
 ---
 
-### N4RF32: Generación de Datos para Modelo 182
+### N4RF33: Generación de Datos para Modelo 182
 
 **Qué es:** Exportación de listado de donantes con NIF y cantidades para cumplimentar el Modelo 182.
 
@@ -960,7 +983,7 @@
 
 ---
 
-### N4RF33: Apertura de Caja por Turnos
+### N4RF34: Apertura de Caja por Turnos
 
 **Qué es:** Funcionalidad para abrir caja con fondo inicial asignado a un responsable de turno (específico peñas).
 
@@ -968,7 +991,7 @@
 
 ---
 
-### N4RF34: Registro de Ventas por Turno
+### N4RF35: Registro de Ventas por Turno
 
 **Qué es:** Sistema para registrar ventas durante un turno de caja, manual o con TPV básico.
 
@@ -976,7 +999,7 @@
 
 ---
 
-### N4RF35: Cierre de Turno con Arqueo
+### N4RF36: Cierre de Turno con Arqueo
 
 **Qué es:** Proceso de cierre de turno con arqueo: efectivo contado vs registrado, identificación de descuadres.
 
@@ -991,7 +1014,7 @@
 
 ---
 
-### N4RF36: Cierre de Evento con Balance
+### N4RF37: Cierre de Evento con Balance
 
 **Qué es:** Consolidación de todos los turnos de un evento en un balance total.
 
@@ -999,7 +1022,7 @@
 
 ---
 
-### N4RF37: Informe de Descuadres
+### N4RF38: Informe de Descuadres
 
 **Qué es:** Generación de informe de descuadres por turno y responsable para investigación.
 
@@ -2394,7 +2417,7 @@
 |---------|--------|-------|
 | N2: Arquitectura y Acceso al Sistema | 8 | N2RF01 - N2RF08 |
 | N3: Gestión de Socios/Miembros | 34 | N3RF01 - N3RF34 |
-| N4: Tesorería y Finanzas | 35 | N4RF01 - N4RF35 |
+| N4: Tesorería y Finanzas | 38 | N4RF01 - N4RF38 |
 | N5: Gestión de Eventos | 30 | N5RF01 - N5RF30 |
 | N6: Comunicación | 23 | N6RF01 - N6RF23 |
 | N7: Gestión Documental | 12 | N7RF01 - N7RF12 |
@@ -2404,4 +2427,4 @@
 | N11: Cumplimiento Normativo | 17 | N11RF01 - N11RF17 |
 | N12: Específicas por Tipo de Colectividad | 15 | N12RF01 - N12RF15 |
 | N13: Contexto Aragonés | 4 | N13RF01 - N13RF04 |
-| **TOTAL** | **218** | |
+| **TOTAL** | **221** | |

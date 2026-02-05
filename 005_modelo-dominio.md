@@ -62,7 +62,7 @@ Según KB-001, el MVP se centra en **2-3 bounded contexts core**:
 |------------|-----------------|---------------|
 | N2: Arquitectura/Acceso | BC-Identidad | N2RF01-N2RF08 |
 | N3: Socios/Miembros | BC-Membresia | N3RF01-N3RF34 |
-| N4: Tesorería/Finanzas | BC-Tesoreria | N4RF01-N4RF37 |
+| N4: Tesorería/Finanzas | BC-Tesoreria | N4RF01-N4RF38 |
 | N5: Eventos | BC-Eventos | N5RF01-N5RF30 |
 | N6: Comunicación | BC-Comunicacion | N6RF01-N6RF23 |
 | N7: Gestión Documental | BC-Documentos | N7RF01-N7RF12 |
@@ -617,15 +617,16 @@ MotivoBajaSuscripcion (enum):
 | N4RF02 | Domain Service: GeneradorCargos (basado en suscripciones activas y mesesCobro) |
 | N4RF03 | Domain Service: CalculadorProrrateo |
 | N4RF04-05 | SuscripcionCuota.descuento, exenciones |
-| N4RF06** | **SuscripcionCuota (selección modalidad al alta)** |
-| N4RF07** | **SuscripcionCuota.motivoBaja=CAMBIO_PLAN** |
-| N4RF08-10 | Pago (Entity), MetodoPago, EstadoPago |
-| N4RF11-12 | Pago.justificanteId, generación recibo |
-| N4RF13-15 | Domain Service: GestorMorosidad, eventos morosidad |
-| N4RF16-22 | RemesaSepa, AdeudoSepa, MandatoSepa |
-| N4RF23-26 | Integración pasarela (Application Service) |
-| N4RF27-32 | Movimiento (Aggregate), categorías contables |
-| N4RF33-37 | Extensión: CajaTurno (específico peñas) |
+| N4RF06 | SuscripcionCuota (selección modalidad al alta) |
+| N4RF07 | SuscripcionCuota.motivoBaja=CAMBIO_PLAN |
+| N4RF08 | Domain Service: GeneradorCargoManual, Cargo.esManual=true |
+| N4RF09-11 | Pago (Entity), MetodoPago, EstadoPago |
+| N4RF12-13 | Pago.justificanteId, generación recibo |
+| N4RF14-16 | Domain Service: GestorMorosidad, eventos morosidad |
+| N4RF17-23 | RemesaSepa, AdeudoSepa, MandatoSepa |
+| N4RF24-27 | Integración pasarela (Application Service) |
+| N4RF28-33 | Movimiento (Aggregate), categorías contables |
+| N4RF34-38 | Extensión: CajaTurno (específico peñas) |
 
 ---
 
