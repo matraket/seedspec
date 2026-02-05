@@ -4,7 +4,7 @@
 **Versión:** 1.0  
 **Fecha:** Febrero 2026  
 **Inputs:** KB-003 (Requisitos Funcionales), KB-005 (Modelo de Dominio), KB-008 (RNF Técnicos)  
-**Estado:** Borrador  
+**Estado:** Aprobado  
 **Total User Stories:** 202 (80 Must, 110 Should, 12 Could, 0 Won't)
 
 ---
