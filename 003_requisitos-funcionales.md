@@ -559,25 +559,46 @@
 
 ## N4: Necesidades de Tesorería y Finanzas
 
-### N4RF01: Definición de Tipos de Cuota
+### N4RF01: Configuración de Planes de Cuota
 
-**Qué es:** Configuración de los diferentes tipos de cuota que maneja la entidad con sus características.
+**Qué es:** Configuración de planes de cuota que definen modalidades de pago con importes, tipo (única/periódica) y meses de cobro específicos.
 
-**Problema que resuelve:** Cada entidad tiene su estructura de cuotas (ordinarias, inscripción, extraordinarias, eventos) con importes y periodicidades diferentes. El tesorero calcula manualmente quién debe qué.
+**Problema que resuelve:** Cada entidad tiene múltiples modalidades de pago (mensual, trimestral, anual) con importes no necesariamente proporcionales. Un mismo tipo de socio puede elegir entre varias modalidades. El tesorero calcula manualmente quién debe qué.
 
 **Campos específicos:**
-- Cuota ordinaria: periodicidad configurable (anual, semestral, trimestral, mensual)
-- Cuota de inscripción: pago único al darse de alta
-- Cuota extraordinaria: derramas puntuales (obras, eventos especiales)
-- Cuota de evento: vinculada a actividad específica
+- Código y nombre identificativo del plan
+- Tipo de plan: UNICA (inscripción, derrama) o PERIODICA (cuota recurrente)
+- Importe base del plan
+- Periodicidad orientativa: mensual, trimestral, semestral, anual, personalizada
+- Meses de cobro: array configurable (ej: [1,4,7,10] para trimestral, [9,12,3,6] para ejercicio no natural)
+- Estado activo/inactivo
+
+**Ejemplos de configuración:**
+- Plan "Cuota mensual adulto": PERIODICA, 12€, meses [1-12]
+- Plan "Cuota trimestral adulto": PERIODICA, 35€, meses [1,4,7,10]
+- Plan "Cuota anual adulto": PERIODICA, 120€, meses [2]
+- Plan "Inscripción": UNICA, 50€
+- Plan "Derrama obras 2025": UNICA, 100€
 
 ---
 
-### N4RF02: Generación Masiva de Cargos
+### N4RF02: Generación Masiva de Cargos por Suscripciones
 
-**Qué es:** Proceso automatizado para generar cargos de cuotas a todos los socios de un tipo en un ejercicio.
+**Qué es:** Proceso automatizado (ejecutable mensualmente) que genera cargos para todas las suscripciones activas cuyo plan de cuota incluya el mes actual en su configuración de meses de cobro.
 
-**Problema que resuelve:** Generar manualmente las cuotas de cientos de socios es tedioso y propenso a errores y omisiones.
+**Problema que resuelve:** Generar manualmente las cuotas de cientos de socios es tedioso y propenso a errores y omisiones. La generación basada en suscripciones permite que cada socio tenga su propia modalidad de pago.
+
+**Lógica de generación:**
+1. Obtener suscripciones activas (fechaBaja IS NULL, tipo PERIODICA)
+2. Filtrar donde mesActual IN planCuota.mesesCobro
+3. Para cada suscripción: crear Cargo con importeFinal = suscripcion.importeEfectivo
+
+**Campos específicos:**
+- Mes/periodo a generar
+- Ejercicio fiscal
+- Filtros opcionales: por tipo de socio, por plan de cuota
+- Vista previa antes de confirmar generación
+- Resumen post-generación: cargos creados, importe total
 
 ---
 
@@ -589,11 +610,23 @@
 
 ---
 
-### N4RF04: Aplicación de Descuentos por Categoría
+### N4RF04: Aplicación de Descuentos en Suscripciones
 
-**Qué es:** Sistema para aplicar automáticamente descuentos según la categoría del socio (juvenil, familiar, etc.).
+**Qué es:** Sistema para aplicar descuentos a nivel de suscripción individual, calculando el importe efectivo que pagará el socio.
 
-**Problema que resuelve:** Los descuentos se calculan manualmente, generando errores e inconsistencias.
+**Problema que resuelve:** Los descuentos se calculan manualmente, generando errores e inconsistencias. Al aplicarlos en la suscripción (no en el plan), se permite flexibilidad individual.
+
+**Campos específicos:**
+- Descuento como porcentaje (ej: 0.30 = 30%)
+- Importe efectivo calculado: planCuota.importe × (1 - descuento)
+- Motivo del descuento (opcional): juvenil, familiar, situación especial
+- Fecha de aplicación del descuento
+- Descuentos sugeridos por tipo de socio (configurables, no obligatorios)
+
+**Ejemplos:**
+- Socio juvenil con plan anual 120€ y descuento 30% → importeEfectivo = 84€
+- Socio adulto con plan mensual 12€ sin descuento → importeEfectivo = 12€
+- Socio con situación especial, descuento 50% puntual → importeEfectivo = 60€
 
 ---
 

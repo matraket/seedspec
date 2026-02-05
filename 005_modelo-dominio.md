@@ -578,7 +578,10 @@ MotivoBajaSuscripcion (enum):
 | `SecuenciaSepa` | enum | FRST, RCUR, OOFF, FNAL |
 | `EstadoRemesa` | enum | Borrador, Generada, Enviada, Procesada, ConDevoluciones |
 | `IdentificadorAcreedor` | valor: string | Formato ES + 2 dígitos + sufijo (14 chars) |
-| `Periodicidad` | enum | Anual, Semestral, Trimestral, Mensual |
+| `Periodicidad` | enum | Mensual, Trimestral, Semestral, Anual, Personalizada (orientativo, la configuración real está en mesesCobro[]) |
+| `TipoPlan` | enum | UNICA, PERIODICA |
+| `MotivoBajaSuscripcion` | enum | CAMBIO_PLAN, BAJA_SOCIO, EXENCION, FIN_CUOTA_UNICA |
+| `MesesCobro` | int[] | Array de meses (1-12) en que se generan cargos. Vacío para planes UNICA. |
 
 ### 4.4 Domain Events
 
@@ -598,18 +601,20 @@ MotivoBajaSuscripcion (enum):
 
 | Servicio | Responsabilidad |
 |----------|-----------------|
-| `GeneradorCuotas` | Genera cargos masivos por tipo de socio y ejercicio |
+| `GeneradorCargos` | Genera cargos para suscripciones activas cuyo plan incluya el mes actual en mesesCobro. Proceso mensual automatizable. |
+| `GeneradorCargoManual` | Crea cargos puntuales sin suscripción asociada (derramas, penalizaciones, ajustes) |
 | `CalculadorProrrateo` | Calcula cuota proporcional para altas a mitad de ejercicio |
 | `GeneradorRemesaSepa` | Crea fichero XML ISO 20022 pain.008.001.08 |
 | `GestorMorosidad` | Evalúa y ejecuta workflow de morosidad |
 | `ConciliadorPagos` | Asocia pagos de pasarela con cargos pendientes |
+| `GestorSuscripciones` | Gestiona altas, bajas y cambios de modalidad de pago |
 
 ### 4.6 Trazabilidad RF
 
 | RF | Elemento de Dominio |
 |----|---------------------|
 | N4RF01 | PlanCuota (Aggregate), TipoSocioPlanCuota |
-| N4RF02 | Domain Service: GeneradorCargos (basado en suscripciones) |
+| N4RF02 | Domain Service: GeneradorCargos (basado en suscripciones activas y mesesCobro) |
 | N4RF03 | Domain Service: CalculadorProrrateo |
 | N4RF04-05 | SuscripcionCuota.descuento, exenciones |
 | N4RF06** | **SuscripcionCuota (selección modalidad al alta)** |
