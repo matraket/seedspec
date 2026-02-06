@@ -221,7 +221,8 @@ Scenario: Configuración de tipos de socio personalizados
   Given un presidente autenticado en su tenant
   When accede a Configuración > Tipos de Socio
   Then puede crear tipos específicos (ej: "Hermano de Luz", "Socio Infantil")
-  And cada tipo puede tener cuota y permisos diferenciados
+  And cada tipo puede vincularse con múltiples planes de cuota
+  And cada tipo tiene permisos y reglas diferenciadas
   And los cambios solo afectan a su tenant
 
 Scenario: Personalización de branding
@@ -657,13 +658,16 @@ Scenario: Transiciones controladas (no cualquier cambio es válido)
 Scenario: Configuración de tipos de hermano
   Given una cofradía configurando sus tipos de socio
   When el presidente define las categorías:
-    | tipo           | cuota  | voto | elegible | carencia |
-    | Numerario      | 100%   | Sí   | Sí       | 2 años   |
-    | Honorario      | 0€     | No   | No       | -        |
-    | Aspirante      | 50%    | No   | No       | 1 año    |
-    | MenorEdad      | 30%    | No   | No       | -        |
+    | tipo           | voto | elegible | carencia |
+    | Numerario      | Sí   | Sí       | 2 años   |
+    | Honorario      | No   | No       | -        |
+    | Aspirante      | No   | No       | 1 año    |
+    | MenorEdad      | No   | No       | -        |
   Then los tipos quedan configurados para el tenant
   And las reglas se aplican automáticamente
+
+# Nota: Para configurar cuotas, ver US-043 (Planes de Cuota) y US-044
+# (vinculación con tipos de socio).
 
 Scenario: Validación de antigüedad para voto
   Given un hermano numerario con 18 meses de antigüedad
@@ -685,26 +689,31 @@ Scenario: Validación de elegibilidad para Hermano Mayor
 **Prioridad:** Should
 
 > Como **tesorero de una peña**,  
-> quiero configurar categorías de socios con cuotas diferenciadas por edad,  
-> para aplicar automáticamente los descuentos correspondientes.
+> quiero configurar categorías de socios diferenciadas por edad,  
+> para gestionar automáticamente las transiciones entre categorías.
 
 **Criterios de Aceptación:**
 ```gherkin
 Scenario: Configuración de tipos de peñista
-  Given una peña configurando sus cuotas
+  Given una peña configurando sus categorías de socio
   When el tesorero define las categorías:
-    | tipo       | edadMin | edadMax | cuota  | descuento |
-    | Adulto     | 35      | -       | 150€   | 0%        |
-    | Juvenil    | 18      | 34      | 105€   | 30%       |
-    | Infantil   | 0       | 17      | 90€    | 40%       |
-    | Honor      | -       | -       | 0€     | 100%      |
-  Then las cuotas se calculan automáticamente según edad
+    | tipo       | edadMin | edadMax | derechoVoto | elegibleCargos |
+    | Adulto     | 35      | -       | Sí          | Sí             |
+    | Juvenil    | 18      | 34      | Sí          | No             |
+    | Infantil   | 0       | 17      | No          | No             |
+    | Honor      | -       | -       | Sí          | Sí             |
+  Then el sistema valida las configuraciones
+  And permite vincular planes de cuota a cada categoría (ver US-044)
+
+# Nota: Para configurar los importes y modalidades de pago disponibles para cada
+# tipo de socio, ver US-043 (Planes de Cuota) y US-044 (Vinculación tipo-plan).
 
 Scenario: Transición automática juvenil a adulto
   Given un socio juvenil que cumple 35 años el 15 de marzo
   When se abre el ejercicio del año siguiente
   Then el socio pasa automáticamente a categoría "Adulto"
-  And se genera la cuota correspondiente a la nueva categoría
+  And se emite evento TipoSocioCambiado
+  And el tesorero puede revisar si debe ajustar su plan de cuota
   And se notifica al socio del cambio
 ```
 
@@ -746,19 +755,21 @@ Scenario: Alta de deportista federado
 
 > Como **secretario de una asociación cultural**,  
 > quiero configurar categorías tradicionales de socios,  
-> para gestionar aportaciones diferenciadas.
+> para gestionar derechos y aportaciones diferenciadas.
 
 **Criterios de Aceptación:**
 ```gherkin
 Scenario: Configuración de tipos de asociado
   Given una asociación cultural
   When configura sus categorías:
-    | tipo       | cuota | derechos                      |
-    | Ordinario  | 50€   | Voto, actividades             |
-    | Fundador   | 50€   | Voto, actividades, distintivo |
-    | Honorario  | 0€    | Actividades (sin voto)        |
-    | Protector  | 200€  | Voto, actividades, mecenazgo  |
+    | tipo       | derechos                      |
+    | Ordinario  | Voto, actividades             |
+    | Fundador   | Voto, actividades, distintivo |
+    | Honorario  | Actividades (sin voto)        |
+    | Protector  | Voto, actividades, mecenazgo  |
   Then las categorías se aplican según configuración
+
+# Nota: Para configurar cuotas, ver US-043 y US-044.
 ```
 
 ---
@@ -769,7 +780,7 @@ Scenario: Configuración de tipos de asociado
 
 > Como **presidente**,  
 > quiero definir reglas configurables por cada tipo de socio,  
-> para automatizar el cálculo de derechos, cuotas y transiciones.
+> para automatizar el cálculo de derechos y transiciones.
 
 **Criterios de Aceptación:**
 ```gherkin
@@ -779,14 +790,15 @@ Scenario: Configuración completa de reglas por tipo
     | regla                | valor                          |
     | edadMinima           | 14                             |
     | edadMaxima           | 34                             |
-    | cuotaBase            | 150€                           |
-    | descuento            | 30%                            |
     | derechoVoto          | Sí (si antigüedad >= 1 año)    |
     | elegibleCargo        | No                             |
     | carenciaDerechos     | 12 meses                       |
     | transicionAutomatica | Adulto (al cumplir 35 años)    |
   Then las reglas se evalúan automáticamente
   And los cambios de categoría se ejecutan en apertura de ejercicio
+
+# Nota: Para configurar planes de cuota disponibles para este tipo, ver US-044.
+# Los descuentos se aplican a nivel individual en la suscripción (US-049).
 
 Scenario: Evaluación de derecho a voto condicional
   Given un socio juvenil con 8 meses de antigüedad
@@ -940,7 +952,7 @@ Scenario: Consulta histórica por ejercicio
 **Prioridad:** Must
 
 > Como **tesorero**,  
-> quiero que la apertura de ejercicio arrastre socios activos y genere cuotas automáticamente,  
+> quiero que la apertura de ejercicio arrastre socios activos al nuevo periodo,  
 > para no tener que hacerlo manualmente cada año.
 
 **Criterios de Aceptación:**
@@ -953,20 +965,16 @@ Scenario: Apertura de ejercicio con arrastre de socios
   And los socios dados de baja NO se arrastran
   And se emite evento EjercicioAbierto
 
-Scenario: Generación automática de cuotas
-  Given la apertura del ejercicio 2025
-  And tipos de socio con cuotas configuradas
-  When se completa la apertura
-  Then se generan cargos de cuota para cada socio activo
-  And cada cargo refleja el importe según tipo de socio
-  And los cargos quedan pendientes de cobro
-
 Scenario: Transiciones automáticas de categoría
   Given socios juveniles que cumplen 35 años en 2025
   When se abre el ejercicio 2025
   Then esos socios pasan a categoría "Adulto"
-  And se genera la cuota correspondiente a "Adulto"
+  And se emite evento TipoSocioCambiado
+  And el tesorero puede revisar si debe ajustar su plan de cuota
   And se registra el cambio en el timeline
+
+# Nota: Los cargos se generan mensualmente mediante el proceso automatizado N4RF02,
+# NO en la apertura de ejercicio. Ver US-047 (Generación masiva mensual de cargos).
 ```
 
 ---
@@ -1069,12 +1077,16 @@ Scenario: Alta simple en 3 pasos
   Given un aspirante que quiere hacerse socio
   When el secretario inicia el proceso de alta simple
   Then sigue los pasos:
-    | paso | acción                              |
-    | 1    | Registro de datos personales        |
-    | 2    | Selección de tipo de socio          |
-    | 3    | Generación de cuota de inscripción  |
+    | paso | acción                                           |
+    | 1    | Registro de datos personales                     |
+    | 2    | Selección de tipo de socio                       |
+    | 3    | Creación de suscripción de inscripción y cargos  |
   And al completar, el socio queda en estado "Activo"
   And se emite evento SocioRegistrado
+
+# Nota Paso 3: Se crea SuscripcionCuota con planCuotaId="Inscripción" (tipo UNICA),
+# se genera el Cargo asociado, y la suscripción se cierra automáticamente 
+# (motivoBaja=FIN_CUOTA_UNICA).
 
 Scenario: Alta con pago inmediato
   Given el proceso de alta completado
@@ -1100,15 +1112,18 @@ Scenario: Proceso de alta por fases
   Given un aspirante a hermano
   When se inicia su proceso de alta
   Then debe completar las fases:
-    | fase | descripción                        | responsable  |
-    | 1    | Solicitud escrita al Hermano Mayor | Aspirante    |
-    | 2    | Aval de 2 hermanos (2+ años)       | Padrinos     |
-    | 3    | Entrega documentación (bautismo)   | Aspirante    |
-    | 4    | Pago cuota inscripción             | Aspirante    |
-    | 5    | Periodo formación (1 año)          | Cofradía     |
-    | 6    | Jura de reglas                     | Junta        |
-    | 7    | Imposición medalla                 | Hermano Mayor|
+    | fase | descripción                            | responsable  |
+    | 1    | Solicitud escrita al Hermano Mayor     | Aspirante    |
+    | 2    | Aval de 2 hermanos (2+ años)           | Padrinos     |
+    | 3    | Entrega documentación (bautismo)       | Aspirante    |
+    | 4    | Pago cuota inscripción (ver nota)      | Aspirante    |
+    | 5    | Periodo formación (1 año)              | Cofradía     |
+    | 6    | Jura de reglas                         | Junta        |
+    | 7    | Imposición medalla                     | Hermano Mayor|
   And cada fase tiene fecha límite configurable
+
+# Nota Fase 4: Se crea SuscripcionCuota con PlanCuota tipo UNICA, se genera el
+# Cargo asociado, y al pagarse la suscripción se cierra automáticamente.
 
 Scenario: Seguimiento de proceso estancado
   Given un aspirante en fase 3 hace más de 60 días
@@ -1200,7 +1215,9 @@ Scenario: Solicitud de baja voluntaria
   When el secretario registra la solicitud
   Then se registra fecha de solicitud
   And se calcula fecha efectiva según estatutos (típico: fin ejercicio)
-  And se generan cuotas pendientes hasta fecha efectiva
+  And se cierra(n) su(s) suscripción(es) con motivoBaja=BAJA_SOCIO
+  And los cargos ya generados hasta la fecha se mantienen como pendientes
+  And NO se generarán nuevos cargos en procesos mensuales futuros
   And el socio recibe confirmación con fecha de baja
 
 Scenario: Baja inmediata vs fin de ejercicio
@@ -1246,11 +1263,11 @@ Scenario: Generación de certificado de descubierto
   Given un socio con 2+ años de impago
   When se genera el certificado
   Then incluye:
-    | elemento              | contenido                       |
-    | Datos socio           | Nombre, número, DNI             |
-    | Deuda detallada       | Cuotas, importes, fechas        |
-    | Notificaciones enviadas| Fechas de cada aviso           |
-    | Firma tesorero        | Con VºBº del presidente         |
+    | elemento              | contenido                             |
+    | Datos socio           | Nombre, número, DNI                   |
+    | Deuda detallada       | Cargos pendientes, importes, fechas   |
+    | Notificaciones enviadas| Fechas de cada aviso                 |
+    | Firma tesorero        | Con VºBº del presidente               |
   And el certificado queda archivado como prueba
 
 Scenario: Oportunidad de regularización
@@ -1464,7 +1481,7 @@ Scenario: Escaneo de carnet válido
     | Foto            | [Miniatura]        |           |
 
 Scenario: Escaneo de socio moroso
-  Given un socio con cuotas pendientes
+  Given un socio con cargos pendientes de pago
   When se escanea su QR
   Then se muestra estado "Pendiente de pago" con indicador rojo
   And el controlador decide si permite acceso

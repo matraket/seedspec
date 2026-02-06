@@ -128,7 +128,7 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 |----|------|------------|-----|
 | BC-Identidad | Generic | Usuario, Tenant, MembresiaTenant, Rol | N2 (8) |
 | BC-Membresia | **Core** | Socio, TipoSocio, SolicitudAlta, Carnet, Ejercicio | N3 (34) |
-| BC-Tesoreria | **Core** | CuentaSocio, TipoCuota, RemesaSepa, Movimiento | N4 (35) |
+| BC-Tesoreria | **Core** | CuentaSocio, PlanCuota, SuscripcionCuota, RemesaSepa, Movimiento | N4 (38) |
 | BC-Eventos | **Core** | Evento, TipoEvento (+ Inscripcion entity) | N5 (30) |
 | BC-Comunicacion | Supporting | Comunicacion, Plantilla, Anuncio | N6 (23) |
 | BC-Documentos | Supporting | Documento, Categoria, Acta | N7 (12) |

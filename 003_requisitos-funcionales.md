@@ -351,9 +351,11 @@
 
 ### N3RF16: Apertura de Nuevo Ejercicio
 
-**Qué es:** Proceso automatizado de apertura de ejercicio con arrastre de socios activos y generación de cuotas pendientes.
+**Qué es:** Proceso automatizado de apertura de ejercicio con arrastre de socios activos al nuevo periodo.
 
-**Problema que resuelve:** Cada inicio de año/temporada requiere trabajo manual para 'pasar' los socios al nuevo periodo y generar las cuotas correspondientes.
+**Problema que resuelve:** Cada inicio de año/temporada requiere trabajo manual para 'pasar' los socios al nuevo periodo.
+
+**Nota importante:** Este proceso NO genera cargos automáticamente. Los cargos se generan mensualmente mediante el proceso automatizado N4RF02 (Generación Masiva de Cargos por Suscripciones), basándose en las suscripciones activas de cada socio.
 
 ---
 
@@ -389,9 +391,11 @@
 
 ### N3RF20: Proceso de Alta Simple
 
-**Qué es:** Workflow de alta de socio simplificado para peñas y asociaciones: solicitud → pago → alta efectiva.
+**Qué es:** Workflow de alta de socio simplificado para peñas y asociaciones: solicitud → selección modalidad de pago → generación de cargo(s) → alta efectiva.
 
 **Problema que resuelve:** Las altas llegan por múltiples canales (WhatsApp, email, presencial) y se gestionan de forma desorganizada.
+
+**Nota:** Si existe cuota de inscripción, se genera como SuscripcionCuota tipo UNICA. Para la cuota periódica, el socio selecciona un PlanCuota disponible para su tipo de socio (ver N4RF06).
 
 ---
 
