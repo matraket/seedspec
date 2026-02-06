@@ -1,0 +1,223 @@
+================================================================================
+REPORTE DE VERIFICACIÓN DE METADATA - CASOS DE USO
+010_casos-uso_FINAL-HUMANO.md
+================================================================================
+
+📊 RESUMEN EJECUTIVO
+────────────────────────────────────────────────────────────────────────────────
+
+Total UCs documentados:           70 (esperado: 71, falta UC-063)
+UCs con metadata completa:         45 (64.3%)
+UCs con metadata incompleta:       25 (35.7%)
+
+ESTRUCTURA ESPERADA POR UC:
+  Campos de metadata:
+    • User Stories
+    • Bounded Context
+    • Application Service
+    • Aggregates Involucrados
+    • Prioridad
+
+  Secciones obligatorias:
+    • Descripción
+    • Actores
+    • Precondiciones
+    • Flujo Normal
+    • Domain Events Emitidos
+    • Poscondiciones
+    • Notas de Implementación
+
+
+✅ UCs CON METADATA COMPLETA: 45 CASOS
+────────────────────────────────────────────────────────────────────────────────
+
+BC-Identidad (5/5 = 100%):
+  UC-001 a UC-005
+
+BC-Membresia (10/11 = 90.9%):
+  UC-006 a UC-015 (excepto UC-016 fusionado)
+
+BC-Tesoreria (11/11 = 100%):
+  UC-017 a UC-027
+
+BC-Eventos (7/11 = 63.6%):
+  UC-028, UC-029, UC-030, UC-031, UC-032, UC-033, UC-038
+
+BC-Comunicacion (6/9 = 66.7%):
+  UC-042, UC-043, UC-044, UC-045, UC-046, UC-047
+
+BC-Documentos (5/8 = 62.5%):
+  UC-048, UC-049, UC-050, UC-051, UC-052
+
+Transversal: Import/Export (1/8 = 12.5%):
+  UC-056
+
+Transversal: Reporting (0/4 = 0%):
+  [Ninguno completo]
+
+Transversal: Portal Socio (0/4 = 0%):
+  [Ninguno completo]
+
+
+⚠️ UCs CON METADATA INCOMPLETA: 25 CASOS
+────────────────────────────────────────────────────────────────────────────────
+
+🔴 CRÍTICO (1 UC):
+
+  UC-016: [FUSIONADO CON UC-015]
+    • Conserva entrada vacía sin contenido
+    • Genera confusión en conteo total
+    • Acción: Eliminar entrada o documentar correctamente
+
+
+🟠 ALTA PRIORIDAD (8 UCs):
+
+  Eventos Específicos (4 UCs):
+    UC-034: Procesiones (Cofradías)
+      - Falta: Application Service, Poscondiciones, Notas
+    UC-035: Cuadrillas de Costaleros
+      - Falta: Application Service
+    UC-036: Cultos (Cofradías)
+      - Falta: Application Service
+    UC-037: Competiciones (Clubes)
+      - Falta: Application Service
+
+  Comunicación (3 UCs):
+    UC-039: Envío Email
+      - Falta: Application Service
+    UC-040: Envío SMS
+      - Falta: Application Service, Domain Events, Poscondiciones
+    UC-041: Notificaciones Push
+      - Falta: Application Service, Actores, Precondiciones, Domain Events
+
+  Documentos (1 UC):
+    UC-053: Búsqueda y Filtrado
+      - Falta: User Stories
+
+
+🟡 MEDIA PRIORIDAD (12 UCs):
+
+  Documentos (2 UCs):
+    UC-054: Control de Permisos
+      - Falta: Flujo Normal
+    UC-055: Control de Versiones y OCR
+      - Falta: Flujo Normal
+
+  Import/Export (7 UCs):
+    UC-057: Importación Histórico Pagos
+      - Falta: User Stories, Domain Events, Poscondiciones
+    UC-058: Exportación Listados
+      - Falta: Domain Events, Poscondiciones
+    UC-059: Exportación informes económicos
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-060: Exportación Modelo 182
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-061: Exportación listados eventos
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-062: Exportación histórico comunicaciones
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    [UC-063]: FALTA EN SECUENCIA
+
+  Reporting (4 UCs):
+    UC-064: Dashboard Principal
+      - Falta: Domain Events, Poscondiciones
+    UC-065: Gráficos de evolución
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-066: Informes Asamblea
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-067: Certificados y memorias
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+
+
+🟢 BAJA PRIORIDAD (4 UCs):
+
+  Portal Socio (4 UCs):
+    UC-068: Acceso al Portal
+      - Falta: Domain Events, Poscondiciones
+    UC-069: Consulta Datos Personales
+      - Falta: Precondiciones, Domain Events, Poscondiciones, Notas
+    UC-070: Inscripción eventos portal
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+    UC-071: Descarga documentos
+      - Falta: User Stories, Aggregates, Domain Events, Poscondiciones, Notas
+
+
+📈 ANÁLISIS POR BOUNDED CONTEXT
+────────────────────────────────────────────────────────────────────────────────
+
+BC                          | Total | Completos | % Completitud | Estado
+────────────────────────────|-------|-----------|---------------|─────────
+BC-Identidad                |   5   |     5     |    100%       | ✅ OK
+BC-Tesoreria                |  11   |    11     |    100%       | ✅ OK
+BC-Membresia                |  11   |    10     |    90.9%      | ✅ OK
+BC-Comunicacion             |   9   |     6     |    66.7%      | ⚠️ Revisar
+BC-Eventos                  |  11   |     7     |    63.6%      | ⚠️ Revisar
+BC-Documentos               |   8   |     5     |    62.5%      | ⚠️ Revisar
+Transversal: Import/Export  |   8   |     1     |    12.5%      | 🔴 Incompleto
+Transversal: Reporting      |   4   |     0     |     0%        | 🔴 Incompleto
+Transversal: Portal Socio   |   4   |     0     |     0%        | 🔴 Incompleto
+
+
+🔍 PATRONES DETECTADOS
+────────────────────────────────────────────────────────────────────────────────
+
+1. Secciones más frecuentemente faltantes:
+   • Domain Events Emitidos: 18 UCs (72% de incompletos)
+   • Poscondiciones: 18 UCs (72% de incompletos)
+   • Notas de Implementación: 10 UCs (40% de incompletos)
+
+2. Campos de metadata más frecuentemente faltantes:
+   • Application Service: 8 UCs
+   • User Stories: 8 UCs
+   • Aggregates: 8 UCs
+
+3. BCs Core (Identidad, Membresia, Tesorería): Excelente completitud (90-100%)
+
+4. Secciones Transversales: Baja completitud (0-13%)
+   → Parecen estar en estado de borrador o pendientes de detalle
+
+
+🎯 RECOMENDACIONES PRIORITARIAS
+────────────────────────────────────────────────────────────────────────────────
+
+FASE 1: CORRECCIONES CRÍTICAS (1-2 horas)
+  ✓ Resolver UC-016 (fusionado)
+  ✓ Investigar UC-063 (faltante en secuencia)
+  ✓ Completar Application Service en UC-034 a UC-041
+
+FASE 2: COMPLETAR IMPORT/EXPORT (2-3 horas)
+  ✓ UC-057 a UC-062 (6 UCs)
+  ✓ Patrón común: faltan Domain Events y Poscondiciones
+
+FASE 3: COMPLETAR REPORTING (2-3 horas)
+  ✓ UC-064 a UC-067 (4 UCs)
+  ✓ Patrón común: faltan User Stories, Aggregates, Domain Events, Notas
+
+FASE 4: COMPLETAR PORTAL SOCIO (1-2 horas)
+  ✓ UC-068 a UC-071 (4 UCs)
+  ✓ Portal = capa presentación, menor impacto arquitectura
+
+FASE 5: COMPLETAR DOCUMENTOS (1 hora)
+  ✓ UC-053 a UC-055 (3 UCs)
+
+
+ESTIMACIÓN TOTAL: 8-12 horas de trabajo
+
+
+✅ CONCLUSIÓN
+────────────────────────────────────────────────────────────────────────────────
+
+Estado actual:  BUENA BASE DE TRABAJO
+  • 64.3% de UCs completamente documentados
+  • BCs Core al 100% (Identidad, Tesorería)
+  • BCs Supporting/Core en buen estado (63-91%)
+  • Secciones transversales requieren completar
+
+Acción prioritaria: Completar Application Services en UC-034 a UC-041
+
+Estado final esperado tras completar:
+  • 71 UCs documentados (100%)
+  • 100% de UCs con metadata completa
+  • Trazabilidad completa: 202 US → 71 UCs → Services → BCs
+
+================================================================================

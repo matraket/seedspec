@@ -1,0 +1,72 @@
+UC,Bounded Context,Estado,User Stories,Application Service,Aggregates,Prioridad,Descripción,Actores,Precondiciones,Flujo Normal,Domain Events,Poscondiciones,Notas,Campos Faltantes,Secciones Faltantes,Prioridad Corrección
+UC-001,BC-Identidad,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-002,BC-Identidad,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-003,BC-Identidad,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-004,BC-Identidad,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-005,BC-Identidad,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-006,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-007,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-008,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-009,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-010,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-011,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-012,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-013,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-014,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-015,BC-Membresia,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-016,BC-Membresia,Incompleto - FUSIONADO,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,FALTA,"User Stories, Bounded Context, Application Service, Aggregates, Prioridad","Descripción, Actores, Precondiciones, Flujo Normal, Domain Events, Poscondiciones, Notas",CRÍTICO
+UC-017,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-018,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-019,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-020,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-021,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-022,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-023,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-024,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-025,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-026,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-027,BC-Tesoreria,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-028,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-029,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-030,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-031,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-032,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-033,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-034,BC-Eventos,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,OK,FALTA,FALTA,"Application Service","Poscondiciones, Notas",ALTA
+UC-035,BC-Eventos,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,OK,OK,OK,"Application Service",,ALTA
+UC-036,BC-Eventos,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,OK,OK,OK,"Application Service",,ALTA
+UC-037,BC-Eventos,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,OK,OK,OK,"Application Service",,ALTA
+UC-038,BC-Eventos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-039,BC-Comunicacion,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,OK,OK,OK,"Application Service",,ALTA
+UC-040,BC-Comunicacion,Incompleto,OK,FALTA,OK,OK,OK,OK,OK,OK,FALTA,FALTA,OK,"Application Service","Domain Events, Poscondiciones",ALTA
+UC-041,BC-Comunicacion,Incompleto,OK,FALTA,OK,OK,OK,FALTA,FALTA,OK,FALTA,OK,OK,"Application Service","Actores, Precondiciones, Domain Events",ALTA
+UC-042,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-043,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-044,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-045,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-046,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-047,BC-Comunicacion,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-048,BC-Documentos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-049,BC-Documentos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-050,BC-Documentos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-051,BC-Documentos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-052,BC-Documentos,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-053,BC-Documentos,Incompleto,FALTA,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,"User Stories",,ALTA
+UC-054,BC-Documentos,Incompleto,OK,OK,OK,OK,OK,OK,OK,FALTA,OK,OK,OK,,"Flujo Normal",MEDIA
+UC-055,BC-Documentos,Incompleto,OK,OK,OK,OK,OK,OK,OK,FALTA,OK,OK,OK,,"Flujo Normal",MEDIA
+UC-056,Transversal: Import/Export,Completo,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,"N/A"
+UC-057,Transversal: Import/Export,Incompleto,FALTA,OK,OK,OK,OK,OK,OK,OK,FALTA,FALTA,OK,"User Stories","Domain Events, Poscondiciones",MEDIA
+UC-058,Transversal: Import/Export,Incompleto,OK,OK,OK,OK,OK,OK,OK,OK,FALTA,FALTA,OK,,"Domain Events, Poscondiciones",MEDIA
+UC-059,Transversal: Import/Export,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-060,Transversal: Import/Export,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-061,Transversal: Import/Export,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-062,Transversal: Import/Export,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-063,Transversal: Import/Export,FALTA EN SECUENCIA,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,"Documento completo","Documento completo",CRÍTICO
+UC-064,Transversal: Reporting,Incompleto,OK,OK,OK,OK,OK,OK,OK,OK,FALTA,FALTA,OK,,"Domain Events, Poscondiciones",MEDIA
+UC-065,Transversal: Reporting,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-066,Transversal: Reporting,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-067,Transversal: Reporting,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",MEDIA
+UC-068,Transversal: Portal Socio,Incompleto,OK,OK,OK,OK,OK,OK,OK,OK,FALTA,FALTA,OK,,"Domain Events, Poscondiciones",BAJA
+UC-069,Transversal: Portal Socio,Incompleto,OK,OK,OK,OK,OK,OK,FALTA,OK,FALTA,FALTA,FALTA,,"Precondiciones, Domain Events, Poscondiciones, Notas",BAJA
+UC-070,Transversal: Portal Socio,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",BAJA
+UC-071,Transversal: Portal Socio,Incompleto,FALTA,OK,FALTA,OK,OK,OK,OK,OK,FALTA,FALTA,FALTA,"User Stories, Aggregates","Domain Events, Poscondiciones, Notas",BAJA
