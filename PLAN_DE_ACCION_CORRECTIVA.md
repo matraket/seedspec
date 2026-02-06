@@ -45,11 +45,11 @@
 - **Prioridad:** Should Have
 
 **Verificación:**
-- [ ] Sección `### UC-063:` creada con estructura completa
-- [ ] Metadata completa (US, BC, Service, Aggregates, Priority)
-- [ ] Flujos Normal, Alternativos y Excepciones documentados
-- [ ] Domain Events definidos (BackupCompletado, BackupFallido)
-- [ ] Notas de Implementación con tecnologías (pg_dump, S3, BullMQ)
+- [x] Sección `### UC-063:` creada con estructura completa
+- [x] Metadata completa (US, BC, Service, Aggregates, Priority)
+- [x] Flujos Normal, Alternativos y Excepciones documentados
+- [x] Domain Events definidos (BackupCompletado, BackupFallido)
+- [x] Notas de Implementación con tecnologías (pg_dump, S3, BullMQ)
 
 **Estimación:** 1-2 horas
 
@@ -82,9 +82,9 @@
    ```
 
 **Verificación:**
-- [ ] Todas las referencias US-188→202 reemplazadas por US-148→160
-- [ ] Mapeo UC→US correcto según `009_user-stories.md`
-- [ ] Total de User Stories actualizado (15 → 13)
+- [x] Todas las referencias US-188→202 reemplazadas por US-148→160
+- [x] Mapeo UC→US correcto según `009_user-stories.md`
+- [x] Total de User Stories actualizado (15 → 13)
 
 **Estimación:** 30 minutos
 
@@ -119,8 +119,8 @@
 - UC-041: `ComunicacionService.enviarPushNotification()`
 
 **Verificación:**
-- [ ] 8 UCs tienen campo "Application Service" definido
-- [ ] Nombres de Application Services siguen convención `[BC]Service.[metodo]`
+- [x] 7 UCs tienen campo "Application Service" definido
+- [x] Nombres de Application Services siguen convención `[BC]Service.[metodo]`
 
 **Estimación:** 2 horas
 
@@ -164,9 +164,9 @@
 3. Actualizar Context Map si hay nuevas relaciones entre BCs
 
 **Verificación:**
-- [ ] 10 Aggregates documentados en KB-005
-- [ ] Cada Aggregate tiene descripción e invariantes
-- [ ] Context Map actualizado si aplica
+- [x] 10 Aggregates documentados en KB-005
+- [x] Cada Aggregate tiene descripción e invariantes
+- [x] Context Map actualizado si aplica
 
 **Estimación:** 2-3 horas
 
@@ -223,10 +223,10 @@ Crear **5 nuevos Casos de Uso:**
 - Notas de Implementación
 
 **Verificación:**
-- [ ] 5 nuevos UCs creados (UC-072 a UC-076)
-- [ ] 15 User Stories de N11 cubiertas (100% cobertura)
-- [ ] Estructura completa y homogénea con UCs existentes
-- [ ] BC-Cumplimiento definido en KB-005 si se crea como BC nuevo
+- [x] 5 nuevos UCs creados (UC-072 a UC-076)
+- [x] 15 User Stories de N11 cubiertas (100% cobertura)
+- [x] Estructura completa y homogénea con UCs existentes
+- [x] BC-Cumplimiento definido en KB-005 si se crea como BC nuevo
 
 **Estimación:** 3-4 horas
 
@@ -234,11 +234,11 @@ Crear **5 nuevos Casos de Uso:**
 
 ### 📊 Checklist Fase 1
 
-- [ ] Tarea 1.1: UC-063 generado (1-2h)
-- [ ] Tarea 1.2: Numeración US corregida (30min)
-- [ ] Tarea 1.3: Application Services añadidos (2h)
-- [ ] Tarea 1.4: KB-005 actualizado con Aggregates (2-3h)
-- [ ] Tarea 1.5: UCs N11 creados (3-4h)
+- [x] Tarea 1.1: UC-063 generado (1-2h)
+- [x] Tarea 1.2: Numeración US corregida (30min)
+- [x] Tarea 1.3: Application Services añadidos (2h)
+- [x] Tarea 1.4: KB-005 actualizado con Aggregates (2-3h)
+- [x] Tarea 1.5: UCs N11 creados (3-4h)
 
 **Total Fase 1:** 10-12 horas
 
