@@ -18502,7 +18502,7 @@ async calcularQuorum(
   }
   
   // Verificar si se alcanza quórum
-  const alcanzado = totalVotos >= umbralMinimo;
+  const cumple = totalVotos >= umbralMinimo;
   
   return Result.ok({
     totalSociosConDerecho,
@@ -18510,11 +18510,12 @@ async calcularQuorum(
     delegaciones,
     totalVotos,
     umbralMinimo,
-    alcanzado,
+    necesarios: umbralMinimo, // Alias para claridad en UC-048
+    cumple,
     convocatoria,
-    mensaje: alcanzado 
-      ? `✓ Quórum válido (${totalVotos}/${umbralMinimo} necesarios)`
-      : `⚠️ No hay quórum (${totalVotos}/${umbralMinimo} necesarios). ${convocatoria === Convocatoria.Primera ? 'Pase a 2ª convocatoria.' : 'Reunión no puede celebrarse.'}`
+    mensaje: cumple 
+      ? `Quórum válido: ${totalVotos} votos de ${umbralMinimo} necesarios`
+      : `Quórum no alcanzado: ${totalVotos} votos de ${umbralMinimo} necesarios (convocatoria: ${convocatoria})`
   });
 }
 
@@ -18540,9 +18541,10 @@ interface ResultadoQuorum {
   delegaciones: number;
   totalVotos: number;
   umbralMinimo: number;
-  alcanzado: boolean;
+  necesarios: number; // Alias de umbralMinimo para claridad
+  cumple: boolean; // Renombrado de 'alcanzado' para consistencia con UC-048
   convocatoria: Convocatoria;
-  mensaje: string;
+  mensaje: string; // Mensaje descriptivo (no prescriptivo)
 }
 
 enum Convocatoria {
@@ -18674,9 +18676,11 @@ async registrarFirmaDigital(
 - **Cuándo:** Asisten 95 de 200 socios, se necesitan 101
 - **Qué pasa:**
   - Sistema muestra alerta: "⚠️ No hay quórum (95/101 necesarios)"
-  - Sugiere: "Puede pasar a 2ª convocatoria (sin mínimo según estatutos)"
-  - Secretario actualiza campo `convocatoria` a "2ª"
+  - UI sugiere (no automático): "Puede pasar a 2ª convocatoria (sin mínimo según estatutos)"
+  - Secretario manualmente actualiza campo `convocatoria` a "2ª"
   - Sistema recalcula con umbral de 2ª convocatoria (0 si sin mínimo)
+  
+**Nota:** La sugerencia es presentacional (UI), no lógica de negocio. El evento `QuorumCalculado` solo informa el estado, no prescribe acciones.
 
 **FA-3: Quórum especial para modificación de estatutos**
 - **Cuándo:** Asamblea Extraordinaria para cambiar estatutos
