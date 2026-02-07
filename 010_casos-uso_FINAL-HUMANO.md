@@ -21000,6 +21000,43 @@ private async notificarAdministrador(
     prioridad: alerta.nivel === 'critical' ? 'alta' : 'media'
   });
 }
+
+// Event Handler: Reaccionar a cambio de plan del tenant
+@OnEvent('PlanAmpliado')
+async handlePlanAmpliado(event: PlanAmpliado) {
+  
+  // 1. Invalidar cache de límites para forzar recálculo
+  await this.cacheService.invalidate(`almacenamiento:${event.tenantId}`);
+  
+  // 2. Recalcular uso inmediatamente con nuevo límite
+  const uso = await this.almacenamientoService.calcularUsoTotal(event.tenantId);
+  
+  // 3. Si antes estaba bloqueado y ahora tiene espacio, notificar
+  if (event.planAnterior !== event.planNuevo && uso.getValue().disponibleBytes > 0) {
+    await this.notificarAdministrador(
+      await this.tenantService.findById(event.tenantId),
+      {
+        nivel: 'success',
+        mensaje: `Plan ampliado exitosamente a ${event.planNuevo}. ` +
+                 `Nuevo límite: ${this.formatBytes(event.limiteNuevo)}. ` +
+                 `Espacio disponible: ${uso.getValue().disponibleLegible}.`
+      }
+    );
+  }
+  
+  // 4. Log de auditoría
+  await this.auditService.log({
+    accion: 'PLAN_AMPLIADO_PROCESADO',
+    entidad: 'Tenant',
+    entidadId: event.tenantId,
+    datos: {
+      planAnterior: event.planAnterior,
+      planNuevo: event.planNuevo,
+      limiteNuevo: event.limiteNuevo
+    }
+  });
+}
+
 ```
 
 4. **Dashboard muestra uso de almacenamiento visualmente**
@@ -21019,13 +21056,16 @@ private async notificarAdministrador(
   - Herencia recursiva hasta encontrar permisos o llegar a raíz
   - Raíz sin permisos = acceso público (todos los roles)
 
-**FA-2: Usuario solicita ampliación de plan**
+**FA-2: Indicación de necesidad de ampliar plan**
 - **Cuándo:** Almacenamiento al 90%+ o bloqueado
 - **Qué pasa:** 
-  - Dashboard muestra botón "Ampliar plan"
-  - Redirección a página de planes con comparativa
-  - Proceso de upgrade con pasarela de pago (BC-Tesoreria)
-  - Límite se actualiza inmediatamente tras pago exitoso
+  - Dashboard muestra botón "Ampliar plan" junto a alerta
+  - Botón redirige a sección de gestión de suscripción (fuera de BC-Documentos)
+  - Usuario completa proceso de upgrade en BC-Identidad/Tesorería
+  - Tras upgrade, BC-Documentos recibe evento `PlanAmpliado` (emitido por BC-Identidad)
+  - BC-Documentos invalida cache de límites y recalcula uso disponible
+  
+**Nota:** El proceso de upgrade (selección de plan, pasarela de pago, actualización de Tenant.plan) es responsabilidad de BC-Identidad y BC-Tesorería, **no** de BC-Documentos. Este UC solo muestra la necesidad y consume el resultado vía evento.
 
 **FA-3: Limpieza masiva de documentos antiguos**
 - **Cuándo:** Administrador necesita liberar espacio urgentemente
@@ -21066,13 +21106,17 @@ private async notificarAdministrador(
 | `PermisosCategoriaCambiados` | categoriaId, rolesAntes, rolesDespues, adminId | Administrador cambia permisos |
 | `AlmacenamientoUmbralAlcanzado` | tenantId, porcentaje, umbral (80/90/100) | Uso alcanza umbral crítico |
 | `SubidaBloqueadaPorLimite` | tenantId, usuarioId, tamañoIntentado | Usuario intenta subir sin espacio |
-| `PlanAmpliado` | tenantId, planAnterior, planNuevo, limiteNuevo | Tenant amplía plan de almacenamiento |
+
+**Eventos Consumidos (de otros BCs):**
+| Evento | Origen | Datos | Acción en BC-Documentos |
+|--------|--------|-------|------------------------|
+| `PlanAmpliado` | BC-Identidad | tenantId, planAnterior, planNuevo, limiteNuevo | Invalidar cache de límites, recalcular uso disponible |
 
 #### Interacciones entre BCs
 
 - **BC-Documentos → BC-Identidad:** Consulta roles de usuarios, configuración de tenant
 - **BC-Documentos → BC-Comunicacion:** Envío de alertas de almacenamiento por email
-- **BC-Documentos → BC-Tesoreria:** Proceso de upgrade de plan (pasarela de pago)
+- **BC-Identidad → BC-Documentos (evento):** `PlanAmpliado` para actualizar cache de límites
 
 #### Poscondiciones
 
