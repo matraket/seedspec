@@ -3353,7 +3353,7 @@ async verificarPlazosVencidos(): Promise<void> {
 - **User Stories:** US-038, US-039, US-040, US-041, US-042
 - **Bounded Context:** BC-Membresia
 - **Application Service:** `CarnetService`
-- **Aggregates:** **Socio** (con Entity Carnet)
+- **Aggregates:** **Carnet**, **Socio**, **Ejercicio**
 - **Prioridad:** Must (digital), Should (físico y papeletas)
 
 **Descripción:**  
@@ -3411,7 +3411,7 @@ async generarCarnetDigital(socioId: SocioId): Promise<CarnetDigitalDTO> {
 }
 
 private async crearCarnet(socio: Socio, ejercicio: Ejercicio): Promise<Carnet> {
-  // Entity: Carnet (dentro del Aggregate Socio)
+  // Aggregate: Carnet
   const carnet = new Carnet({
     carnetId: CarnetId.generar(),
     socioId: socio.id,
