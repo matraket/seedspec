@@ -425,7 +425,7 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
 - **Prioridad:** Must
 
 **Descripción:**  
-Personalización de la configuración de un tenant: branding, tipos de socio, campos personalizados y parámetros operativos.
+Personalización de la configuración de un tenant: branding, campos personalizados y parámetros operativos.
 
 #### Actores
 - **Presidente** (rol con permisos de configuración)
@@ -439,7 +439,6 @@ Personalización de la configuración de un tenant: branding, tipos de socio, ca
 1. Presidente accede a "Configuración > General"
 2. Sistema muestra panel de configuración con secciones:
    - **Branding:** Logo, colores corporativos
-   - **Tipos de socio:** Configurar categorías personalizadas
    - **Campos personalizados:** Añadir campos específicos a entidades
    - **Parámetros operativos:** Ejercicio fiscal, plazos, etc.
 3. **Sección Branding:**
@@ -450,72 +449,38 @@ Personalización de la configuración de un tenant: branding, tipos de socio, ca
    - Valida formato y tamaño de imagen
    - Almacena logo en Object Storage (MinIO/S3)
    - Actualiza `tenant.branding_config` en BD
-5. **Sección Tipos de Socio:**
-   - Presidente crea tipo "Hermano de Luz":
-     ```
-     - Código: HL
-     - Nombre: Hermano de Luz
-     - Edad mínima: 18
-     - Derecho voto: Sí (tras 2 años antigüedad)
-     - Elegible cargos: Sí (tras 5 años)
-     ```
-6. `TenantConfigService.createTipoSocio(tenant_id, data)`
-   - Valida unicidad de código
-   - Crea registro en BC-Membresia (TipoSocio aggregate)
-   - Permite vincular planes de cuota disponibles (ver UC-017)
-7. **Sección Campos Personalizados:**
+5. **Sección Campos Personalizados:**
    - Presidente añade campo "Año de promesa" (tipo: fecha) a entidad "Socio"
-8. `TenantConfigService.addCustomField(tenant_id, entity, field_config)`
+6. `TenantConfigService.addCustomField(tenant_id, entity, field_config)`
    - Almacena definición en tabla `custom_fields`
    - El campo aparecerá dinámicamente en formularios de esa entidad
-9. Sistema muestra confirmación: "Configuración actualizada correctamente"
+7. Sistema muestra confirmación: "Configuración actualizada correctamente"
 
 #### Flujos Alternativos
 
-**FA-1: Configuración por tipo de colectividad**
-- Según el tipo de colectividad (Peña, Cofradía, Club), el sistema sugiere:
-  - Campos personalizados comunes de ese tipo
-  - Tipos de socio típicos
-  - Configuración de ejercicio estándar
-
-**FA-2: Importar configuración de otra entidad**
-- Presidente puede importar configuración de tipos de socio de otra entidad similar (si pública)
+**FA-1: Importar configuración de otra entidad**
+- Presidente puede importar configuración de campos personalizados de otra entidad similar
 
 #### Flujos de Excepción
 
-**FE-1: Código de tipo de socio duplicado**
-- Si el código ya existe:
-  - Sistema muestra: "Ya existe un tipo con el código 'HL'"
-  - Sugiere códigos alternativos
-
-**FE-2: Imagen de logo inválida**
+**FE-1: Imagen de logo inválida**
 - Si la imagen supera 2MB o no es PNG/SVG:
   - Sistema rechaza upload
   - Muestra: "El logo debe ser PNG o SVG y menor de 2MB"
 
-**FE-3: Modificación de tipo de socio con socios asignados**
-- Si se intenta eliminar un tipo con socios activos:
-  - Sistema bloquea la eliminación
-  - Muestra: "No puede eliminar un tipo con X socios asignados"
-  - Sugiere marcar como "Inactivo" en su lugar
-
 #### Eventos de Dominio
 - `TenantConfigActualizado` → Consumidores: cachés de configuración
-- `TipoSocioCreado` → Consumidores: BC-Tesoreria (para vincular planes de cuota)
 
 #### Interacciones entre BCs
-- BC-Identidad → BC-Membresia: Creación de TipoSocio
-- BC-Identidad → BC-Tesoreria: Notificación de nuevos tipos para vincular planes
+- o se requieren interacciones con otros Bounded Contexts
 
 #### Poscondiciones
 - Configuración del tenant actualizada
 - Cambios visibles inmediatamente en la UI (cachés invalidados)
-- Tipos de socio disponibles para asignación
 
 #### Notas de Implementación
 - Los cambios de branding deben invalidar caché CDN
 - Los campos personalizados se almacenan en JSON (`Socio.custom_fields`)
-- Validar que tipos de socio no se eliminen con socios asignados (integridad referencial)
 
 ---
 
