@@ -10154,13 +10154,13 @@ private censurarDNI(dni: string): string {
 
 #### Flujos Alternativos
 
-**FA-1: Check-in de socio no inscrito con inscripción rápida**
+**FA-1: Check-in de socio no inscrito con redirección a inscripción**
 - Cuándo: Se escanea QR de socio que no está inscrito pero hay plazas disponibles
-- Qué pasa: El sistema muestra "Socio no inscrito" con botón "Inscribir ahora", el organizador pulsa el botón, se registra inscripción + check-in en una sola operación, si hay precio se marca como "pago pendiente" (se cobrará después)
+- Qué pasa: El sistema muestra "⚠️ Socio no inscrito a este evento" con botón "Inscribir ahora", el organizador pulsa el botón, el sistema redirige al flujo de inscripción rápida (UC-030), tras completar inscripción exitosa, vuelve automáticamente a pantalla de check-in para registrar asistencia
 
-**FA-2: Check-in con pago pendiente - cobro en efectivo**
+**FA-2: Check-in con pago pendiente - redirección a cobro**
 - Cuándo: Socio inscrito pero con pago pendiente llega al evento
-- Qué pasa: El sistema muestra "⚠️ Pendiente de pago: 35€" con opciones: "Permitir entrada" (organizador decide), "Cobrar ahora en efectivo" (registrar pago manual), se registra el pago en BC-Tesoreria, se confirma inscripción, se completa check-in
+- Qué pasa: El sistema muestra "⚠️ Pendiente de pago: 35€" con opciones: "Permitir entrada sin pago" (organizador decide permitir acceso), "Ir a cobro" (redirige a UC-021 para registrar pago en efectivo), si organizador elige "Permitir entrada", se registra check-in marcando que accedió con pago pendiente, si elige "Ir a cobro", se abre pantalla de registro de cobros (BC-Tesoreria) y tras confirmar pago vuelve a check-in automáticamente
 
 **FA-3: QR de ejercicio anterior**
 - Cuándo: Socio presenta carnet del año pasado
@@ -10208,7 +10208,7 @@ private censurarDNI(dni: string): string {
 #### Interacciones entre BCs
 
 - **BC-Eventos → BC-Membresia (ACL):** Validar carnet, consultar foto y datos del socio
-- **BC-Eventos → BC-Tesoreria (ACL):** Registrar pago en efectivo si check-in con cobro en puerta
+- **BC-Eventos → BC-Tesoreria (ACL):** Consultar estado de pago de inscripción, redirigir a flujo de cobro (UC-021) si necesario
 - **BC-Eventos → BC-Comunicacion (Pub/Sub):** Enviar recordatorio a no presentados (opcional)
 
 #### Poscondiciones
