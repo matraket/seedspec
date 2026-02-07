@@ -14644,9 +14644,10 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 **FA-2: Email con Adjuntos Grandes**
 - **Cuándo:** Adjuntos superan 10 MB
 - **Qué pasa:**
-  - Sistema bloquea el envío
-  - Sugiere: "Sube los archivos a Documentos y comparte el enlace en el email"
-  - Alternativa: comprimir archivos o enviar en múltiples comunicaciones
+  - Sistema valida tamaño total antes de crear comunicación
+  - Rechaza con error: "Tamaño total de adjuntos supera 10 MB. Tamaño actual: X MB"
+  - Usuario debe reducir adjuntos o eliminar archivos pesados
+  - Alternativa: comprimir archivos antes de adjuntar
 
 **FA-3: Destinatario sin Email**
 - **Cuándo:** Socio en segmento no tiene email registrado
@@ -14671,9 +14672,10 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 - **Cuándo:** Email inválido o buzón lleno
 - **Manejo:**
   - Webhook de SendGrid notifica bounce
-  - Sistema marca envío como `Rebotado`
-  - Registra tipo de bounce (hard/soft)
-  - Hard bounce: marcar email como inválido en BC-Membresia (sugerencia)
+  - Sistema marca envío como `Rebotado` en Entity Envio
+  - Registra tipo de bounce (hard/soft) y motivo específico
+  - Si hard bounce: emite evento `EmailRebotado` para consumidores interesados
+  - BC-Membresia puede consumir evento y decidir marcar email como inválido
 
 **FE-3: Límite de Envíos Superado (Rate Limiting)**
 - **Cuándo:** Se supera límite del proveedor (ej: 100 emails/hora)
@@ -14692,6 +14694,7 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 | `ComunicacionEnviada` | comunicacionId, totalDestinatarios, canal | - |
 | `EmailAbierto` | envioId, comunicacionId, socioId, fechaApertura | - (tracking interno) |
 | `EnlaceClicado` | envioId, comunicacionId, socioId, url | - (tracking interno) |
+| `EmailRebotado` | envioId, socioId, email, tipoBounce (hard/soft), motivo | BC-Membresia (marcar email inválido si hard bounce) |
 
 ---
 
@@ -14772,7 +14775,7 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 9. **Privacidad y RGPD (RNF-025, RNF-034):**
    - No revelar emails de otros destinatarios (BCC obligatorio para masivos)
    - Enlace de baja en pie de email ("Dejar de recibir comunicaciones")
-   - Registro de consentimiento de comunicaciones por socio
+   - Consulta vía ACL a BC-Membresia para verificar consentimiento de comunicaciones del socio
    - Opción de exportar histórico de comunicaciones recibidas
 
 10. **Monitoreo y Alertas:**

@@ -1247,9 +1247,22 @@ Gestiona el envío de comunicaciones a socios: emails, notificaciones push, SMS 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 6.3 Domain Events (consumidos)
+### 6.3 Domain Events
 
-Este BC es principalmente **consumidor** de eventos de otros BCs:
+BC-Comunicacion emite eventos relacionados con el ciclo de vida de las comunicaciones:
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `ComunicacionEnviada` | Envío completado | comunicacionId, totalDestinatarios, canal, fechaEnvio | - |
+| `EmailAbierto` | Tracking de apertura | envioId, comunicacionId, socioId, fechaApertura | - (tracking interno) |
+| `EnlaceClicado` | Tracking de clic | envioId, comunicacionId, socioId, url, fechaClic | - (tracking interno) |
+| `EmailRebotado` | Email rebota (bounce) | envioId, socioId, email, tipoBounce (hard/soft), motivo | BC-Membresia (marcar email inválido si hard bounce) |
+
+**Notas:**
+- `ComunicacionEnviada`: Marca la finalización del proceso de envío masivo
+- `EmailAbierto` y `EnlaceClicado`: Eventos de tracking para métricas internas (no requieren consumidores externos)
+- `EmailRebotado`: Permite a BC-Membresia actualizar la validez de emails de socios según tipo de bounce (hard/soft)
+
+Este BC **también es consumidor** de eventos de otros BCs:
 
 | Evento Origen | Acción en BC-Comunicacion |
 |---------------|---------------------------|
