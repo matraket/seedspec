@@ -17991,7 +17991,11 @@ class Acta extends AggregateRoot<ActaId> {
     });
   }
   
-  aprobar(secretarioId: UsuarioId, presidenteId: UsuarioId): Result<void> {
+  aprobar(
+    secretarioId: UsuarioId, 
+    presidenteId: UsuarioId, 
+    quorum: ResultadoQuorum
+  ): Result<void> {
     // Validar campos obligatorios
     const validacion = this.validarCamposObligatorios();
     
@@ -18006,6 +18010,13 @@ class Acta extends AggregateRoot<ActaId> {
       return Result.fail('Solo se pueden aprobar actas en borrador');
     }
     
+    // Validar invariante: quórum mínimo según tipo reunión (KB-005 §7.2.3)
+    if (!quorum.cumple) {
+      return Result.fail(
+        `No se puede aprobar: ${quorum.mensaje} (necesarios: ${quorum.necesarios}, presentes: ${quorum.totalVotos})`
+      );
+    }
+
     // Cambiar estado a Aprobada (inmutable desde ahora)
     this._estado = EstadoActa.Aprobada;
     this._firmadaPor = secretarioId;
@@ -18107,8 +18118,9 @@ enum ResultadoVotacion {
 
 ```typescript
 // Application Service: ActaService
-async validarAntesDe Aprobar(
-  actaId: ActaId
+async validarAntesDeAprobar(
+  actaId: ActaId,
+  convocatoria: Convocatoria
 ): Promise<Result<ValidacionActa>> {
   
   const acta = await this.actaRepo.findById(actaId);
@@ -18120,15 +18132,20 @@ async validarAntesDe Aprobar(
   // Validar campos en dominio
   const validacion = acta.validarCamposObligatorios();
   
-  // Validar quórum (delegar a UC-049)
-  const quorumResult = await this.quorumService.validarQuorum(
-    acta.tipoReunion,
-    acta.asistentes.length
+  // Calcular quórum (UC-049 QuorumService calcula, NO valida)
+  // La validación del invariante se hace en el dominio
+  const quorumResult = await this.quorumService.calcularQuorum(
+    actaId,
+    convocatoria
   );
   
   if (quorumResult.isFailure) {
     validacion.getValue().camposFaltantes.push(
-      `Quórum: ${quorumResult.error}`
+      `Error al calcular quórum: ${quorumResult.error}`
+    );
+  } else if (!quorumResult.getValue().cumple) {
+    validacion.getValue().camposFaltantes.push(
+      `Quórum insuficiente: ${quorumResult.getValue().mensaje}`
     );
   }
   
@@ -18143,7 +18160,8 @@ async validarAntesDe Aprobar(
 async aprobarActa(
   actaId: ActaId,
   secretarioId: UsuarioId,
-  presidenteId: UsuarioId
+  presidenteId: UsuarioId,
+  convocatoria: Convocatoria
 ): Promise<Result<void>> {
   
   const acta = await this.actaRepo.findById(actaId);
@@ -18152,8 +18170,18 @@ async aprobarActa(
     return Result.fail('Acta no encontrada');
   }
   
-  // Aprobar en dominio
-  const resultado = acta.aprobar(secretarioId, presidenteId);
+  // Calcular quórum antes de aprobar (UC-049: QuorumService)
+  const quorumResult = await this.quorumService.calcularQuorum(
+    actaId,
+    convocatoria
+  );
+  
+  if (quorumResult.isFailure) {
+    return Result.fail(`Error al calcular quórum: ${quorumResult.error}`);
+  }
+  
+  // Aprobar en dominio (valida invariante de quórum)
+  const resultado = acta.aprobar(secretarioId, presidenteId, quorumResult.getValue());
   
   if (resultado.isFailure) {
     return resultado;
@@ -18161,9 +18189,6 @@ async aprobarActa(
   
   // Guardar con nuevo estado
   await this.actaRepo.save(acta);
-  
-  // Generar PDF automáticamente tras aprobación
-  await this.generarPDFActa(actaId);
   
   // Log de auditoría
   await this.auditService.log({
@@ -18182,7 +18207,7 @@ async aprobarActa(
 }
 ```
 
-8. **Sistema genera PDF** del acta aprobada para archivo (ver UC-050).
+8. **Sistema emite evento `ActaAprobada`**, que dispara la generación automática de PDF (UC-050 reacciona al evento).
 
 #### Flujos Alternativos
 
@@ -18246,7 +18271,7 @@ async aprobarActa(
 #### Interacciones entre BCs
 
 - **BC-Documentos → BC-Membresia:** Consultar socios con derecho a voto para asistentes (ACL)
-- **BC-Documentos (interno):** Generar PDF del acta aprobada (UC-050)
+- **Event:** `ActaAprobada` → Consumido por UC-050 (PDFService) para generar PDF automáticamente
 
 #### Poscondiciones
 
