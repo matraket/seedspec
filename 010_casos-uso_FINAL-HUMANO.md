@@ -14924,10 +14924,6 @@ Envío de SMS para comunicaciones urgentes a grupos reducidos (Junta Directiva, 
 - Sistema crea envío con `estado: NoEntregable`
 - Genera reporte: "3 socios sin teléfono móvil"
 
-**FA-2: Recarga de Crédito SMS**
-- Administrador puede comprar paquetes de SMS (500, 1000, 5000)
-- Integración con pasarela de pago o gestión manual
-
 #### Flujos de Excepción
 
 **FE-1: Crédito SMS insuficiente**
@@ -14970,8 +14966,6 @@ Envío de SMS para comunicaciones urgentes a grupos reducidos (Junta Directiva, 
 
 - **BC-Comunicacion → BC-Membresia:** Consulta teléfonos móviles de destinatarios por segmento (ACL)
 - **BC-Comunicacion → Proveedor Externo (Twilio/Vonage):** Envío de SMS vía API REST
-- **BC-Comunicacion → BC-Tesoreria:** Registro de coste SMS como gasto del ejercicio (si configurado)
-- **BC-Comunicacion → BC-Auditoría:** Registro de EventoDeAuditoria por envío SMS (coste asociado)
 
 ---
 
@@ -15651,15 +15645,15 @@ async guardarSegmento(
 }
 ```
 
-6. **Sistema recalcula segmento dinámicamente** cada vez que se usa:
+6. **Sistema devuelve lista de SocioIds resueltos:**
 
 ```typescript
-// Application Service: ComunicacionService
-async crearComunicacionConSegmento(
-  request: CrearComunicacionRequest
-): Promise<Result<ComunicacionDTO>> {
+// Application Service: SegmentacionService
+async resolverSegmentoParaComunicacion(
+  request: ResolverSegmentoRequest
+): Promise<Result<SegmentoResueltoDTO>> {
   
-  let destinatarios: SocioId[];
+  let criterios: CriteriosSegmentacion;
   
   if (request.segmentoGuardadoId) {
     // Reutilizar segmento guardado
@@ -15667,71 +15661,49 @@ async crearComunicacionConSegmento(
       request.segmentoGuardadoId
     );
     
-    // RECALCULAR con datos actuales (no usar snapshot estático)
-    const resolucionResult = await this.segmentacionService.resolverSegmento(
-      segmento.criterios
-    );
+    if (!segmento) {
+      return Result.fail('Segmento no encontrado');
+    }
     
-    destinatarios = resolucionResult.getValue();
+    criterios = segmento.criterios;
     
   } else if (request.criterios) {
     // Segmento ad-hoc sin guardar
-    const resolucionResult = await this.segmentacionService.resolverSegmento(
-      request.criterios
-    );
+    criterios = request.criterios;
     
-    destinatarios = resolucionResult.getValue();
   } else {
     return Result.fail('Debe especificar criterios o segmento guardado');
   }
+  
+  // RECALCULAR con datos actuales (no usar snapshot estático)
+  const resolucionResult = await this.resolverSegmento(criterios);
+  
+  if (resolucionResult.isFailure) {
+    return Result.fail(resolucionResult.error);
+  }
+  
+  const destinatarios = resolucionResult.getValue();
   
   // Validar que hay al menos un destinatario
   if (destinatarios.length === 0) {
     return Result.fail('La segmentación no devolvió ningún destinatario');
   }
   
-  // Crear comunicación con destinatarios resueltos
-  const comunicacionResult = Comunicacion.create({
-    contenido: request.contenido,
-    canal: request.canal,
-    segmento: SegmentoDestinatarios.create(request.criterios).getValue(),
-    tipo: TipoComunicacion.Manual,
-    creadoPor: this.currentUser.id
+  return Result.ok({
+    socioIds: destinatarios,
+    cantidadTotal: destinatarios.length,
+    criteriosAplicados: criterios
   });
-  
-  const comunicacion = comunicacionResult.getValue();
-  
-  // Crear entidades Envio para cada destinatario
-  for (const socioId of destinatarios) {
-    const socio = await this.socioACL.findById(socioId);
-    
-    const envioResult = Envio.create({
-      socioId: socio.id,
-      destino: this.obtenerDestinoPorCanal(socio, request.canal),
-      estado: EstadoEnvio.Pendiente
-    });
-    
-    comunicacion.agregarEnvio(envioResult.getValue());
-  }
-  
-  await this.comunicacionRepo.save(comunicacion);
-  
-  return Result.ok(ComunicacionMapper.toDTO(comunicacion));
 }
-
-private obtenerDestinoPorCanal(socio: SocioDTO, canal: CanalComunicacion): string {
-  switch (canal) {
-    case CanalComunicacion.Email:
-      return socio.email;
-    case CanalComunicacion.SMS:
-      return socio.telefono;
-    case CanalComunicacion.Push:
-      return socio.id; // El ID es suficiente para push
-    default:
-      throw new Error(`Canal no soportado: ${canal}`);
-  }
+// DTO de salida
+interface SegmentoResueltoDTO {
+  socioIds: SocioId[];
+  cantidadTotal: number;
+  criteriosAplicados: CriteriosSegmentacion;
 }
 ```
+
+Nota: La creación de la Comunicacion y las entidades Envio se realiza en UC-039 (Envío de comunicaciones), que consume el resultado de este UC.
 
 7. **Sistema muestra preview de destinatarios** antes de enviar:
    - Lista con primeros 20 socios del segmento
@@ -15798,11 +15770,11 @@ private obtenerDestinoPorCanal(socio: SocioDTO, canal: CanalComunicacion): strin
 
 - **Éxito:** 
   - Segmento resuelto con lista de SocioIds
-  - Comunicación creada con N entidades Envio (una por destinatario)
-  - Segmento guardado disponible para reutilización
-
+  - Cantidad total de destinatarios calculada
+  - Segmento guardado disponible para reutilización (si se guardó)
+  - DTO con SocioIds listo para consumo por UC-039
 - **Fallo:** 
-  - Comunicación no creada si segmentación falla
+  - Segmentación no resuelta si criterios inválidos
   - Error específico sobre problema (timeout, criterios vacíos, etc.)
 
 #### Notas de Implementación
@@ -15845,7 +15817,6 @@ private obtenerDestinoPorCanal(socio: SocioDTO, canal: CanalComunicacion): strin
 7. **Performance en Segmentos Grandes (RNF-T-015):**
    - Query optimizada con índices en: `tipo_socio`, `estado_pago`, `fecha_alta`, `estado`
    - Paginación en UI si segmento > 500 destinatarios
-   - Procesamiento de envíos en batches (ver UC-039)
 
 8. **Auditoría de Segmentación (RNF-T-025):**
    - Registrar criterios usados en cada comunicación
