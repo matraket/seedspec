@@ -2088,17 +2088,6 @@ async altaSimple(request: AltaSimpleRequest): Promise<Result<SocioDTO>> {
     - **BC-Comunicacion:** Envía email de bienvenida con instrucciones de pago
     - **BC-Membresia:** Genera carnet digital del nuevo socio
 
-**Alta con pago inmediato:**
-
-14. Aspirante accede a portal del socio con credenciales recibidas por email
-15. Ve cargo pendiente de 50€
-16. Realiza pago mediante pasarela (ver UC-025 de BC-Tesoreria)
-17. Al confirmar pago:
-    - BC-Tesoreria emite evento `PagoRegistrado`
-    - Cargo pasa a estado COBRADO
-    - BC-Comunicacion envía email de confirmación
-    - Carnet digital queda activo para uso
-
 #### Flujos Alternativos
 
 **FA-1: Alta sin pago inmediato**
@@ -2108,8 +2097,19 @@ async altaSimple(request: AltaSimpleRequest): Promise<Result<SocioDTO>> {
 
 **FA-2: Alta con datos bancarios (SEPA)**
 - En paso 3, secretario añade IBAN del socio
-- Sistema crea mandato SEPA pendiente de firma
+- Sistema incluye IBAN en evento SocioRegistrado
+- BC-Tesoreria escucha el evento y crea mandato SEPA pendiente de firma
 - Cargo de inscripción se incluirá en próxima remesa SEPA
+
+**FA-3: Pago inmediato de inscripción**
+- Aspirante accede a portal del socio con credenciales recibidas por email
+- Ve cargo pendiente de 50€
+- Realiza pago mediante pasarela (ver UC-025: Pasarela de pago online de BC-Tesoreria)
+- Al confirmar pago:
+  - BC-Tesoreria emite evento `PagoRegistrado`
+  - Cargo pasa a estado COBRADO
+  - BC-Comunicacion envía email de confirmación
+  - Carnet digital queda activo para uso
 
 #### Flujos de Excepción
 
@@ -2140,7 +2140,7 @@ async altaSimple(request: AltaSimpleRequest): Promise<Result<SocioDTO>> {
 
 | Evento | Datos | Consumidores |
 |--------|-------|--------------|
-| `SocioRegistrado` | socioId, tipoSocioId, cargoInscripcionId, fechaAlta | BC-Tesoreria (crear CuentaSocio), BC-Comunicacion (email bienvenida), BC-Membresia (generar carnet) |
+| `SocioRegistrado` | socioId, tipoSocioId, cargoInscripcionId, fechaAlta, iban? | BC-Tesoreria (crear CuentaSocio, crear MandatoSepa si iban presente), BC-Comunicacion (email bienvenida), BC-Membresia (generar carnet) |
 
 #### Interacciones entre BCs
 - **BC-Membresia → BC-Tesoreria:** Crear CuentaSocio y vincular cargo de inscripción
