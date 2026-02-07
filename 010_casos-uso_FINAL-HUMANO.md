@@ -7170,7 +7170,7 @@ async generarInformeEjercicio(ejercicioId: EjercicioId): Promise<Result<InformeE
 - **Prioridad:** Should
 
 **Descripción:**  
-Gestión de caja por turnos para eventos con venta de bebidas y comida (típico de peñas festeras). Permite apertura de turno con fondo inicial, registro rápido de ventas, arqueo al cierre con detección de descuadres, y consolidación económica del evento completo. Incluye modo offline para tablets con sincronización posterior.
+Gestión de caja por turnos para eventos con venta de bebidas y comida (típico de peñas festeras). Permite apertura de turno con fondo inicial, registro rápido de ventas, arqueo al cierre con detección de descuadres, y consulta de balance consolidado del evento. Incluye modo offline para tablets con sincronización posterior.
 
 #### Actores
 - **Responsable de turno** (vocal de bar, voluntario)
@@ -7200,7 +7200,7 @@ Gestión de caja por turnos para eventos con venta de bebidas y comida (típico 
    │                                                    │
    │ Hora inicio:    [20:00__] (15/07/2025)             │
    │                                                    │
-   │ ☑ Confirmo que he recibido el fondo inicial       │
+   │ ☑ Confirmo que he recibido el fondo inicial        │
    │                                                    │
    │ [Cancelar]                       [Abrir Turno]     │
    └────────────────────────────────────────────────────┘
@@ -7263,16 +7263,16 @@ async abrirTurno(
    ├────────────────────────────────────────────────────┤
    │                                                    │
    │  Productos Rápidos:                                │
-   │  ┌─────────┬─────────┬─────────┬─────────┐        │
-   │  │ Cerveza │ T. Ver. │ Refresco│ Agua    │        │
-   │  │  2,00€  │  2,50€  │  1,50€  │  1,00€  │        │
-   │  ├─────────┼─────────┼─────────┼─────────┤        │
-   │  │ Bocata  │ Tapa    │ Patatas │ Otro... │        │
-   │  │  4,00€  │  2,00€  │  1,50€  │         │        │
-   │  └─────────┴─────────┴─────────┴─────────┘        │
+   │  ┌─────────┬─────────┬─────────┬─────────┐         │
+   │  │ Cerveza │ T. Ver. │ Refresco│ Agua    │         │
+   │  │  2,00€  │  2,50€  │  1,50€  │  1,00€  │         │
+   │  ├─────────┼─────────┼─────────┼─────────┤         │
+   │  │ Bocata  │ Tapa    │ Patatas │ Otro... │         │
+   │  │  4,00€  │  2,00€  │  1,50€  │         │         │
+   │  └─────────┴─────────┴─────────┴─────────┘         │
    │                                                    │
    │  Total ventas: 0,00 €                              │
-   │  [Ver detalle ventas]            [Cerrar turno]   │
+   │  [Ver detalle ventas]            [Cerrar turno]    │
    └────────────────────────────────────────────────────┘
    ```
 
@@ -7324,7 +7324,7 @@ async registrarVenta(
 13. Al finalizar turno, responsable pulsa "Cerrar turno"
 14. Sistema muestra pantalla de arqueo:
     ```
-    ┌─ Arqueo de Caja: Turno Pedro Martínez ────────────┐
+    ┌─ Arqueo de Caja: Turno Pedro Martínez ─────────────┐
     │                                                    │
     │  Resumen del turno:                                │
     │  • Hora inicio:      20:00                         │
@@ -7402,53 +7402,77 @@ async cerrarTurno(
 20. Sistema registra descuadre para auditoría
 21. Responsable entrega efectivo al siguiente turno o tesorero
 
-**Parte 4: Balance consolidado del evento**
+**Parte 4: Consulta de balance consolidado (US-081)**
 
-22. Tras finalizar evento (12 turnos cerrados), tesorero accede a "Eventos > Fiestas 2025 > Balance"
-23. Sistema muestra consolidación:
-    ```
-    ┌─ Balance Económico: Fiestas 2025 ──────────────────┐
-    │                                                    │
-    │  Turnos cerrados:     12                           │
-    │  Ventas totales:      8.500,00 €                   │
-    │  Descuadres totales:  -15,00 €                     │
-    │                                                    │
-    │  Detalle por turno:                                │
-    │  ┌────┬───────────────┬──────────┬───────────┐    │
-    │  │ # │ Responsable   │ Ventas   │ Descuadre │    │
-    │  ├────┼───────────────┼──────────┼───────────┤    │
-    │  │ 1  │ Pedro Martínez│ 650,00 € │   0,00 €  │    │
-    │  │ 2  │ Ana López     │ 720,00 € │  -5,00 €  │    │
-    │  │ 3  │ Juan García   │ 680,00 € │   0,00 €  │    │
-    │  │... │ ...           │ ...      │ ...       │    │
-    │  └────┴───────────────┴──────────┴───────────┘    │
-    │                                                    │
-    │  Gastos aprovisionamiento:                         │
-    │  • Bebidas:           1.800,00 €                   │
-    │  • Comida:            1.000,00 €                   │
-    │  • Total gastos:      2.800,00 €                   │
-    │                                                    │
-    │  ┌─ Resultado Neto ──────────────────────┐        │
-    │  │ Ventas:           8.500,00 €          │        │
-    │  │ - Gastos:         2.800,00 €          │        │
-    │  │ - Descuadres:        15,00 €          │        │
-    │  │ = Beneficio:      5.685,00 €          │        │
-    │  └───────────────────────────────────────┘        │
-    │                                                    │
-    │  [Exportar PDF]               [Cerrar Evento]     │
-    └────────────────────────────────────────────────────┘
-    ```
+22. Tras finalizar jornada, tesorero accede a "Eventos > Fiestas 2025 > Balance Caja"
+23. Sistema consulta turnos cerrados del evento
+24. `CajaTurnoService.obtenerBalanceEvento(evento_id)`:
 
-24. Tesorero pulsa "Cerrar Evento"
-25. `CajaTurnoService.cerrarEvento(evento_id)`:
-    - Valida todos los turnos cerrados
-    - Genera asiento contable en BC-Contabilidad:
-      - Debe: Caja 5.685€
-      - Haber: Ingresos eventos 8.500€
-      - Debe: Gastos eventos 2.815€ (incluye descuadres)
-    - Evento pasa a CERRADO (no modificable)
-    - Genera informe final PDF
+```typescript
+async obtenerBalanceEvento(
+  eventoId: EventoId
+): Promise<Result<BalanceEventoDTO>> {
+  // 1. Obtener todos los turnos del evento
+  const turnos = await this.turnoRepo.findByEvento(eventoId);
+  
+  // 2. Filtrar solo turnos cerrados
+  const turnosCerrados = turnos.filter(t => t.estaCerrado());
+  
+  // 3. Calcular totales
+  const totalVentas = turnosCerrados.reduce(
+    (sum, t) => sum.add(t.calcularTotalVentas()),
+    Money.zero('EUR')
+  );
+  
+  const totalDescuadres = turnosCerrados.reduce(
+    (sum, t) => sum.add(t.arqueo.descuadre),
+    Money.zero('EUR')
+  );
+  
+  // 4. Construir DTO con detalle por turno
+  return Result.ok({
+    eventoId,
+    turnosTotales: turnos.length,
+    turnosCerrados: turnosCerrados.length,
+    totalVentas,
+    totalDescuadres,
+    detalleTurnos: turnosCerrados.map(t => ({
+      turnoId: t.id,
+      responsable: t.responsable,
+      ventas: t.calcularTotalVentas(),
+      descuadre: t.arqueo.descuadre
+    }))
+  });
+}
+```
 
+25. Sistema muestra balance consolidado (read-only):
+    ┌─ Balance de Caja: Fiestas 2025 ──────────────────┐
+    │                                                  │
+    │  Turnos cerrados:     12 de 12                   │
+    │  Ventas totales:      8.500,00 €                 │
+    │  Descuadres totales:  -15,00 €                   │
+    │                                                  │
+    │  Detalle por turno:                              │
+    │  ┌────┬───────────────┬──────────┬───────────┐   │
+    │  │ #  │ Responsable   │ Ventas   │ Descuadre │   │
+    │  ├────┼───────────────┼──────────┼───────────┤   │
+    │  │ 1  │ Pedro Martínez│ 650,00 € │   0,00 €  │   │
+    │  │ 2  │ Ana López     │ 720,00 € │  -5,00 €  │   │
+    │  │ 3  │ Juan García   │ 680,00 € │   0,00 €  │   │
+    │  │... │ ...           │ ...      │ ...       │   │
+    │  └────┴───────────────┴──────────┴───────────┘   │
+    │                                                  │
+    │  [i] Este es un informe de consulta.             │
+    │  El cierre económico del evento se realiza desde │
+    │  la gestión de eventos (ver UC-028).             │
+    │                                                  │
+    │  [Exportar PDF]                       [Cerrar]   │
+    └──────────────────────────────────────────────────┘
+    
+26. Tesorero puede exportar PDF del balance para auditoría
+27. El evento permanece en su estado actual (no se cierra desde aquí)
+  
 #### Flujos Alternativos
 
 **FA-1: Modo offline (tablet sin conexión)**
@@ -7476,18 +7500,13 @@ async cerrarTurno(
   - Sistema bloquea: "Cierre el turno de Ana López antes de abrir uno nuevo"
   - Muestra enlace directo al turno pendiente
 
-**FE-2: Intento de cierre de evento con turnos abiertos**
-- Si hay turnos sin cerrar:
-  - Sistema bloquea: "Hay 2 turnos sin cerrar. Ciérrelos antes de consolidar"
-  - Lista los turnos pendientes
-
-**FE-3: Pérdida de datos en modo offline**
+**FE-2: Pérdida de datos en modo offline**
 - Si browser cierra antes de sincronizar:
   - Datos persisten en LocalStorage
   - Al reabrir, sistema detecta datos pendientes
   - Pregunta: "¿Restaurar turno no sincronizado?"
 
-**FE-4: Descuadre extremo**
+**FE-3: Descuadre extremo**
 - Si descuadre > 100€:
   - Sistema alerta: "⚠️ Descuadre crítico. Revise detenidamente antes de cerrar"
   - Requiere doble confirmación del responsable
@@ -7496,17 +7515,15 @@ async cerrarTurno(
 - `TurnoCajaAbierto` → Consumidores: sistema de notificaciones (avisar siguiente turno)
 - `TurnoCajaCerrado` → Consumidores: dashboard en tiempo real
 - `DescuadreDetectado` → Consumidores: notificar tesorero por email
-- `EventoCerradoEconomicamente` → Consumidores: BC-Contabilidad (registrar asiento)
 
 #### Interacciones entre BCs
-- BC-Tesoreria (Caja) → BC-Tesoreria (Contabilidad): Registrar asiento al cerrar evento
-- BC-Tesoreria → BC-Eventos: Vincular turnos a evento, validar estado evento
+- BC-Tesoreria → BC-Eventos: Consultar estado evento, vincular turnos a evento
 
 #### Poscondiciones
 - Turno cerrado con arqueo registrado
 - Descuadres identificados y justificados
-- Balance consolidado del evento generado
-- Asiento contable creado al cerrar evento
+- Balance consolidado del evento disponible para consulta
+- Turnos cerrados quedan inmutables para auditoría
 
 #### Notas de Implementación
 
@@ -7535,10 +7552,6 @@ async cerrarTurno(
    - Todos los descuadres quedan registrados inmutables
    - Report mensual de descuadres por responsable
    - Alerta si mismo responsable acumula >50€ en descuadres
-
-6. **Cierre de evento:**
-   - Validación: `SELECT COUNT(*) FROM turnos_caja WHERE evento_id = X AND estado != 'CERRADO'`
-   - Generar PDF con resumen completo (ventas, gastos, resultado)
 
 ---
 
