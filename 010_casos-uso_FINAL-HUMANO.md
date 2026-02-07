@@ -337,7 +337,6 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
        "tenant_id": "tenant_uuid",
        "rol": "Tesorero",
        "permissions": ["cuotas:read", "cuotas:write", ...]
-       "permissions": ["cuotas:read", "cuotas:write", ...]
      }
      ```
    - Genera Refresh Token (30 días) almacenado en BD
@@ -382,15 +381,14 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
 
 #### Eventos de Dominio
 
-- **SocioAutenticadoPortal** → BC-Auditoría (registro de acceso)
+- **UsuarioAutenticado** → BC-Auditoría (registro de acceso)
   ```typescript
-  { socioId: string; fecha: Date; ip: string; userAgent: string }
+  { userId: string; fecha: Date; ip: string; userAgent: string }
   ```
 
 #### Interacciones entre BCs
 
-- **BC-Identidad → BC-Membresia:** Verificar que usuario tiene socio asociado y estado activo
-- **BC-Identidad:** Generar JWT con claims de socio (socioId, estado, permisos)
+- **BC-Identidad:** Genera JWT con claims de usuario (userId, tenantId, rol, permissions)
 
 #### Postcondiciones
 
@@ -398,7 +396,7 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
 - Sesión de usuario creada con JWT válido (Access Token + Refresh Token)
 - JWT contiene claims críticos: `sub` (user_id), `tenant_id`, `rol`, `permissions`
 - Usuario puede acceder a recursos del tenant seleccionado
-- Evento de dominio `SocioAutenticadoPortal` emitido
+- Evento de dominio `UsuarioAutenticado` emitido
 - Registro de acceso creado en auditoría (IP, user agent, timestamp)
 - Refresh Token almacenado con expiración de 30 días
 
