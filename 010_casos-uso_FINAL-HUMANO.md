@@ -3930,21 +3930,13 @@ const vinculaciones = [
   - **Clubes:** Temporada (150€), Mensual (15€)
 - Tesorero puede aceptar plantilla y personalizarla
 
-**FA-2: Modificación de plan existente**
-- Si el plan ya tiene suscripciones activas:
-  - Sistema pregunta: "¿Aplicar cambios a suscripciones existentes?"
-  - Opciones:
-    - **Solo nuevas:** Las suscripciones actuales mantienen importe anterior
-    - **Todas:** Se recalcula importeEfectivo en suscripciones activas
-    - **Crear nueva versión:** Se desactiva plan actual y se crea uno nuevo
-
-**FA-3: Planes con periodicidad personalizada**
+**FA-2: Planes con periodicidad personalizada**
 - Para ejercicios no naturales (ej: temporada sep-ago):
   ```typescript
   mesesCobro: [9, 12, 3, 6] // Trimestral en temporada deportiva
   ```
 
-**FA-4: Planes sin proporcionalidad matemática**
+**FA-3: Planes sin proporcionalidad matemática**
 - Los importes de planes pueden ser independientes (no proporcionales):
   ```
   Mensual:    12.00€ × 12 = 144€ (año completo)
@@ -3980,13 +3972,13 @@ const vinculaciones = [
   - Sistema rechaza: "Un plan periódico debe tener al menos un mes de cobro"
 
 #### Eventos de Dominio
-- `PlanCuotaCreado` → Consumidores: BC-Membresia (actualiza opciones en alta de socio)
+- `PlanCuotaCreado` → Consumidores: BC-Membresia
 - `PlanCuotaModificado` → Consumidores: cachés de configuración, BC-Membresia
-- `PlanCuotaVinculado` → Consumidores: BC-Membresia (actualiza tipos de socio)
+- `PlanCuotaVinculadoATipoSocio` → Consumidores: BC-Membresia
 
 #### Interacciones entre BCs
 - BC-Tesoreria ← BC-Membresia: Consulta tipos de socio disponibles para vinculación
-- BC-Tesoreria → BC-Membresia: Notifica planes disponibles por tipo de socio
+- BC-Tesoreria → BC-Membresia: BC-Membresia consulta planes disponibles cuando necesita mostrar opciones en alta de socio
 
 #### Poscondiciones
 - Plan de cuota creado y disponible para vinculación
@@ -3996,7 +3988,7 @@ const vinculaciones = [
 #### Notas de Implementación
 - **RNF-T-015:** Consulta de planes debe ser <100ms (uso frecuente en alta de socios)
 - Los planes se almacenan en tabla `planes_cuota` en BD del tenant
-- La relación N:M con TipoSocio requiere join con BC-Membresia (via foreign key o event sourcing)
+- La relación N:M con TipoSocio se materializa mediante tabla intermedia `tipo_socio_plan_cuota` que almacena IDs de ambos aggregates. BC-Tesoreria consulta TipoSocio via Application Service de BC-Membresia cuando necesita mostrar opciones de vinculación
 - Permitir descuentos a nivel de suscripción individual (no en el plan, sino al aplicarlo)
 - Los planes "inactivos" se ocultan en UI pero se conservan para histórico
 - Validar periodicidad orientativa vs mesesCobro:

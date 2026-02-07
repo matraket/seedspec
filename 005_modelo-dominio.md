@@ -844,6 +844,9 @@ MotivoBajaSuscripcion (enum):
 | `RemesaProcesada` | Confirmación banco | remesaId, adeudosOk, adeudosKo | BC-Comunicacion (resumen) |
 | `MandatoCreado` | Firma mandato SEPA | mandatoId, socioId | - |
 | `MandatoCaducado` | 36 meses sin uso | mandatoId, socioId | BC-Comunicacion (solicitar renovación) |
+| `PlanCuotaCreado` | Creación de plan | planCuotaId, codigo, nombre, tipo, importe | BC-Membresia (invalidar caché) |
+| `PlanCuotaModificado` | Modificación plan | planCuotaId, camposModificados | BC-Membresia (invalidar caché) |
+| `PlanCuotaVinculadoATipoSocio` | Vinculación N:M | planCuotaId, tipoSocioId, esDefault | BC-Membresia (invalidar caché) |
 
 ### 4.5 Domain Services
 
