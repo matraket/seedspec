@@ -11112,9 +11112,9 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 
 ---
 
-#### Flujo Normal: Generación de Papeletas de Sitio
+#### Flujo Normal
 
-**FN-1: Generación Automática por Antigüedad**
+**Parte 1: Generación de Papeletas de Sitio**
 
 1. **Secretario configura la procesión:**
    - Define secciones del cortejo: Cruz de guía, Estandarte, Hermanos de carga, Penitentes, Varas de palio
@@ -11253,11 +11253,9 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 
 ---
 
-#### Flujo Normal: Reserva de Insignias y Varas
+**Parte 2: Reserva de Insignias y Varas**
 
-**FN-2: Solicitud de Reserva de Elemento**
-
-1. **Hermano consulta catálogo de elementos reservables:**
+5. **Hermano consulta catálogo de elementos reservables:**
    ```typescript
    // Domain: Aggregate Evento (Procesion)
    class EventoProcesion extends Evento {
@@ -11278,7 +11276,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
    }
    ```
 
-2. **Sistema valida requisitos de antigüedad:**
+6. **Sistema valida requisitos de antigüedad:**
    ```typescript
    // Application Service: ReservaInsigniaService
    async solicitarReservaInsignia(
@@ -11341,7 +11339,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
    }
    ```
 
-3. **Junta Directiva aprueba reservas (si elemento destacado):**
+7. **Junta Directiva aprueba reservas (si elemento destacado):**
    ```typescript
    async aprobarReservaInsignia(
      reservaId: ReservaId,
@@ -11370,9 +11368,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
    }
    ```
 
-**FN-3: Asignación por Antigüedad en Caso de Múltiples Solicitudes**
-
-4. **Sistema resuelve conflictos de múltiples solicitudes para mismo elemento:**
+8. **Sistema resuelve conflictos de múltiples solicitudes para mismo elemento:**
    ```typescript
    async resolverAsignacionesInsignias(
      eventoId: EventoId
@@ -11441,11 +11437,9 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 
 ---
 
-#### Flujo Normal: Publicación Programada de Listas
+**Parte 3: Publicación Programada de Listas**
 
-**FN-4: Programación de Publicación en Fecha Tradicional**
-
-1. **Secretario programa publicación (típicamente Viernes de Dolores):**
+9. **Secretario programa publicación (típicamente Viernes de Dolores):**
    ```typescript
    // Application Service: PublicacionProcesionService
    async programarPublicacionListas(
@@ -11484,7 +11478,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
    }
    ```
 
-2. **Sistema ejecuta publicación automática en fecha/hora programada:**
+10. **Sistema ejecuta publicación automática en fecha/hora programada:**
    ```typescript
    // Scheduled Job Handler
    @Cron(CronExpression.EVERY_MINUTE) // Revisar cada minuto
@@ -11519,7 +11513,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
    }
    ```
 
-3. **Sistema notifica a todos los hermanos:**
+11. **Sistema notifica a todos los hermanos:**
    ```typescript
    // Event Handler en BC-Comunicacion
    @EventHandler(ListasProcesionPublicadas)
@@ -11542,7 +11536,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
      });
    }
    ```
-4. **Hermano consulta su papeleta desde el portal:**
+12. **Hermano consulta su papeleta desde el portal:**
    ```typescript
    // Portal del Socio: Query
    async consultarMiPapeleta(
@@ -11737,9 +11731,9 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
 
 ---
 
-#### Flujo Normal: Configuración de Cuadrilla
+#### Flujo Normal
 
-**FN-1: Creación de Cuadrilla para un Paso**
+**Parte 1: Configuración de Cuadrilla**
 
 1. **Capataz configura la cuadrilla:**
    ```typescript
@@ -11833,12 +11827,9 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
    ```
 
 ---
+**Parte 2: Igualá Digital**
 
-#### Flujo Normal: Igualá Digital
-
-**FN-2: Registro de Igualá de Costalero**
-
-1. **Costalero registra sus datos de igualá:**
+2. **Costalero registra sus datos de igualá:**
    ```typescript
    // Application Service: CuadrillaService
    async registrarIgualaCostalero(
@@ -11911,11 +11902,9 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
 
 ---
 
-#### Flujo Normal: Asignación a Trabajaderas
+**Parte 3: Asignación a Trabajaderas**
 
-**FN-3: Asignación con Validación de Homogeneidad de Alturas**
-
-1. **Capataz asigna costaleros a trabajaderas:**
+3. **Capataz asigna costaleros a trabajaderas:**
    ```typescript
    // Application Service: CuadrillaService
    async asignarCostaleroATrabajadora(
@@ -11997,7 +11986,7 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
    }
    ```
 
-2. **Sistema genera listado de cuadrilla:**
+4. **Sistema genera listado de cuadrilla:**
    ```typescript
    async generarListadoCuadrilla(
      cuadrillaId: CuadrillaId
@@ -12422,9 +12411,9 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
 
 ---
 
-#### Flujo Normal: Creación de Cultos Periódicos
+#### Flujo Normal
 
-**FN-1: Creación de Novena (Serie de 9 Eventos)**
+**Parte 1: Creación de Cultos Periódicos**
 
 1. **Secretario crea novena:**
    ```typescript
@@ -12554,11 +12543,9 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
 
 ---
 
-#### Flujo Normal: Exportación a Calendario Parroquial
+**Parte 2: Exportación a Calendario Parroquial**
 
-**FN-2: Exportación iCal para Integración Externa**
-
-1. **Secretario exporta calendario de cultos:**
+3. **Secretario exporta calendario de cultos:**
    ```typescript
    // Application Service: CalendarioLitúrgicoService
    async exportarCalendarioICal(
@@ -12597,12 +12584,12 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
    }
    ```
 
-2. **Párroco/Diócesis importa el archivo .ics generado:**
+4. **Párroco/Diócesis importa el archivo .ics generado:**
    - Formato estándar iCalendar (RFC 5545)
    - Compatible con Google Calendar, Outlook, Apple Calendar
    - URL de suscripción dinámica: actualización automática de cambios
 
-3. **Sistema ofrece URL de suscripción dinámica:**
+5. **Sistema ofrece URL de suscripción dinámica:**
    ```typescript
    async generarURLSuscripcionICal(
      tenantId: TenantId
@@ -12645,11 +12632,9 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
 
 ---
 
-#### Flujo Normal: Control de Aforo en Besamanos
+**Parte 3: Control de Aforo en Besamanos**
 
-**FN-3: Configuración de Turnos con Aforo Limitado**
-
-1. **Secretario configura besamanos con turnos:**
+6. **Secretario configura besamanos con turnos:**
    ```typescript
    // Application Service: CultoService
    async configurarBesamanosConTurnos(
@@ -12725,7 +12710,7 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
    }
    ```
 
-2. **Hermano se inscribe a turno específico:**
+7. **Hermano se inscribe a turno específico:**
    ```typescript
    // Reutilizar lógica de UC-030 (Inscripciones) y UC-031 (Control de aforo)
    async inscribirseATurnoBesamanos(
@@ -12767,7 +12752,7 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
    }
    ```
 
-3. **Control de acceso el día del besamanos:**
+8. **Control de acceso el día del besamanos:**
    ```typescript
    // Reutilizar lógica de UC-032 (Check-in)
    async checkInTurnoBesamanos(
@@ -12958,9 +12943,9 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 ---
 
-#### Flujo Normal: Gestión de Calendario de Competición
+#### Flujo Normal
 
-**FN-1: Creación Manual de Partido**
+**Parte 1: Gestión de Calendario de Competición**
 
 1. **Coordinador crea partido de liga:**
    ```typescript
@@ -13020,9 +13005,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-2: Importación Masiva desde Calendario Federativo**
-
-1. **Coordinador importa Excel de la federación:**
+2. **Coordinador importa Excel de la federación:**
    ```typescript
    // Application Service: CompeticionService
    async importarCalendarioFederativo(
@@ -13101,11 +13084,9 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 ---
 
-#### Flujo Normal: Convocatoria de Jugadores
+**Parte 2: Convocatoria de Jugadores**
 
-**FN-3: Generación de Convocatoria con Validaciones Reglamentarias**
-
-1. **Entrenador genera convocatoria:**
+3. **Entrenador genera convocatoria:**
    ```typescript
    // Application Service: ConvocatoriaService
    async generarConvocatoria(
@@ -13250,7 +13231,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-2. **Sistema notifica a jugadores convocados:**
+4. **Sistema notifica a jugadores convocados:**
    ```typescript
    // Event Handler en BC-Comunicacion
    @EventHandler(ConvocatoriaGenerada)
@@ -13276,9 +13257,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-4: Jugador Confirma Disponibilidad**
-
-1. **Jugador responde desde portal:**
+5. **Jugador responde desde portal:**
    ```typescript
    async confirmarDisponibilidad(
      convocatoriaId: ConvocatoriaId,
@@ -13302,7 +13281,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-2. **Entrenador consulta panel de confirmaciones:**
+6. **Entrenador consulta panel de confirmaciones:**
    ```typescript
    async consultarEstadoConvocatoria(
      convocatoriaId: ConvocatoriaId
@@ -13336,11 +13315,9 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 ---
 
-#### Flujo Normal: Control de Sanciones Acumuladas
+**Parte 3: Control de Sanciones Acumuladas**
 
-**FN-5: Registro de Incidencias y Tarjetas**
-
-1. **Delegado registra incidencias del partido:**
+7. **Delegado registra incidencias del partido:**
    ```typescript
    // Application Service: SancionDeportivaService
    async registrarIncidencia(
@@ -13503,9 +13480,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-6: Panel de Sanciones Pendientes**
-
-1. **Delegado/Entrenador consulta sanciones:**
+8. **Delegado/Entrenador consulta sanciones:**
    ```typescript
    async consultarSancionesPendientes(
      equipoId: EquipoId
@@ -13535,11 +13510,9 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 ---
 
-#### Flujo Normal: Registro de Resultados y Estadísticas
+**Parte 4: Registro de Resultados y Estadísticas**
 
-**FN-7: Registro de Resultado del Partido**
-
-1. **Delegado registra resultado:**
+9. **Delegado registra resultado:**
    ```typescript
    // Application Service: EstadisticaDeportivaService
    async registrarResultado(
@@ -13579,9 +13552,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-8: Registro de Goleadores y Asistencias**
-
-1. **Delegado registra estadísticas individuales:**
+10. **Delegado registra estadísticas individuales:**
    ```typescript
    async registrarGol(
      partidoId: PartidoId,
@@ -13641,9 +13612,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-9: Consulta de Estadísticas de Temporada**
-
-1. **Ver estadísticas acumuladas:**
+11. **Ver estadísticas acumuladas:**
    ```typescript
    async consultarEstadisticasTemporada(
      equipoId: EquipoId,
@@ -13693,9 +13662,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    }
    ```
 
-**FN-10: Generación de Acta de Partido**
-
-1. **Generar PDF con acta oficial:**
+12. **Generar PDF con acta oficial:**
    ```typescript
    async generarActaPartido(
      partidoId: PartidoId
