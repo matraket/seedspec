@@ -109,39 +109,40 @@ Cada caso de uso documenta:
 **Descripción:**  
 [Resumen conciso del objetivo del caso de uso en 1-3 líneas]
 
-#### Actores:
-  • Actor principal
-  • Actores secundarios
+#### Actores
+- **ActorPrincipal** (rol/responsabilidad)
+- **ActorSecundario** (rol/responsabilidad)
+- **Sistema** (acciones automáticas si aplica)
 
-#### Precondiciones:
-  • Condición 1
-  • Condición 2
+#### Precondiciones
+- Condición 1
+- Condición 2
 
-#### Flujo Normal:
-  1. Paso 1
-  2. Paso 2
-  3. ...
+#### Flujo Normal
+1. Paso 1
+2. Paso 2
+3. ...
 
-#### Flujos Alternativos:
-  FA-1: [Variante válida]
-  FA-2: [Otra variante]
+#### Flujos Alternativos
+FA-1: [Variante válida]
+FA-2: [Otra variante]
 
-#### Flujos de Excepción:
-  FE-1: [Condición de error y manejo]
-  FE-2: [Otra excepción]
+#### Flujos de Excepción
+FE-1: [Condición de error y manejo]
+FE-2: [Otra excepción]
 
-#### Eventos de Dominio:
-  • EventoNombre1 → [Consumidores: BC-X, BC-Y]
-  • EventoNombre2 → [Consumidores: BC-Z]
+#### Eventos de Dominio
+- EventoNombre1 → [Consumidores: BC-X, BC-Y]
+- EventoNombre2 → [Consumidores: BC-Z]
 
-#### Interacciones entre BCs:
-  • BC-Origen → BC-Destino: [Descripción]
+#### Interacciones entre BCs
+- BC-Origen → BC-Destino: [Descripción]
 
-#### Poscondiciones:
-  • Estado resultante del sistema
+#### Poscondiciones
+- Estado resultante del sistema
 
-#### Notas de Implementación:
-  • Consideraciones técnicas relevantes
+#### Notas de Implementación
+- Consideraciones técnicas relevantes
 ```
 
 ### Tipos de Flujo
@@ -11724,7 +11725,7 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 **Descripción:**  
 Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igualá" digital (medición de altura y experiencia), asignación a trabajaderas validando homogeneidad de alturas, convocatoria de ensayos y control de asistencia.
 
-#### Actore
+#### Actores
 - **Capataz** (gestiona cuadrilla, convoca ensayos, asigna posiciones)
 - **Costalero** (registra igualá, confirma asistencia a ensayos)
 - **Sistema** (valida homogeneidad de alturas, calcula estadísticas de asistencia)
