@@ -30,7 +30,7 @@
 
 ### BC-Identidad
 
-#### UC-001: Provisión multi-tenant ❌
+#### UC-001: Provisión multi-tenant ❌ (1 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 2
@@ -49,7 +49,7 @@
 
 ---
 
-#### UC-002: Autenticación multi-tenant ❌
+#### UC-002: Autenticación multi-tenant ❌ (2 - Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 4
@@ -78,7 +78,7 @@
 
 ---
 
-#### UC-003: Configuración de tenant ❌
+#### UC-003: Configuración de tenant ❌ (3 - Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 5
@@ -127,7 +127,7 @@ El UC-005 es completamente congruente con su título y propósito. Todo el conte
 
 ### BC-Membresia
 
-#### UC-006: Gestión de ficha de socio ❌
+#### UC-006: Gestión de ficha de socio ❌ (4 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 5
@@ -171,7 +171,7 @@ El UC-005 es completamente congruente con su título y propósito. Todo el conte
 
 ---
 
-#### UC-007: Gestión de estados del socio ❌
+#### UC-007: Gestión de estados del socio ❌ (5 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 7
@@ -224,7 +224,7 @@ El UC-005 es completamente congruente con su título y propósito. Todo el conte
 
 ---
 
-#### UC-008: Configuración de tipos de socio ❌
+#### UC-008: Configuración de tipos de socio ❌ (6 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas Detectados:** 5
@@ -267,7 +267,7 @@ El UC-009 es completamente congruente con su título y propósito. Todo el conte
 
 ---
 
-#### UC-010: Gestión de ejercicios ❌ **[CRÍTICO]**
+#### UC-010: Gestión de ejercicios ❌ **[CRÍTICO]** (7 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE - **CONTENIDO 100% ERRÓNEO**  
 **Problemas Detectados:** 16 (todos los flujos y secciones)
@@ -429,7 +429,7 @@ El UC-009 es completamente congruente con su título y propósito. Todo el conte
 
 ## Actualización: UC-011 a UC-015 Analizados
 
-### UC-011: Alta simple de socio ❌
+### UC-011: Alta simple de socio ❌ (8 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 2
@@ -437,14 +437,14 @@ El UC-009 es completamente congruente con su título y propósito. Todo el conte
 1. **Pasos 14-17: Proceso de pago por pasarela** - Pertenece a BC-Tesorería/UC-025
 2. **FA-2: Configuración mandatos SEPA** - Funcionalidad de BC-Tesorería
 
-### UC-012: Alta compleja con workflow (cofradías) ❌ **[CRÍTICO]**
+### UC-012: Alta compleja con workflow (cofradías) ❌ **[CRÍTICO]** (9 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE - Contenido genérico, sin especificidad de cofradías  
 **Problemas:** 10
 
 El UC promete workflow específico para cofradías pero implementa un sistema genérico de aprobación aplicable a cualquier asociación. Faltan elementos como: hermandades, pasos procesionales, túnicas, nazarenos, apadrinamiento por hermanos, incompatibilidades con otras cofradías, etc.
 
-### UC-013: Baja de socio ❌
+### UC-013: Baja de socio ❌ (10 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 2
@@ -456,7 +456,7 @@ El UC promete workflow específico para cofradías pero implementa un sistema ge
 
 **Estado:** CONGRUENTE
 
-### UC-015: Generación y validación de carnets ❌
+### UC-015: Generación y validación de carnets ❌ (11 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 5
@@ -477,7 +477,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 ### BC-Tesorería
 
-#### UC-017: Configuración de planes de cuota ❌
+#### UC-017: Configuración de planes de cuota ❌ (12 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 6
@@ -536,7 +536,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 ### BC-Eventos
 
-#### UC-027: Caja por turnos (peñas) ❌
+#### UC-027: Caja por turnos (peñas) ❌ (13 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 3
@@ -569,7 +569,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 **Estado:** CONGRUENTE  
 **Resumen:** Exclusivamente sobre control de aforo en tiempo real (WebSocket), prevención overbooking (optimistic locking), gestión listas de espera con posiciones ordenadas, notificaciones automáticas cuando se liberan plazas (24h confirmación), cierre/reapertura inscripciones.
 
-#### UC-032: Check-in y Control de Asistencia ❌
+#### UC-032: Check-in y Control de Asistencia ❌ (14 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 3
@@ -587,7 +587,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 **Estado:** CONGRUENTE  
 **Resumen:** Contenido 100% específico de peñas festeras: múltiples menús con cupos independientes, registro alergias/intolerancias, inscripciones con acompañantes y menús diferenciados, generación listados para catering (Excel consolidado), tracking cambios de última hora.
 
-#### UC-034: Eventos Específicos: Procesiones (Cofradías) ❌ **[CRÍTICO]**
+#### UC-034: Eventos Específicos: Procesiones (Cofradías) ❌ **[CRÍTICO]** (15 + Corregido ✅)
 
 **Estado:** GRAVEMENTE INCONGRUENTE  
 **Problemas:** 10 (45% del contenido es erróneo)
@@ -661,7 +661,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 ### BC-Comunicación (UC-039 a UC-046)
 
-#### UC-039: Envío de Comunicaciones por Email ❌
+#### UC-039: Envío de Comunicaciones por Email ❌ (16 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 4
@@ -676,7 +676,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 **Severidad:** Moderada - Core del UC (envío email) es correcto, problemas en flujos secundarios.
 
-#### UC-040: Envío de SMS para Urgencias ❌
+#### UC-040: Envío de SMS para Urgencias ❌ (17 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 3
@@ -699,7 +699,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 **Estado:** CONGRUENTE  
 **Resumen:** Centrado exclusivamente en gestión del catálogo de plantillas: creación, edición, validación de variables, previsualización, desactivación. Correctamente distingue entre gestión de plantillas (UC-042) y envío efectivo (UC-039, UC-040).
 
-#### UC-043: Segmentación de destinatarios ❌
+#### UC-043: Segmentación de destinatarios ❌ (18 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 3
@@ -760,7 +760,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 ### BC-Documentos (UC-048 a UC-055)
 
-#### UC-048: Gestión de libro de actas digital ❌
+#### UC-048: Gestión de libro de actas digital ❌ (19 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 4
@@ -775,7 +775,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 **Diagnóstico:** UC-048 debe limitarse a: crear actas, validar campos, aprobar, garantizar inmutabilidad, numeración correlativa. Validación de quórum y generación de PDF deben manejarse mediante eventos.
 
-#### UC-049: Registro de asistentes y cálculo de quórum ❌
+#### UC-049: Registro de asistentes y cálculo de quórum ❌ (20 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 7
@@ -816,7 +816,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 **Estado:** CONGRUENTE  
 **Resumen:** Búsqueda multi-criterio (texto, categoría, fecha, tipo, etiquetas, autor), facetas para refinamiento, paginación, aplicación de permisos, optimizaciones de performance, full-text opcional, búsquedas guardadas.
 
-#### UC-054: Control de Permisos y Límites de Almacenamiento ❌
+#### UC-054: Control de Permisos y Límites de Almacenamiento ❌ (21 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 3
@@ -829,7 +829,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 **Diagnóstico:** Control de permisos y límites son correctos. Ampliación de plan debe documentarse en UC separado del BC-Tesorería.
 
-#### UC-055: Control de Versiones y OCR Avanzado ❌
+#### UC-055: Control de Versiones y OCR Avanzado ❌ (22 + Corregido ✅)
 
 **Estado:** INCONGRUENTE  
 **Problemas:** 4
@@ -848,7 +848,7 @@ Mezcla 3 responsabilidades: (1) generación/renovación carnets (correcto), (2) 
 
 ### N8-Import/Export
 
-#### UC-056: Importación Masiva de Socios ❌
+#### UC-056: Importación Masiva de Socios ❌ (23 - No existia tal inconsistencia ✅)
 
 **Estado:** INCONGRUENTE - Contiene otros UCs completos  
 **Problemas:** 3
