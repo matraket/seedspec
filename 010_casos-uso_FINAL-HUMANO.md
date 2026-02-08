@@ -20235,7 +20235,7 @@ const DocumentoViewer: React.FC<{ documentoId: string }> = ({ documentoId }) => 
 ### UC-053: Búsqueda y Filtrado de Documentos
 
 #### Metadatos
-- **User Story:** US-141
+- **User Stories:** US-141
 - **Bounded Context:** BC-Documentos
 - **Application Service:** BusquedaDocumentosService
 - **Aggregates:** Documento, Categoria
@@ -22364,7 +22364,7 @@ async ejecutarImportacion(
 ### UC-057: Importación de Histórico de Pagos
 
 #### Metadatos
-- **User Story:** US-152
+- **User Stories:** US-152
 - **Bounded Context:** Transversal (BC-Tesoreria + BC-Membresia)
 - **Application Service:** ImportacionPagosService
 - **Aggregates:** CuentaSocio, Movimiento
@@ -32112,7 +32112,7 @@ El sistema mantiene el Libro Registro de Asociados actualizado automáticamente 
 ### UC-075: Alertas Legales Automáticas
 
 #### Metadatos
-- *User Stories:** US-199, US-200  
+- **User Stories:** US-199, US-200  
 - **Bounded Context:** BC-Cumplimiento  
 - **Application Service:** `CumplimientoService.gestionarAlertasLegales()`  
 - **Aggregates:** **AlertaLegal**, **VencimientoLegal**  
