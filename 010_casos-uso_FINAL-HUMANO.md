@@ -21229,24 +21229,23 @@ async handlePlanAmpliado(event: PlanAmpliado) {
 ### UC-055: Control de Versiones y OCR Avanzado
 
 #### Metadatos
-- **User Stories:** US-144, US-145, US-146, US-147
+- **User Stories:** US-144 (Versionado), US-145 (OCR)
 - **Bounded Context:** BC-Documentos
-- **Application Service:** VersionadoService, OcrService, BusquedaAvanzadaService
+- **Application Service:** VersionadoService, OcrService
 - **Aggregates:** Documento
 - **Prioridad:** Could (extensión futura)
 
 **Descripción:**  
-Funcionalidades avanzadas para gestión documental: versionado de documentos con historial completo, extracción automática de datos de facturas mediante OCR, y búsqueda full-text en el contenido de documentos. Estas features son opcionales y se implementan como extensiones del sistema base.
+Funcionalidades avanzadas para gestión documental: versionado de documentos con historial completo y extracción automática de datos de facturas mediante OCR. Estas features son opcionales y se implementan como extensiones del sistema base. Para búsqueda full-text ver UC-053 FA-2.
 
 #### Actores
 - **Directivo, Secretario** (gestionan versiones de estatutos, actas, etc.)
 - **Tesorero** (sube facturas y revisa datos extraídos por OCR)
-- **Sistema** (procesa OCR asíncronamente, indexa texto)
+- **Sistema** (procesa OCR asíncronamente)
 
 #### Precondiciones
 - Sistema base de documentos funcionando (UC-051, UC-052)
 - Servicios externos configurados (Tesseract/Google Vision API para OCR)
-- Índice full-text creado en BD o Elasticsearch desplegado (búsqueda en contenido)
 
 #### Flujo Normal
 
@@ -21294,34 +21293,6 @@ Funcionalidades avanzadas para gestión documental: versionado de documentos con
 10. Tesorero confirma datos
 11. Sistema crea gasto automáticamente en BC-Tesoreria con datos confirmados
 12. Documento queda vinculado al asiento contable como justificante
-
-**C) Búsqueda Full-Text en Contenido:**
-
-1. Sistema indexa contenido de documentos PDF al subirlos (proceso asíncrono)
-2. Worker descarga documento y extrae texto con pdf-parse
-3. Sistema guarda texto extraído en campo `contenido_texto`
-4. Sistema crea índice full-text con PostgreSQL (tsvector) o Elasticsearch
-5. Usuario realiza búsqueda: "subvención cultura 2024"
-6. Sistema busca en título, descripción Y contenido de documentos
-7. Sistema presenta resultados con extractos resaltados:
-   - "...aprobada la **subvención** de **2024** para actividades de **cultura**..."
-8. Usuario puede ver documento completo con términos resaltados
-9. Sistema ordena resultados por relevancia (rank de búsqueda full-text)
-
-**D) Vinculación de Documentos con Otros Módulos:**
-
-1. Usuario registra un gasto en BC-Tesoreria
-2. Sistema ofrece opción "Adjuntar justificante"
-3. Usuario selecciona documento del repositorio o sube nuevo
-4. Sistema vincula documento al asiento contable
-5. Vínculo bidireccional queda registrado:
-   - Desde gasto → enlace a factura
-   - Desde factura → enlace a gasto
-6. Usuario puede navegar entre gasto y documento fácilmente
-7. Sistema aplica mismo mecanismo para otros módulos:
-   - Acta ← Evento (asamblea)
-   - Justificante transferencia ← Cobro (tesorería)
-   - Contrato ← Proveedor (si módulo existe)
 
 #### Implementación Técnica Detallada
 
@@ -21735,170 +21706,6 @@ async confirmarDatosOcr(
 }
 ```
 
-**Flujo Normal - Búsqueda Full-Text en Contenido:**
-
-1. **Sistema indexa contenido de documentos al subirlos**
-
-```typescript
-// Event Handler: DocumentoSubidoHandler
-@OnEvent('documento.subido')
-async indexarContenido(event: DocumentoSubido) {
-  
-  const documento = await this.documentoRepo.findById(event.documentoId);
-  
-  // Solo indexar PDFs y documentos de texto
-  if (!['application/pdf', 'text/plain'].includes(documento.archivoFisico.mimeType)) {
-    return;
-  }
-  
-  // Encolar para procesamiento asíncrono
-  await this.indexacionQueue.add('indexar-contenido', {
-    documentoId: event.documentoId.value
-  });
-}
-
-// Worker: IndexacionProcessor
-@Process('indexar-contenido')
-async indexarContenido(job: Job<{ documentoId: string }>) {
-  
-  const { documentoId } = job.data;
-  
-  // 1. Descargar documento
-  const documento = await this.documentoRepo.findById(new DocumentoId(documentoId));
-  const buffer = await this.storageService.download(documento.archivoFisico.path);
-  
-  // 2. Extraer texto según tipo
-  let textoExtraido: string;
-  
-  if (documento.archivoFisico.mimeType === 'application/pdf') {
-    const pdfData = await pdfParse(buffer);
-    textoExtraido = pdfData.text;
-  } else {
-    textoExtraido = buffer.toString('utf-8');
-  }
-  
-  // 3. Guardar en BD (PostgreSQL con full-text)
-  await this.db.raw(`
-    UPDATE documento
-    SET contenido_texto = ?,
-        contenido_tsvector = to_tsvector('spanish', ?)
-    WHERE id = ?
-  `, [textoExtraido, textoExtraido, documentoId]);
-  
-  // O indexar en Elasticsearch
-  if (this.config.elasticsearch.enabled) {
-    await this.elasticsearchService.index({
-      index: 'documentos',
-      id: documentoId,
-      document: {
-        tenant_id: documento.tenantId,
-        nombre: documento.metadatos.nombre,
-        descripcion: documento.metadatos.descripcion,
-        contenido: textoExtraido,
-        categoria_id: documento.categoriaId.value,
-        fecha_documento: documento.fechaDocumento,
-        etiquetas: documento.metadatos.etiquetas
-      }
-    });
-  }
-  
-  return { success: true, caracteres: textoExtraido.length };
-}
-```
-
-2. **Usuario busca texto dentro de documentos**
-
-```typescript
-// Application Service: BusquedaAvanzadaService
-async buscarEnContenido(
-  terminoBusqueda: string,
-  paginacion: Paginacion
-): Promise<Result<BusquedaContenidoResult[]>> {
-  
-  // Opción 1: PostgreSQL Full-Text Search
-  if (!this.config.elasticsearch.enabled) {
-    return this.buscarConPostgreSQL(terminoBusqueda, paginacion);
-  }
-  
-  // Opción 2: Elasticsearch (más potente)
-  return this.buscarConElasticsearch(terminoBusqueda, paginacion);
-}
-
-private async buscarConPostgreSQL(
-  termino: string,
-  paginacion: Paginacion
-): Promise<Result<BusquedaContenidoResult[]>> {
-  
-  const query = plainto_tsquery('spanish', termino);
-  
-  const resultados = await this.db.raw(`
-    SELECT 
-      id,
-      nombre,
-      descripcion,
-      ts_rank(contenido_tsvector, query) as relevancia,
-      ts_headline('spanish', contenido_texto, query, 
-        'MaxWords=50, MinWords=25, ShortWord=3, HighlightAll=FALSE, MaxFragments=1'
-      ) as extracto
-    FROM documento, plainto_tsquery('spanish', ?) query
-    WHERE tenant_id = ?
-      AND contenido_tsvector @@ query
-      AND estado = 'Activo'
-    ORDER BY relevancia DESC
-    LIMIT ? OFFSET ?
-  `, [termino, this.tenantId, paginacion.limit, paginacion.offset]);
-  
-  return Result.ok(resultados.rows.map(r => ({
-    documentoId: r.id,
-    nombre: r.nombre,
-    extracto: r.extracto, // Texto con <b>término</b> resaltado
-    relevancia: parseFloat(r.relevancia)
-  })));
-}
-
-private async buscarConElasticsearch(
-  termino: string,
-  paginacion: Paginacion
-): Promise<Result<BusquedaContenidoResult[]>> {
-  
-  const { hits } = await this.elasticsearchService.search({
-    index: 'documentos',
-    query: {
-      bool: {
-        must: [
-          { term: { tenant_id: this.tenantId } },
-          { multi_match: {
-            query: termino,
-            fields: ['nombre^3', 'descripcion^2', 'contenido'],
-            fuzziness: 'AUTO'
-          }}
-        ]
-      }
-    },
-    highlight: {
-      fields: {
-        contenido: {
-          pre_tags: ['<mark>'],
-          post_tags: ['</mark>'],
-          fragment_size: 150,
-          number_of_fragments: 1
-        }
-      }
-    },
-    from: paginacion.offset,
-    size: paginacion.limit,
-    sort: [{ _score: 'desc' }]
-  });
-  
-  return Result.ok(hits.hits.map(hit => ({
-    documentoId: hit._id,
-    nombre: hit._source.nombre,
-    extracto: hit.highlight?.contenido?.[0] || '',
-    relevancia: hit._score
-  })));
-}
-```
-
 #### Flujos Alternativos
 
 **FA-1: Comparar dos versiones (diff)**
@@ -21939,13 +21746,6 @@ private async buscarConElasticsearch(
   - Mensaje: "Esta versión ya no está disponible (política de retención)"
   - Mantener último 3-5 versiones siempre
 
-**FE-3: Elasticsearch caído**
-- **Cuándo:** Cluster Elasticsearch no responde
-- **Manejo:** 
-  - Fallback a búsqueda básica en PostgreSQL (solo metadatos)
-  - Mensaje: "Búsqueda en contenido temporalmente no disponible"
-  - Alertar a ops para restaurar servicio
-
 #### Eventos de Dominio
 
 | Evento | Datos | Cuándo |
@@ -21954,15 +21754,13 @@ private async buscarConElasticsearch(
 | `VersionRestaurada` | documentoId, versionRestaurada, usuarioId | Versión anterior restaurada |
 | `OcrCompletado` | documentoId, datosExtraidos, confianzaMedia | OCR finalizado |
 | `DatosOcrConfirmados` | documentoId, datosOriginales, datosCorregidos | Tesorero confirma datos |
-| `ContenidoIndexado` | documentoId, caracteres, tiempoMs | Documento indexado para búsqueda |
 
 #### Interacciones entre BCs
 
 - **BC-Documentos (interno):** Gestión de versiones en repositorio
-- **BC-Documentos → S3/MinIO:** Descarga de archivos para OCR e indexación
+- **BC-Documentos → S3/MinIO:** Descarga de archivos para OCR
 - **BC-Documentos → BC-Tesoreria:** Creación automática de gasto tras confirmar OCR de factura
 - **BC-Documentos → BC-Comunicacion:** Notificaciones de OCR completado
-- **BC-Documentos → Elasticsearch:** Indexación de contenido (si habilitado)
 - **BC-Documentos → Google Cloud Vision / Tesseract:** Procesamiento OCR
 
 #### Poscondiciones
@@ -21977,13 +21775,8 @@ private async buscarConElasticsearch(
   - Tesorero notificado para revisión
   - Gasto creado automáticamente tras confirmación
 
-- **Éxito (Búsqueda Contenido):** 
-  - Texto indexado y buscable
-  - Resultados con extractos resaltados
-  - Orden por relevancia
-
 - **Fallo:** 
-  - Estado del documento refleja error (ocr_fallido, indexacion_pendiente)
+  - Estado del documento refleja error (ocr_fallido)
   - Usuario notificado con mensaje claro
   - Job reintentable desde panel de administración
 
@@ -22004,74 +21797,32 @@ private async buscarConElasticsearch(
    ALTER TABLE documento ADD COLUMN estado_ocr VARCHAR(20); -- pendiente/procesando/completado/fallido
    ```
 
-3. **Full-Text Search con PostgreSQL:**
-   ```sql
-   ALTER TABLE documento ADD COLUMN contenido_texto TEXT;
-   ALTER TABLE documento ADD COLUMN contenido_tsvector TSVECTOR;
-   CREATE INDEX idx_documento_fts ON documento USING GIN(contenido_tsvector);
-   
-   -- Trigger para actualizar tsvector automáticamente
-   CREATE TRIGGER documento_contenido_update
-   BEFORE INSERT OR UPDATE ON documento
-   FOR EACH ROW
-   EXECUTE FUNCTION tsvector_update_trigger(contenido_tsvector, 'pg_catalog.spanish', contenido_texto);
-   ```
-
-4. **Queue de Procesamiento Asíncrono:**
+3. **Queue de Procesamiento Asíncrono:**
    - Bull Queue con Redis como backend
-   - Procesadores separados: `ocrProcessor`, `indexacionProcessor`
+   - Procesador: `ocrProcessor`
    - Concurrencia: 2-3 jobs simultáneos
    - Retry: 3 intentos con backoff exponencial
 
-5. **Librería para OCR:**
+4. **Librería para OCR:**
    - **Tesseract.js:** Gratis, OCR básico, confianza ~75-85%
    - **Google Cloud Vision API:** Pago, OCR avanzado, confianza ~90-98%
    - **Document AI:** Especializado en facturas, mejor extracción de campos estructurados
 
-6. **Extracción de Datos con Regex:**
-   ```typescript
-   extraerCIF(text: string): string | null {
-     const regex = /\b[A-Z]\d{8}\b/; // CIF español
-     const match = text.match(regex);
-     return match ? match[0] : null;
-   }
-   
-   extraerNumeroFactura(text: string): string | null {
-     const regex = /(?:factura|invoice|nº)\s*:?\s*(\d{4,}[\/-]?\d*)/i;
-     const match = text.match(regex);
-     return match ? match[1] : null;
-   }
-   ```
-
-7. **Elasticsearch Configuration:**
-   ```typescript
-   // config/elasticsearch.ts
-   {
-     node: process.env.ELASTICSEARCH_URL,
-     auth: {
-       username: process.env.ELASTICSEARCH_USER,
-       password: process.env.ELASTICSEARCH_PASSWORD
-     },
-     maxRetries: 3,
-     requestTimeout: 60000
-   }
-   ```
-
-8. **Política de Retención de Versiones:**
+5. **Política de Retención de Versiones:**
    - Últimas 5 versiones: siempre disponibles
    - Versiones más antiguas: eliminar archivo de S3 tras 1 año (mantener metadatos)
    - Scheduled job mensual para limpieza
 
-9. **Performance:**
+6. **Performance:**
    - OCR: procesar en background, no bloquear subida
-   - Indexación: batch de 10 documentos en paralelo
-   - Búsqueda: cache de resultados en Redis (TTL: 10 min)
+   - Versionado: reutilizar archivos existentes en S3 al restaurar versiones
+   - Cache de historial de versiones en Redis (TTL: 1 hora)
 
-10. **Testing:**
-    - Test unitario: extracción de datos con regex
-    - Test integración: subir factura → verificar OCR → confirmar datos → verificar gasto creado
-    - Test E2E: flujo completo de versionado con restauración
-    - Test performance: búsqueda en 10,000 documentos < 1s
+7. **Testing:**
+   - Test unitario: extracción de datos con regex (OCR)
+   - Test integración: subir factura → verificar OCR → confirmar datos → verificar gasto creado
+   - Test E2E: flujo completo de versionado con restauración
+   - Test performance: historial de 50 versiones carga en <200ms
 
 ---
 
