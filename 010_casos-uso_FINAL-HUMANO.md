@@ -4583,7 +4583,7 @@ Creación de cargos puntuales sin vinculación a suscripciones, para conceptos n
 
 #### Precondiciones
 - Socio registrado con cuenta de socio creada
-- Usuario con permisos de gestión de tesorería
+- Usuario con permisos `tesoreria:write`
 
 #### Flujo Normal
 
@@ -4840,8 +4840,8 @@ Registro de cobros por múltiples métodos de pago (efectivo, transferencia, dom
 - **Socio** (consulta de recibos)
 
 #### Precondiciones
-- Cargo pendiente en estado PENDIENTE o PARCIAL
-- Usuario con permisos de gestión de cobros
+- Cargo pendiente en estado `PENDIENTE` o `PARCIAL`
+- Usuario con permisos `tesoreria:write`
 
 #### Flujo Normal
 
@@ -15018,11 +15018,10 @@ Envío de notificaciones push a socios con PWA instalada. Sin coste adicional, e
 - **Sistema** (gestiona suscripciones, envía notificaciones)
 
 #### Precondiciones
-
 - Socio tiene PWA instalada en dispositivo
 - Socio activó notificaciones (granted permission en navegador)
 - Suscripción push registrada y activa en sistema
-- Service Worker registrado en PWA (sw.js activo)
+- Service Worker registrado en PWA (`sw.js` activo)
 
 ---
 
@@ -21912,11 +21911,10 @@ Este UC da soporte a las necesidades de rendición de cuentas ante asambleas, au
 - **Sistema de Notificaciones:** Componente que notifica al usuario cuando el PDF está disponible para descarga.
 
 #### Precondiciones
-
-- [PRE-1]: Usuario autenticado con permisos `tesoreria:export` o superior
-- [PRE-2]: Tenant tiene al menos un ejercicio fiscal configurado con movimientos registrados
-- [PRE-3]: Datos de tesorería disponibles en BC-Tesoreria para el rango de fechas solicitado
-- [PRE-4]: Servicio de generación PDF operativo (Puppeteer instalado)
+- Usuario autenticado con permisos `tesoreria:export` o superior
+- Tenant tiene al menos un ejercicio fiscal configurado con movimientos registrados
+- Datos de tesorería disponibles en BC-Tesoreria para el rango de fechas solicitado
+- Servicio de generación PDF operativo (Puppeteer instalado)
 
 #### Flujo Normal
 
@@ -22055,12 +22053,11 @@ Este UC es crítico para el cumplimiento normativo de asociaciones que reciben d
 - **Sistema AEAT:** Receptor del archivo XML para validación y presentación telemática
 
 #### Precondiciones
-
-- [PRE-1]: Usuario autenticado con permisos `tesoreria:export-fiscal` o `admin:full`
-- [PRE-2]: Tenant configurado con NIF de la entidad y razón social correctos
-- [PRE-3]: Ejercicio fiscal cerrado con movimientos de tipo `DONATIVO` registrados
-- [PRE-4]: Donantes tienen NIF/CIF/NIE válido almacenado en BC-Membresia
-- [PRE-5]: Librería de validación XSD disponible (libxmljs2 o similar)
+- Usuario autenticado con permisos `tesoreria:export-fiscal` o `admin:full`
+- Tenant configurado con NIF de la entidad y razón social correctos
+- Ejercicio fiscal cerrado con movimientos de tipo `DONATIVO` registrados
+- Donantes tienen NIF/CIF/NIE válido almacenado en BC-Membresia
+- Librería de validación XSD disponible (libxmljs2 o similar)
 
 #### Flujo Normal
 
@@ -22187,12 +22184,11 @@ Este UC es especialmente útil para eventos multitudinarios (comidas de hermanda
 - **Proveedor de Catering:** Receptor de comandas con desglose de menús
 
 #### Precondiciones
-
-- [PRE-1]: Usuario autenticado con permisos `eventos:export` o es organizador del evento
-- [PRE-2]: Evento existe y tiene al menos una inscripción registrada
-- [PRE-3]: Inscripciones tienen datos mínimos válidos (nombre, email o teléfono)
-- [PRE-4]: Librería de generación Excel operativa (ExcelJS)
-- [PRE-5]: Librería de generación QR disponible (qrcode)
+- Usuario autenticado con permisos `eventos:export` o es organizador del evento
+- Evento existe y tiene al menos una inscripción registrada
+- Inscripciones tienen datos mínimos válidos (nombre, email o teléfono)
+- Librería de generación Excel operativa (ExcelJS)
+- Librería de generación QR disponible (qrcode)
 
 #### Flujo Normal
 
@@ -22338,11 +22334,10 @@ El sistema permite filtros avanzados por rango de fechas, tipo de comunicación 
 - **Administrador:** Usuario con acceso completo a logs de comunicación
 
 #### Precondiciones
-
-- [PRE-1]: Usuario autenticado con permisos `comunicacion:audit` o `admin:full`
-- [PRE-2]: Sistema de tracking de emails activo (webhooks de proveedor configurados)
-- [PRE-3]: Comunicaciones registradas en BD con metadata de entrega
-- [PRE-4]: Rango de fechas del export no supera 2 años (límite de performance)
+- Usuario autenticado con permisos `comunicacion:audit` o `admin:full`
+- Sistema de tracking de emails activo (webhooks de proveedor configurados)
+- Comunicaciones registradas en BD con metadata de entrega
+- Rango de fechas del export no supera 2 años (límite de performance)
 
 #### Flujo Normal
 
@@ -23643,6 +23638,11 @@ Socios consultan y actualizan sus datos personales, ven estado de cuotas y desca
 #### Actores
 - **Socio** (consulta su información)
 
+#### Precondiciones
+- Socio autenticado en portal con JWT válido
+- Socio con estado `ACTIVA`, `BAJA_TEMPORAL` o `BAJA_VOLUNTARIA` (acceso a datos históricos)
+- CuentaSocio creada en BC-Tesoreria para consulta de cuotas
+
 #### Flujo Normal
 
 ```typescript
@@ -23823,11 +23823,10 @@ Este caso de uso materializa la filosofía self-service del portal del socio, re
 - **Sistema:** Valida disponibilidad de plazas, procesa pagos online, registra inscripciones, emite confirmaciones y gestiona webhooks de pasarela
 
 #### Precondiciones
-
-- [PRE-1]: Socio autenticado en portal con JWT válido
-- [PRE-2]: Socio con estado ACTIVO o BAJA_TEMPORAL (no BAJA_DEFINITIVA)
-- [PRE-3]: Evento con inscripción abierta (`fecha_actual >= configInscripcion.fechaApertura AND fecha_actual <= configInscripcion.fechaCierre`)
-- [PRE-4]: Evento con plazas disponibles (`inscripciones.count < aforo`) o aforo ilimitado (`aforo = null`)
+- Socio autenticado en portal con JWT válido
+- Socio con estado `ACTIVO` o `BAJA_TEMPORAL` (no `BAJA_DEFINITIVA`)
+- Evento con inscripción abierta (`fecha_actual >= configInscripcion.fechaApertura AND fecha_actual <= configInscripcion.fechaCierre`)
+- Evento con plazas disponibles (`inscripciones.count < aforo`) o aforo ilimitado (`aforo = null`)
 
 #### Flujo Normal
 
@@ -24038,11 +24037,10 @@ Los carnets digitales incluyen código QR cifrado con AES-256-GCM conteniendo pa
 - **Sistema:** Genera documentos bajo demanda, cifra códigos QR, firma URLs de descarga, registra accesos en auditoría
 
 #### Precondiciones
-
-- [PRE-1]: Socio autenticado en portal con JWT válido
-- [PRE-2]: Socio con estado ACTIVO, BAJA_TEMPORAL o BAJA_VOLUNTARIA (histórico accesible)
-- [PRE-3]: Para carnet digital: ejercicio activo con carnet emitido para el socio
-- [PRE-4]: Para recibos: pagos registrados en BC-Tesoreria vinculados al socio
+- Socio autenticado en portal con JWT válido
+- Socio con estado `ACTIVO`, `BAJA_TEMPORAL` o `BAJA_VOLUNTARIA` (histórico accesible)
+- Para carnet digital: ejercicio activo con carnet emitido para el socio
+- Para recibos: pagos registrados en BC-Tesoreria vinculados al socio
 
 #### Flujo Normal
 
