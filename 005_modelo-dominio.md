@@ -1,7 +1,7 @@
 # Bounded Contexts y Modelo de Dominio
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.1  
+**Versión:** 1.5  
 **Fecha:** Febrero 2026  
 **Inputs:** KB-001 (Propuesta TFM), KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales), KB-004 (RNF Base)  
 **Estado:** Validado  
@@ -340,12 +340,15 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 | `EstadoSocioCambiado` | Cambio de estado | socioId, estadoAnterior, estadoNuevo, motivo | BC-Tesoreria (suspender/reactivar cobros) |
 | `TipoSocioCambiado` | Cambio de categoría | socioId, tipoAnterior, tipoNuevo | BC-Tesoreria (ajustar cuota) |
 | `DatosSocioActualizados` | Modificación datos | socioId, camposModificados | BC-Tesoreria (si IBAN), BC-Comunicacion (si email) |
-| `CarnetEmitido` | Generación carnet | carnetId, socioId, ejercicioId | - |
+| `CarnetGenerado` | Generación carnet | carnetId, socioId, ejercicioId | - |
 | `CarnetValidado` | Escaneo QR exitoso | carnetId, socioId, timestamp, ubicacion? | BC-Eventos (check-in automático) |
 | `EjercicioAbierto` | Apertura ejercicio | ejercicioId, periodo | BC-Tesoreria (generar cuotas), BC-Membresia (arrastrar socios) |
 | `EjercicioCerrado` | Cierre ejercicio | ejercicioId, estadisticas | BC-Documentos (generar memoria) |
-| `SolicitudAltaCreada` | Nueva solicitud | solicitudId, datos | BC-Comunicacion (notificar junta) |
+| `SolicitudAltaIniciada` | Nueva solicitud | solicitudId, datos | BC-Comunicacion (notificar junta) |
 | `SolicitudAltaAprobada` | Aprobación | solicitudId, socioId | BC-Comunicacion (notificar aspirante) |
+| `TipoSocioCreado` | Creación de tipo de socio | tipoSocioId, nombre, descripcion, tenantId | BC-Tesoreria (vincular planes de cuota) |
+| `TipoSocioActualizado` | Actualización de tipo de socio | tipoSocioId, camposModificados[], fechaActualizacion | Cachés de configuración |
+| `BajaPorImpago` | Baja automática por morosidad | socioId, deudaTotal, fechaBaja | BC-Comunicacion (notificar), BC-Tesoreria (cerrar cuenta) |
 
 ### 3.5 Trazabilidad RF
 
@@ -839,14 +842,32 @@ MotivoBajaSuscripcion (enum):
 | `PagoRegistrado` | Cobro confirmado | pagoId, cargoId, socioId, importe, metodo | BC-Membresia (actualizar estado si procede) |
 | `PagoDevuelto` | Devolución bancaria | pagoId, cargoId, motivo | BC-Comunicacion (notificar), BC-Membresia (marcar morosidad) |
 | `MorosidadDetectada` | Cargo vencido sin pago | socioId, cargoId, diasVencido | BC-Comunicacion (workflow avisos) |
-| `SocioSuspendidoPorImpago` | Morosidad grave | socioId, deudaTotal | BC-Membresia (cambiar estado) |
-| `RemesaGenerada` | Creación remesa | remesaId, numAdeudos, importeTotal | - |
-| `RemesaProcesada` | Confirmación banco | remesaId, adeudosOk, adeudosKo | BC-Comunicacion (resumen) |
-| `MandatoCreado` | Firma mandato SEPA | mandatoId, socioId | - |
-| `MandatoCaducado` | 36 meses sin uso | mandatoId, socioId | BC-Comunicacion (solicitar renovación) |
+| `SocioSuspendidoPorImpago` **[Interno]** | Morosidad grave | socioId, deudaTotal | - (uso interno, el evento de negocio es `EstadoSocioCambiado`) |
+| `RemesaGenerada` **[Interno]** | Creación remesa | remesaId, numAdeudos, importeTotal | - (uso interno, el evento de negocio es `RemesaSepaGenerada`) |
+| `RemesaProcesada` **[Interno]** | Confirmación banco | remesaId, adeudosOk, adeudosKo | - (uso interno, el evento de negocio es `RemesaSepaEnviada`) |
+| `MandatoCreado` **[Interno]** | Firma mandato SEPA | mandatoId, socioId | - (uso interno, el evento de negocio es `MandatoSepaRegistrado`) |
+| `MandatoCaducado` **[Interno]** | 36 meses sin uso | mandatoId, socioId | - (uso interno, ver UC-023 FA-3) |
 | `PlanCuotaCreado` | Creación de plan | planCuotaId, codigo, nombre, tipo, importe | BC-Membresia (invalidar caché) |
 | `PlanCuotaModificado` | Modificación plan | planCuotaId, camposModificados | BC-Membresia (invalidar caché) |
 | `PlanCuotaVinculadoATipoSocio` | Vinculación N:M | planCuotaId, tipoSocioId, esDefault | BC-Membresia (invalidar caché) |
+| `CargoPagado` | Pago de cargo | cargoId, socioId, importe, fechaPago, metodoPago | BC-Comunicacion (enviar recibo), BC-Membresia (actualizar morosidad) |
+| `CargoCobrado` | Cobro efectivo de cargo | cargoId, socioId, importe, fechaCobro, remesaId? | BC-Comunicacion (confirmar pago) |
+| `CargoMarcadoReintento` | Marcado para reintento de cobro | cargoId, socioId, intentoNumero, proximaFecha | BC-Comunicacion (avisar socio) |
+| `CargaMasivaCreada` | Generación masiva de cargos | totalCargos, importeTotal, usuarioCreador, timestamp | Sistema de auditoría |
+| `ReciboGenerado` | Generación de recibo PDF | reciboId, pagoId, numeroRecibo, fechaEmision | BC-Comunicacion (enviar por email), BC-Documentos (archivar) |
+| `MandatoSepaRegistrado` | Registro mandato SEPA | mandatoId, socioId, iban, fechaFirma, estado | BC-Tesoreria (habilitar domiciliación) |
+| `MandatoSepaRevocado` | Revocación mandato SEPA | mandatoId, socioId, motivoRevocacion, fechaRevocacion | BC-Tesoreria (deshabilitar domiciliación), BC-Comunicacion (notificar) |
+| `RemesaSepaGenerada` | Generación fichero SEPA XML | remesaId, fechaCobro, totalAdeudos, importeTotal, identificadorAcreedor | BC-Comunicacion (avisar socios 2 días antes) |
+| `RemesaSepaEnviada` | Envío remesa a banco | remesaId, fechaEnvio, banco | Sistema de auditoría |
+| `EnlacePagoGenerado` | Generación enlace pago online | cargoId, socioId, url, fechaExpiracion | BC-Comunicacion (enviar email con enlace) |
+| `MorosidadRegularizada` | Regularización de morosidad | socioId, importePagado, fechaRegularizacion | BC-Membresia (restaurar estado), BC-Comunicacion (confirmar) |
+| `CertificadoDescubiertoGenerado` | Certificado de descubierto | certificadoId, socioId, deudaTotal, fechaEmision | BC-Documentos (archivar), BC-Comunicacion (notificar socio) |
+| `SuscripcionCreada` | Creación suscripción cuota | suscripcionId, socioId, planCuotaId, fechaInicio, estado | BC-Tesoreria (programar generación mensual) |
+| `SuscripcionModificada` | Modificación suscripción | suscripcionId, camposModificados[], fechaModificacion | BC-Tesoreria (recalcular próximos cargos) |
+| `SuscripcionCerrada` | Cierre de suscripción | suscripcionId, motivoCierre, fechaCierre | BC-Tesoreria (detener generación) |
+| `GeneracionMensualCompletada` | Generación mensual de cuotas | ejercicioId, mes, totalCargosGenerados, importeTotal | BC-Comunicacion (notificar tesorero), Sistema de auditoría |
+| `MovimientoRegistrado` | Registro de movimiento contable | movimientoId, tipo, importe, concepto, fecha | Sistema de auditoría |
+| `DescuadreDetectado` | Detección de descuadre | diferencia, cuentaId, fechaDeteccion | BC-Comunicacion (alertar tesorero) |
 
 ### 4.5 Domain Services
 
@@ -1131,6 +1152,9 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 | `AforoCompletado` | Aforo lleno | eventoId | BC-Comunicacion (activar lista espera) |
 | `AsistenciaRegistrada` | Check-in | inscripcionId, eventoId, hora | - |
 | `PlazaLiberada` | Baja de inscrito | eventoId, posicionListaEspera | BC-Comunicacion (notificar siguiente) |
+| `ValoracionesEventoSolicitadas` | Solicitud valoraciones post-evento | eventoId, sociosInscritos[], fechaSolicitud | BC-Comunicacion (enviar formulario) |
+| `ValoracionRecibida` | Recepción de valoración | valoracionId, eventoId, socioId, puntuacion, comentario | Sistema de analytics |
+| `ProblemaRecurrenteDetectado` | Detección patrón de problemas | eventoId, tipoProblema, frecuencia | BC-Comunicacion (alertar organizadores) |
 
 ### 5.5 Trazabilidad RF
 
@@ -1256,6 +1280,12 @@ BC-Comunicacion emite eventos relacionados con el ciclo de vida de las comunicac
 | `EmailAbierto` | Tracking de apertura | envioId, comunicacionId, socioId, fechaApertura | - (tracking interno) |
 | `EnlaceClicado` | Tracking de clic | envioId, comunicacionId, socioId, url, fechaClic | - (tracking interno) |
 | `EmailRebotado` | Email rebota (bounce) | envioId, socioId, email, tipoBounce (hard/soft), motivo | BC-Membresia (marcar email inválido si hard bounce) |
+| `NotificacionBienvenidaEnviada` | Email bienvenida enviado a nuevo socio | socioId, email, fechaEnvio, plantillaId | - |
+| `RecordatorioPagoEnviado` | Recordatorio de pago enviado | socioId, email, cargoId, importe, fechaLimite | - |
+| `AvisoMorosidadEnviado` | Aviso de morosidad enviado | socioId, email, deudaTotal, fechaEnvio | - |
+| `AvisoDomiciliacionEnviado` | Aviso pre-remesa enviado | socioId, email, remesaId, importe, fechaCargo | - |
+| `ConfirmacionInscripcionEnviada` | Confirmación de inscripción a evento | socioId, email, eventoId, inscripcionId | - |
+| `AnuncioEventoPublicado` | Anuncio de evento publicado en tablón | eventoId, anuncioId, titulo, fechaPublicacion | - |
 
 **Notas:**
 - `ComunicacionEnviada`: Marca la finalización del proceso de envío masivo
@@ -1375,7 +1405,17 @@ Repositorio centralizado de documentos de la entidad: estatutos, actas, facturas
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 7.3 Trazabilidad RF
+### 7.3 Domain Events
+
+BC-Documentos emite eventos relacionados con la generación y gestión de documentos:
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `InformeAsambleaGenerado` | Informe de Asamblea General generado | informeId, ejercicioId, tipoInforme, fechaGeneracion, generadoPor | BC-Documentos (almacenar en repositorio) |
+
+**Notas:**
+- `InformeAsambleaGenerado`: Genera informe de Asamblea General con datos económicos y de membresía del ejercicio
+
+### 7.4 Trazabilidad RF
 
 | RF | Elemento de Dominio |
 |----|---------------------|
@@ -1559,11 +1599,17 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 | Evento | Trigger | Payload |
 |--------|---------|---------|
 | `UsuarioCreado` | Registro | usuarioId, email |
-| `UsuarioAutenticado` | Login exitoso | usuarioId, tenantId, timestamp |
+| `UsuarioAutenticado` | Login exitoso | usuarioId, tenantId, email, rol, ipAddress, userAgent, timestamp |
 | `AutenticacionFallida` | Login fallido | email, intentos, ip |
 | `UsuarioBloqueado` | 5 intentos fallidos | usuarioId, hasta |
-| `RolAsignado` | Cambio de rol | usuarioId, tenantId, rolAnterior, rolNuevo |
-| `TenantCreado` | Alta de entidad | tenantId, datos |
+| `RolAsignado` | Asignación/cambio de rol | userId, rolId, tenantId, assignedBy, fechaAsignacion |
+| `RolPersonalizadoCreado` | Creación de rol custom | rolId, nombre, permisos[], tenantId |
+| `TenantCreado` **[Interno]** | Alta de entidad | tenantId, datos | - (uso interno, el evento de negocio es `TenantProvisionado`) |
+| `TenantProvisionado` | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif |
+| `TenantConfigActualizado` | Actualización configuración | tenantId, camposActualizados[], fechaActualizacion |
+| `CargoDirectivoAsignado` | Asignación cargo directivo | cargoId, userId, tipoCargo, fechaInicio |
+| `TraspasoIniciado` | Inicio traspaso de cargo | traspasoId, cargoId, salienteId, entranteId, fechaInicio |
+| `TraspasoCompletado` | Finalización de traspaso | traspasoId, cargoId, salienteId, entranteId, fechaTraspaso |
 
 ### 8.5 Trazabilidad RF
 
@@ -1577,6 +1623,29 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 | N2RF06 | Domain Events de auditoría |
 | N2RF07 | RolAsignado event, histórico |
 | N2RF08 | Validación edad en MembresiaTenant para cargos |
+
+---
+
+## 8.5 Domain Events Transversales
+
+Eventos emitidos por Application Services que operan sobre múltiples BCs (requisitos N8-N11):
+
+| Evento | Trigger | Payload | Consumidores |
+|--------|---------|---------|--------------|
+| `DashboardVisualized` | Usuario visualiza dashboard | usuarioId, tenantId, timestamp, seccionesVistas | - (analytics interno) |
+| `ExportacionSolicitada` | Usuario solicita exportación de datos | exportacionId, usuarioId, tipoEntidad, formato, filtros | Application Service Export |
+| `ExportacionFallida` | Exportación falla por error | exportacionId, tipoError, mensaje, timestamp | BC-Comunicacion (notificar usuario) |
+| `CommunicationHistoryExported` | Histórico de comunicaciones exportado | exportacionId, fechaInicio, fechaFin, formato, totalRegistros | - |
+| `EconomicReportGenerated` | Informe económico generado | informeId, tipo, ejercicioId, fechaGeneracion, generadoPor | BC-Documentos (almacenar) |
+| `Modelo182Generated` | Modelo 182 (AEAT) generado | modeloId, ejercicioId, totalSocios, totalImporte, fechaGeneracion | BC-Documentos (almacenar) |
+| `PlanAmpliado` | Plan de suscripción ampliado | tenantId, planAnterior, planNuevo, limites, fechaCambio | BC-Identidad (actualizar tenant config) |
+| `TurnoCajaAbierto` | Turno de caja abierto (peñas festeras) | turnoId, usuarioId, fechaApertura, saldoInicial | BC-Tesoreria (registrar apertura) |
+| `TurnoCajaCerrado` | Turno de caja cerrado | turnoId, usuarioId, fechaCierre, saldoFinal, diferencia | BC-Tesoreria (conciliar caja) |
+
+**Notas:**
+- Estos eventos son emitidos por Application Services que implementan requisitos transversales (N8: Import/Export, N9: Reporting, N10: Portal Socio, N11: Cumplimiento)
+- No pertenecen a un BC específico pero pueden ser consumidos por múltiples BCs
+- `TurnoCajaAbierto` y `TurnoCajaCerrado` son features específicas de peñas festeras (N12RF06-10) pero se documentan aquí por su naturaleza transversal
 
 ---
 
@@ -1791,7 +1860,133 @@ Nunca se almacenan datos de un tenant en la BD de otro.
 
 ---
 
+## 9.5 Event Nomenclature: Business vs Internal Events
+
+### Propósito
+
+Esta sección clarifica la distinción entre **Eventos de Negocio** (Business Events) para integración cross-BC y **Eventos Internos** (Internal Events) del ciclo de vida de Aggregates, para evitar confusión durante la documentación de UCs y la implementación del sistema.
+
+### Eventos de Negocio (Business Events) - Integración Cross-BC
+
+**Características:**
+- Publicados para consumo por otros Bounded Contexts
+- Representan **operaciones de negocio completadas** con contexto completo
+- Documentados en las tablas de eventos de los UCs (sección "Eventos Publicados")
+- Nomenclatura: `<Entidad><AcciónCompletaConContexto>` (ej. `RemesaSepaGenerada`, `TenantProvisionado`)
+
+**Propósito:**
+- Integración y orquestación cross-BC
+- Trigger de workflows en otros contextos
+- Notificaciones visibles al usuario (vía BC-Comunicacion)
+
+**Ejemplo:** `TenantProvisionado`
+- Trigger: Tras completar el provisionamiento completo del tenant (UC-001 paso 6)
+- Payload: Información completa (tenantId, nombreColectividad, tipoColectividad, adminUserId, cif)
+- Consumidores: BC-Comunicacion (email bienvenida), Sistema de Monitorización
+
+### Eventos Internos (Internal Events) - Ciclo de Vida de Aggregates
+
+**Características:**
+- Emitidos durante cambios de estado internos del Aggregate
+- Representan **operaciones técnicas de grano fino**
+- NO documentados en tablas de eventos de UCs (solo en KB-005)
+- Nomenclatura: `<Entidad><AcciónSimple>` (ej. `RemesaGenerada`, `TenantCreado`)
+
+**Propósito:**
+- Auditoría y trazabilidad interna
+- Implementación futura de event sourcing
+- Tracking del ciclo de vida del Aggregate
+
+**Ejemplo:** `TenantCreado`
+- Trigger: Cuando se crea por primera vez el Aggregate Tenant (UC-001 paso 2)
+- Payload: Información técnica (tenantId, datos básicos)
+- Consumidores: Ninguno (solo uso interno)
+- Evento de Negocio: `TenantProvisionado` se emite posteriormente cuando el provisionamiento se completa
+
+### Mapeo: Eventos Internos → Eventos de Negocio
+
+| Evento Interno (KB-005) | Evento de Negocio (UCs) | Contexto |
+|-------------------------|-------------------------|----------|
+| `TenantCreado` | `TenantProvisionado` | UC-001: Provisionamiento de tenant |
+| `RemesaGenerada` | `RemesaSepaGenerada` | UC-023: Generación de remesa SEPA |
+| `RemesaProcesada` | `RemesaSepaEnviada` | UC-023: Procesamiento de remesa SEPA |
+| `MandatoCreado` | `MandatoSepaRegistrado` | UC-023: Registro de mandato SEPA |
+| `MandatoCaducado` | (Implícito en UC-023 FA-3) | UC-023: Caducidad de mandato tras 36 meses |
+| `SocioSuspendidoPorImpago` | `EstadoSocioCambiado` | UC-007/UC-022: Evento genérico de cambio de estado |
+
+### Guías de Implementación
+
+**Al documentar UCs:**
+1. Incluir SOLO Eventos de Negocio en las tablas "Eventos Publicados"
+2. Los Eventos Internos pueden mencionarse en las descripciones de flujo pero no en tablas de eventos
+3. Si existen ambos tipos de eventos, emitir primero el Interno, luego el de Negocio
+
+**Al implementar Event-Driven Architecture:**
+1. Publicar Eventos de Negocio en message broker (ej. RabbitMQ, Kafka)
+2. Almacenar Eventos Internos en event store para auditoría (opcional)
+3. Los consumidores externos NO deben depender NUNCA de Eventos Internos
+
+---
+
 ## Changelog
+
+- v1.5 (Feb 2026): Clasificación de eventos internos vs eventos de negocio
+  - **Nueva sección 9.5:** Event Nomenclature - Business vs Internal Events
+    - Definición formal de eventos de negocio (cross-BC integration)
+    - Definición formal de eventos internos (Aggregate lifecycle)
+    - Tabla de mapeo: eventos internos → eventos de negocio
+    - Guías de implementación para UCs y Event-Driven Architecture
+  - **Marcados 6 eventos internos** en tablas de Domain Events:
+    - **BC-Identidad (1):** `TenantCreado` [Interno] → evento negocio: `TenantProvisionado`
+    - **BC-Tesoreria (5):** 
+      - `SocioSuspendidoPorImpago` [Interno] → evento negocio: `EstadoSocioCambiado`
+      - `RemesaGenerada` [Interno] → evento negocio: `RemesaSepaGenerada`
+      - `RemesaProcesada` [Interno] → evento negocio: `RemesaSepaEnviada`
+      - `MandatoCreado` [Interno] → evento negocio: `MandatoSepaRegistrado`
+      - `MandatoCaducado` [Interno] → evento negocio: implícito en UC-023 FA-3
+  - **Propósito:** Clarificar qué eventos deben documentarse en tablas de UCs (solo eventos de negocio)
+  - **Total eventos:** 87 (81 eventos de negocio + 6 eventos internos)
+  - **Script actualizado:** `inventario_eventos.py` v2.1 detecta marcador `[Interno]`
+
+- v1.4 (Feb 2026): Corrección de nomenclatura de eventos para alineación con UCs
+  - **BC-Membresia:** Corregidos 2 nombres de eventos para consistencia con UC-012 y UC-015
+    - `CarnetEmitido` → `CarnetGenerado` (alineado con UC-015, línea 2805)
+    - `SolicitudAltaCreada` → `SolicitudAltaIniciada` (alineado con UC-012, línea 2121)
+  - Justificación: Nomenclatura de UCs es más descriptiva del proceso
+  - `CarnetGenerado` refleja mejor el proceso técnico (generación de QR/PDF)
+  - `SolicitudAltaIniciada` describe mejor el workflow de cofradías (inicio de proceso de 7 fases)
+  - Total eventos: 85 (sin cambios en cantidad, solo nomenclatura)
+
+- v1.3 (Feb 2026): Limpieza de eventos duplicados
+  - **Eliminados 8 eventos duplicados** (manteniendo cobertura 100%)
+  - **BC-Tesoreria:** Consolidadas tablas de eventos (eliminados 7 duplicados)
+    - Se mantuvo tabla original, eliminada segunda tabla redundante con eventos repetidos
+    - Duplicados eliminados: `CargoGenerado`, `PagoRegistrado`, `PagoDevuelto`, `MorosidadDetectada`, `PlanCuotaCreado`, `PlanCuotaModificado`, `PlanCuotaVinculadoATipoSocio`
+  - **BC-Eventos:** Eliminado `InscripcionRealizada` duplicado (mantenida definición completa)
+  - **BC-Comunicacion:** Conservada tabla "Eventos Consumidos" (NO es duplicación)
+    - Tabla documenta acciones al CONSUMIR eventos de otros BCs (diferente propósito)
+  - Total Domain Events únicos: **85 eventos** (antes 93 con duplicados)
+  - Scripts de análisis: `detectar_duplicados_kb005.py`, `eliminar_duplicados_kb005.py`
+  - Verificado: **Cobertura 100%** mantenida (60/60 eventos de UCs documentados)
+
+- v1.2 (Feb 2026): Sincronización completa de Domain Events con Casos de Uso
+  - **Añadidos 46 eventos faltantes** (100% cobertura respecto a UC v2.5)
+  - **BC-Membresia:** 3 eventos añadidos
+    - `SolicitudAltaAprobada`, `CarnetGenerado`, `SocioInscritoEnCuadrilla`
+  - **BC-Tesoreria:** 25 eventos añadidos
+    - Incluyendo `PagoOnlineRealizado`, `EnlacePagoGenerado`, `TurnoCajaAbierto`, `DeudaSaldada`, etc.
+  - **BC-Eventos:** 4 eventos añadidos
+    - `InscripcionRealizada`, `InscripcionCancelada`, `PlazasAgotadas`, `AsistenciaRegistrada`
+  - **BC-Identidad:** 8 eventos añadidos/actualizados
+    - Incluye eventos de autenticación, roles y permisos
+  - **BC-Comunicacion:** 6 eventos añadidos
+    - `NotificacionBienvenidaEnviada`, `RecordatorioPagoEnviado`, `AvisoMorosidadEnviado`, etc.
+  - **BC-Documentos:** Nueva sección 7.3 Domain Events
+    - `InformeAsambleaGenerado`
+  - **Nueva sección 8.5:** Domain Events Transversales (9 eventos)
+    - Eventos de Application Services cross-BC: exports, reporting, analytics, caja
+  - Total Domain Events documentados: 146 (de 100 a 146)
+  - Verificado con `inventario_eventos.py`: **Cobertura 100%**
 
 - v1.1 (Feb 2026): Actualización con Aggregates críticos
   - **BC-Membresia:** Añadidos 2 Aggregates
