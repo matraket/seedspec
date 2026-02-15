@@ -425,7 +425,7 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
 #### Notas de Implementación
 - El `tenant_id` en JWT es crítico: NestJS TenantGuard lo extrae y configura conexión DB
 - No usar WHERE tenant_id en queries (la conexión ya está aislada por BD)
-- Implementar rate limiting en endpoint de login (RNF-T-011)
+- Implementar rate limiting en endpoint de login (RNFT-011)
 - Refresh Token permite renovar Access Token sin re-login hasta 30 días
 
 ---
@@ -489,7 +489,6 @@ Personalización de la configuración de un tenant: branding, campos personaliza
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `TenantConfigActualizado` | `{ tenantId: UUID, camposActualizados: string[], fechaActualizacion: Date }` | Al completar la operación principal | cachés de configuración |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -618,8 +617,6 @@ Creación de roles personalizados, configuración de permisos granulares y asign
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `RolAsignado` | `{ userId: UUID, rolId: UUID, tenantId: UUID, assignedBy: UUID, fechaAsignacion: Date }` | Al completar la operación principal | sistema de auditoría, caché de permisos |
-| `RolPersonalizadoCreado` | `{ rolId: UUID, nombre: string, permisos: string[], tenantId: UUID }` | Al completar la operación principal | sistema de auditoría |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -770,7 +767,6 @@ Proceso formal de traspaso de cargo directivo (especialmente Presidente) con wor
 |--------|---------|-----------------|--------------------------|
 | `TraspasoIniciado` | `{ traspasoId: UUID, cargoId: UUID, salienteId: UUID, entranteId: UUID, fechaInicio: Date }` | Al completar la operación principal | BC-Comunicacion (notificar entrante) |
 | `TraspasoCompletado` | `{ traspasoId: UUID, cargoId: UUID, salienteId: UUID, entranteId: UUID, fechaTraspaso: Date }` | Al completar la operación principal | BC-Comunicacion (notificar ambos), BC-Documentos (acta de traspaso) |
-| `CargoDirectivoAsignado` | `{ cargoId: UUID, userId: UUID, tipoCargo: string, fechaInicio: Date }` | Al completar la operación principal | sistema de auditoría |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -1325,7 +1321,6 @@ Configuración de categorías de socios con reglas específicas (edad, derechos,
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
 | `TipoSocioCreado` | `{ tipoSocioId: UUID, nombre: string, descripcion: string, tenantId: UUID }` | Al completar la operación principal | BC-Tesoreria (para vincular planes de cuota) |
-| `TipoSocioActualizado` | `{ tipoSocioId: UUID, camposModificados: string[], fechaActualizacion: Date }` | Al completar la operación principal | cachés de configuración |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -1482,8 +1477,8 @@ Proporciona un sistema de timeline cronológico inmutable que registra todos los
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AntiguedadAlcanzada` | socioId, umbralAlcanzado (ej: "2_AÑOS_VOTO"), antiguedadActual | BC-Comunicacion (notificar derecho adquirido) |
-| `EventoTimelineRegistrado` | socioId, tipoEvento, fecha | Auditoría, BC-Documentos (memoria) |
+| `AntiguedadAlcanzada` | socioId, umbralAlcanzado (ej: "2_AÑOS_VOTO"), antiguedadActual | Al ejecutar la operación | BC-Comunicacion (notificar derecho adquirido) |
+| `EventoTimelineRegistrado` | socioId, tipoEvento, fecha | Al crear el registro | Auditoría, BC-Documentos (memoria) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -1497,21 +1492,21 @@ Proporciona un sistema de timeline cronológico inmutable que registra todos los
 
 #### Notas de Implementación
 
-1. **Event Sourcing parcial (RNF-T-025):**
+1. **Event Sourcing parcial (RNFT-025):**
    - Timeline almacenado como tabla `timeline_eventos` con FK a `socios`
    - Columna `inmutable = true` + trigger DB que bloquea UPDATE/DELETE
    - Índice en `(socio_id, fecha DESC)` para consultas rápidas
 
-2. **Cálculo de antigüedad (RNF-T-015):**
+2. **Cálculo de antigüedad (RNFT-015):**
    - Usar `date-fns` para precisión (evitar bugs de meses con diferente número de días)
    - Cachear antigüedad calculada en columna `socio.antiguedad_cache` (actualizada diariamente por CRON)
    - Consultas p95 < 100ms gracias a cache
 
-3. **Estadísticas agregadas (RNF-T-019):**
+3. **Estadísticas agregadas (RNFT-019):**
    - Usar vistas materializadas de PostgreSQL para dashboards (refresh cada 1h)
    - Consultas complejas de agregación ejecutadas sobre vistas, no sobre tabla principal
 
-4. **Alertas de antigüedad (RNF-T-042):**
+4. **Alertas de antigüedad (RNFT-042):**
    - Proceso batch nocturno que calcula antigüedades
    - Si detecta cruce de umbral, emite `AntiguedadAlcanzada`
    - Usar tabla `umbrales_antiguedad` configurable por tenant
@@ -1521,12 +1516,12 @@ Proporciona un sistema de timeline cronológico inmutable que registra todos los
    - Agrupación en rangos: 0-17, 18-34, 35-49, 50-64, 65+
    - Generación de gráfico con Chart.js en frontend
 
-6. **Timeline UI (RNF-T-045):**
+6. **Timeline UI (RNFT-045):**
    - Componente React con infinite scroll (cargar eventos de 50 en 50)
    - Skeleton screens mientras carga
    - Iconos diferenciados por tipo de evento
 
-7. **Auditoría de eventos (RNF-T-025):**
+7. **Auditoría de eventos (RNFT-025):**
    - Cada evento del timeline incluye `usuario_id` (quién lo ejecutó)
    - Eventos del sistema tienen `usuario_id = NULL`
    - Trigger automático al ejecutar acciones críticas (cambio tipo, baja, etc.)
@@ -1677,9 +1672,9 @@ Gestiona el concepto de ejercicio/temporada como periodo de tiempo configurable 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `EjercicioAbierto` | ejercicioId, sociosArrastrados[], transicionesAplicadas[] | BC-Tesoreria (activar generación mensual), BC-Documentos (crear estructura) |
-| `EjercicioCerrado` | ejercicioId, memoriaId | BC-Documentos (archivar memoria), BC-Comunicacion (notificar Junta) |
-| `TipoSocioCambiado` | socioId, tipoAnterior, tipoNuevo, motivo="transicion_automatica" | BC-Tesoreria (revisar plan cuota), BC-Comunicacion (notificar socio) |
+| `EjercicioAbierto` | ejercicioId, sociosArrastrados[], transicionesAplicadas[] | Al iniciar/abrir | BC-Tesoreria (activar generación mensual), BC-Documentos (crear estructura) |
+| `EjercicioCerrado` | ejercicioId, memoriaId | Al completar/cerrar | BC-Documentos (archivar memoria), BC-Comunicacion (notificar Junta) |
+| `TipoSocioCambiado` | socioId, tipoAnterior, tipoNuevo, motivo="transicion_automatica" | Al ejecutar la operación | BC-Tesoreria (revisar plan cuota), BC-Comunicacion (notificar socio) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -1699,18 +1694,18 @@ Gestiona el concepto de ejercicio/temporada como periodo de tiempo configurable 
    - Constraint UNIQUE: `(tenant_id, nombre)`
    - Constraint CHECK: `estado IN ('PREPARACION', 'ABIERTO', 'CERRADO')`
 
-2. **Validación de unicidad (RNF-T-037):**
+2. **Validación de unicidad (RNFT-037):**
    - Solo 1 ejercicio ABIERTO a la vez por tenant
    - Constraint DB: `CREATE UNIQUE INDEX idx_tenant_ejercicio_abierto ON ejercicios(tenant_id) WHERE estado = 'ABIERTO'`
 
-3. **Transacciones atómicas (RNF-T-037):**
+3. **Transacciones atómicas (RNFT-037):**
    - Apertura de ejercicio en transacción única:
      - INSERT ejercicio
      - UPDATE socios (transiciones)
      - INSERT eventos timeline
    - Si falla cualquier paso: rollback completo
 
-4. **Generación de memoria (RNF-T-022):**
+4. **Generación de memoria (RNFT-022):**
    - PDF generado con pdfmake
    - Datos agregados de: socios (BC-Membresia), económicos (BC-Tesoreria), eventos (BC-Eventos), actas (BC-Documentos)
    - Proceso asíncrono (puede tardar 30s con 500 socios)
@@ -1918,7 +1913,7 @@ Proceso simplificado de alta de socio en 3 pasos (datos personales, tipo de soci
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SocioRegistrado` | socioId, tipoSocioId, cargoInscripcionId, fechaAlta, iban? | BC-Tesoreria (crear CuentaSocio, crear MandatoSepa si iban presente), BC-Comunicacion (email bienvenida), BC-Membresia (generar carnet) |
+| `SocioRegistrado` | socioId, tipoSocioId, cargoInscripcionId, fechaAlta, iban? | Al crear el registro | BC-Tesoreria (crear CuentaSocio, crear MandatoSepa si iban presente), BC-Comunicacion (email bienvenida), BC-Membresia (generar carnet) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -1932,13 +1927,13 @@ Proceso simplificado de alta de socio en 3 pasos (datos personales, tipo de soci
 
 #### Notas de Implementación
 
-1. **Wizard multi-paso (RNF-T-045):**
+1. **Wizard multi-paso (RNFT-045):**
    - React Hook Form con validación por paso
    - Estado del wizard en Context API
    - Botones "Anterior/Siguiente" con validación antes de avanzar
    - Progress bar: "Paso 1 de 3"
 
-2. **Validación de DNI (RNF-T-009):**
+2. **Validación de DNI (RNFT-009):**
    - Algoritmo de validación mod 23 para DNI español
    - Soporte NIE y Pasaporte
    - Cifrado de DNI en BD con AES-256-GCM (datos sensibles)
@@ -1955,7 +1950,7 @@ Proceso simplificado de alta de socio en 3 pasos (datos personales, tipo de soci
      - Estado final: suscripción CERRADA, cargo PENDIENTE
    - Diferencia con suscripciones periódicas: estas permanecen ACTIVAS y generan cargos mensualmente
 
-5. **Transacción atómica (RNF-T-037):**
+5. **Transacción atómica (RNFT-037):**
    - INSERT socio, INSERT suscripción, INSERT cargo en misma transacción
    - Si falla email de bienvenida: no revierte transacción (se reintenta async)
 
@@ -1963,7 +1958,7 @@ Proceso simplificado de alta de socio en 3 pasos (datos personales, tipo de soci
    - Outbox Pattern: guardar eventos en `outbox_events` antes de commit
    - Procesamiento asíncrono por worker que lee outbox cada 5 segundos
 
-7. **Performance (RNF-T-015):**
+7. **Performance (RNFT-015):**
    - Proceso de alta completo < 500ms p95
    - Índices en: `socios(tenant_id, dni)`, `socios(tenant_id, email)`
 
@@ -2121,11 +2116,10 @@ Proceso de alta por fases específico para cofradías que sigue un workflow trad
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SolicitudAltaIniciada` | solicitudId, datosSolicitante | BC-Comunicacion (email confirmación) |
+| `SolicitudAltaIniciada` | solicitudId, datosSolicitante | Al ejecutar la operación | BC-Comunicacion (email confirmación) |
 | `SolicitudAltaAprobada` | solicitudId, socioId, aprobadoPor | Fase 6: tras aprobación de jura e imposición de medalla por Hermano Mayor | BC-Comunicacion (notificar aspirante), BC-Tesoreria (confirmar pago inscripción) |
-| `FaseCompletada` | solicitudId, fase, estadoNuevo | Auditoría |
-| `ProcesoEstancado` | solicitudId, fase, diasEstancado | BC-Comunicacion (alertas) |
-| `SocioRegistrado` | socioId, tipoSocioId | BC-Tesoreria, BC-Comunicacion (ver UC-011) |
+| `ProcesoEstancado` | solicitudId, fase, diasEstancado | Al ejecutar la operación | BC-Comunicacion (alertas) |
+| `SocioRegistrado` | socioId, tipoSocioId | Al crear el registro | BC-Tesoreria, BC-Comunicacion (ver UC-011) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -2148,16 +2142,16 @@ Proceso de alta por fases específico para cofradías que sigue un workflow trad
    - Usar librería `xstate` para gestionar transiciones de estados
    - Configuración del workflow en JSON editable por tenant
 
-3. **Alertas de procesos estancados (RNF-T-042):**
+3. **Alertas de procesos estancados (RNFT-042):**
    - CRON diario que ejecuta query: `SELECT * FROM solicitudes_alta WHERE fecha_ultima_actualizacion < NOW() - INTERVAL '60 days' AND estado NOT IN ('ALTA_EFECTIVA', 'DESISTIDA')`
    - Emite evento `ProcesoEstancado` para cada solicitud
 
-4. **Documentos (RNF-T-009, RNF-T-011):**
+4. **Documentos (RNFT-009, RNFT-011):**
    - Archivos almacenados en MinIO/S3
    - Cifrado AES-256-GCM para partida bautismo y DNI
    - Retention policy: 5 años tras alta o desistimiento
 
-5. **UI de checklist (RNF-T-045):**
+5. **UI de checklist (RNFT-045):**
    - Componente React con checkboxes interactivos
    - Upload de archivos con drag & drop
    - Progress bar mostrando % completitud de fase
@@ -2350,9 +2344,8 @@ Gestiona los tres tipos de baja: voluntaria (con fecha efectiva configurable seg
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SocioDadoDeBaja` | socioId, motivoBaja, fechaEfectiva, deudaPendiente | BC-Tesoreria (cerrar suscripciones), BC-Comunicacion (notificar), BC-Eventos (cancelar inscripciones), ListaEspera (liberar vacante) |
-| `ExpedienteDisciplinarioAbierto` | expedienteId, socioId, motivo | BC-Documentos (archivar), BC-Comunicacion (notificar Junta) |
-| `SocioRehabilitado` | socioId, deudaPagada, antiguedadRecuperada | BC-Tesoreria (reactivar), BC-Comunicacion (email bienvenida) |
+| `ExpedienteDisciplinarioAbierto` | expedienteId, socioId, motivo | Al iniciar/abrir | BC-Documentos (archivar), BC-Comunicacion (notificar Junta) |
+| `SocioRehabilitado` | socioId, deudaPagada, antiguedadRecuperada | Al ejecutar la operación | BC-Tesoreria (reactivar), BC-Comunicacion (email bienvenida) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -2376,12 +2369,12 @@ Gestiona los tres tipos de baja: voluntaria (con fecha efectiva configurable seg
    - `MotivoBajaSuscripcion.BAJA_SOCIO` diferenciado de `FIN_CUOTA_UNICA`
    - Trigger que impide generación de cargos futuros para socios dados de baja
 
-3. **Certificado de descubierto (RNF-T-022):**
+3. **Certificado de descubierto (RNFT-022):**
    - PDF generado con pdfmake
    - Firmado digitalmente (PKCS#7) si disponible
    - Almacenado en S3 con retention 10 años
 
-4. **Expediente disciplinario (RNF-T-025):**
+4. **Expediente disciplinario (RNFT-025):**
    - Tabla `expedientes_disciplinarios` con todas las fases y documentos
    - Auditoría completa de cada paso
    - No se permite eliminación de expedientes (solo archivado)
@@ -2394,7 +2387,7 @@ Gestiona los tres tipos de baja: voluntaria (con fecha efectiva configurable seg
    - Campo `fecha_rehabilitacion` en tabla socios
    - Cálculo de antigüedad contempla periodos de baja si config lo permite
 
-7. **Performance (RNF-T-037):**
+7. **Performance (RNFT-037):**
    - Transacción atómica para baja: UPDATE socio + UPDATE suscripciones en misma TX
    - Rollback si falla cualquier paso
 
@@ -2568,9 +2561,9 @@ Peña El Tambor
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AspiranteRegistrado` | aspiranteId, posicion | BC-Comunicacion (email confirmación) |
-| `VacanteDisponible` | tenantId, aspiranteNotificadoId | BC-Comunicacion (email/SMS notificación) |
-| `PlazosVencido` | aspiranteId | BC-Comunicacion (email informativo) |
+| `AspiranteRegistrado` | aspiranteId, posicion | Al crear el registro | BC-Comunicacion (email confirmación) |
+| `VacanteDisponible` | tenantId, aspiranteNotificadoId | Al ejecutar la operación | BC-Comunicacion (email/SMS notificación) |
+| `PlazosVencido` | aspiranteId | Al ejecutar la operación | BC-Comunicacion (email informativo) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -2588,11 +2581,11 @@ Peña El Tambor
    - Tabla `lista_espera` (1 por tenant): `lista_espera_id`, `tenant_id`, `limite_actual`, `socios_activos`
    - Tabla `aspirantes_espera` (Entity): `aspirante_id`, `lista_espera_id`, `nombre`, `email`, `telefono`, `fecha_solicitud`, `prioridad`, `posicion`, `estado`, `fecha_notificacion`, `fecha_limite_respuesta`
 
-2. **Cálculo de posiciones (RNF-T-015):**
+2. **Cálculo de posiciones (RNFT-015):**
    - Recalcular posiciones tras cada cambio (agregar, eliminar, reordenar)
    - Query optimizada con índice en `(lista_espera_id, prioridad, fecha_solicitud)`
 
-3. **Notificaciones (RNF-T-042):**
+3. **Notificaciones (RNFT-042):**
    - Email vía BC-Comunicacion
    - SMS vía Twilio (si configurado)
    - Notificación push si aspirante instaló PWA
@@ -2606,7 +2599,7 @@ Peña El Tambor
    - Plazo de respuesta configurable por tenant (típico: 15 días)
    - Opción recolocar al final vs eliminar (configurable)
 
-6. **CRON de verificación (RNF-T-042):**
+6. **CRON de verificación (RNFT-042):**
    - Ejecuta diariamente a las 9:00
    - Usa Bull queue para procesamiento asíncrono
    - Retry 3 veces si falla envío de notificación
@@ -2806,8 +2799,6 @@ Proporciona sistema completo de carnets digitales con QR único por ejercicio ac
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `CarnetGenerado` | carnetId, socioId, ejercicioId | Auditoría |
-| `CarnetValidado` | carnetId, socioId, fecha, ubicacion | BC-Eventos (registro asistencia) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -2825,12 +2816,12 @@ Proporciona sistema completo de carnets digitales con QR único por ejercicio ac
    - Tabla `carnets`: `carnet_id`, `socio_id`, `ejercicio_id`, `codigo_qr`, `fecha_emision`, `fecha_validez`, `estado`
    - Constraint UNIQUE: `(socio_id, ejercicio_id)` → 1 carnet activo por socio por ejercicio
 
-2. **Generación de QR (RNF-T-009):**
+2. **Generación de QR (RNFT-009):**
    - Hash SHA-256 con salt aleatorio (no predecible)
    - Longitud: 32 caracteres
    - Índice único en `carnets(codigo_qr)` para búsqueda rápida
 
-3. **PWA (RNF-T-045):**
+3. **PWA (RNFT-045):**
    - Service Worker que cachea datos del carnet
    - Manifest.json con icono personalizado por tenant
    - Offline-first: carnet accesible sin conexión
@@ -2841,7 +2832,7 @@ Proporciona sistema completo de carnets digitales con QR único por ejercicio ac
    - Fallback: input manual de número de socio
    - Endpoint `/api/carnets/validar` con rate limiting (100 req/min)
 
-5. **Generación de PDFs (RNF-T-022):**
+5. **Generación de PDFs (RNFT-022):**
    - **Carnet físico:** pdfmake con template tamaño tarjeta
    - **Masivo:** 10 carnets por hoja A4 (2 columnas × 5 filas)
    - **Papeletas:** 1 por página A5 horizontal
@@ -3020,7 +3011,7 @@ Configuración de los diferentes planes de cuota disponibles en la entidad (mens
 - Planes activos visibles en módulo de tesorería
 
 #### Notas de Implementación
-- **RNF-T-015:** Consulta de planes debe ser <100ms (uso frecuente en alta de socios)
+- **RNFT-015:** Consulta de planes debe ser <100ms (uso frecuente en alta de socios)
 - Los planes se almacenan en tabla `planes_cuota` en BD del tenant
 - La relación N:M con TipoSocio se materializa mediante tabla intermedia `tipo_socio_plan_cuota` que almacena IDs de ambos aggregates. BC-Tesoreria consulta TipoSocio via Application Service de BC-Membresia cuando necesita mostrar opciones de vinculación
 - Permitir descuentos a nivel de suscripción individual (no en el plan, sino al aplicarlo)
@@ -3271,9 +3262,6 @@ Diferencia: 3.60€ de error (socio pagaría menos de lo debido)
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SuscripcionCreada` | `{ suscripcionId: UUID, socioId: UUID, planCuotaId: UUID, fechaInicio: Date }` | Al completar la operación principal | GeneracionCargosService (programar cargos) |
-| `SuscripcionCerrada` | `{ suscripcionId: UUID, motivoCierre: string, fechaCierre: Date }` | Al completar la operación principal | GeneracionCargosService (cancelar cargos futuros) |
-| `SuscripcionModificada` | `{ suscripcionId: UUID, camposModificados: string[], fechaModificacion: Date }` | Al completar la operación principal | GeneracionCargosService (recalcular cargos futuros) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -3288,7 +3276,7 @@ Diferencia: 3.60€ de error (socio pagaría menos de lo debido)
 - Socio notificado del cambio (si aplica)
 
 #### Notas de Implementación
-- **RNF-T-025:** Datos de descuentos personalizados incluyen motivo (auditabilidad)
+- **RNFT-025:** Datos de descuentos personalizados incluyen motivo (auditabilidad)
 - La entity `SuscripcionCuota` vive dentro del aggregate `CuentaSocio`
 - Soft-delete: Las suscripciones nunca se eliminan físicamente, solo se cierran (fechaBaja)
 - Calcular `importeEfectivo` en tiempo de creación/modificación, no dinámicamente
@@ -3449,7 +3437,6 @@ Duración: 2.3 segundos
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `GeneracionMensualCompletada` | `{ ejercicioId: UUID, mes: number, totalCargosGenerados: number, importeTotal: number }` | Al completar la operación principal | sistema de reporting, auditoría |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -3464,7 +3451,7 @@ Duración: 2.3 segundos
 - Eventos emitidos para consumidores
 
 #### Notas de Implementación
-- **RNF-T-015:** Proceso debe completarse en <30 segundos para 1000 socios
+- **RNFT-015:** Proceso debe completarse en <30 segundos para 1000 socios
 - Usar transacciones por lotes (100 cargos por transacción) para performance
 - Índices en BD:
   - `suscripciones_cuota(fecha_baja)` WHERE fecha_baja IS NULL
@@ -3649,7 +3636,6 @@ Creación de cargos puntuales sin vinculación a suscripciones, para conceptos n
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
 | `CargoGenerado` | `{ cargoId: UUID, socioId: UUID, concepto: string, importe: number, fechaVencimiento: Date, esManual: boolean }` | Al completar la operación principal | BC-Comunicacion (notificar socio), MorosidadService |
-| `CargaMasivaCreada` | `{ totalCargos: number, importeTotal: number, usuarioCreador: UUID, fechaCreacion: Date }` | Al completar la operación principal | sistema de auditoría, reporting |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -3664,7 +3650,7 @@ Creación de cargos puntuales sin vinculación a suscripciones, para conceptos n
 - Auditoría registrada con usuario que creó el cargo
 
 #### Notas de Implementación
-- **RNF-T-015:** Creación masiva de 1000 cargos debe completarse en <10 segundos
+- **RNFT-015:** Creación masiva de 1000 cargos debe completarse en <10 segundos
 - Usar transacciones por lotes (50-100 cargos) para performance
 - Los cargos manuales NO participan en generación automática mensual
 - Campo `esManual` permite distinguir en consultas e informes
@@ -3957,7 +3943,6 @@ Registro de cobros por múltiples métodos de pago (efectivo, transferencia, dom
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
 | `PagoRegistrado` | `{ pagoId: UUID, cargoId: UUID, socioId: UUID, importe: number, metodoPago: string, fechaPago: Date }` | Al completar la operación principal | BC-Membresia (actualizar estado morosidad), BC-Comunicacion (confirmación) |
-| `CargoPagado` | `{ cargoId: UUID, socioId: UUID, importe: number, fechaPago: Date }` | Al completar la operación principal | MorosidadService (cancelar workflow), GeneracionCargosService |
 | `ReciboGenerado` | `{ reciboId: UUID, pagoId: UUID, numeroRecibo: string, fechaEmision: Date }` | Al completar la operación principal | BC-Documentos (archivar) |
 
 *Este UC no consume eventos de otros BCs*
@@ -3975,9 +3960,9 @@ Registro de cobros por múltiples métodos de pago (efectivo, transferencia, dom
 - Socio notificado (si configurado)
 
 #### Notas de Implementación
-- **RNF-T-015:** Registro de cobro debe completarse en <200ms
-- **RNF-T-025:** Todos los cambios en pagos deben auditarse (quién, cuándo, qué)
-- **RNF-T-009:** Justificantes almacenados cifrados en S3 con acceso restringido
+- **RNFT-015:** Registro de cobro debe completarse en <200ms
+- **RNFT-025:** Todos los cambios en pagos deben auditarse (quién, cuándo, qué)
+- **RNFT-009:** Justificantes almacenados cifrados en S3 con acceso restringido
 - Generación de recibos: usar plantilla personalizable con logo del tenant
 - Numeración de recibos: `REC-{AÑO}-{SECUENCIAL}` único por tenant
 - Para pagos parciales, permitir múltiples pagos sobre el mismo cargo
@@ -4227,7 +4212,6 @@ Duración: 1.8 segundos
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
 | `MorosidadDetectada` | `{ socioId: UUID, deudaTotal: number, cargosImpagados: number, diasMorosidad: number }` | Al completar la operación principal | BC-Membresia, BC-Comunicacion |
-| `AvisoMorosidadEnviado` | `{ socioId: UUID, fase: number, deudaTotal: number, fechaEnvio: Date }` | Al completar la operación principal | sistema de auditoría |
 | `EstadoSocioCambiado` | `{ socioId: UUID, estadoAnterior: EstadoSocio, estadoNuevo: EstadoSocio, motivo?: string, fechaCambio: Date }` | Al completar la operación principal | BC-Membresia (cambiar estado), BC-Eventos (suspender inscripciones) |
 | `MorosidadRegularizada` | `{ socioId: UUID, importePagado: number, fechaRegularizacion: Date }` | Al completar la operación principal | BC-Membresia (reactivar socio), BC-Comunicacion (confirmación) |
 | `BajaPorImpago` | `{ socioId: UUID, deudaTotal: number, fechaBaja: Date }` | Al completar la operación principal | BC-Membresia (ejecutar baja), BC-Documentos (archivar expediente) |
@@ -4249,8 +4233,8 @@ Duración: 1.8 segundos
 - Log de auditoría completo del proceso
 
 #### Notas de Implementación
-- **RNF-T-037:** Proceso debe ser tolerante a fallos (reintentos automáticos)
-- **RNF-T-025:** Auditoría completa: cada acción registrada con timestamp, usuario (sistema), resultado
+- **RNFT-037:** Proceso debe ser tolerante a fallos (reintentos automáticos)
+- **RNFT-025:** Auditoría completa: cada acción registrada con timestamp, usuario (sistema), resultado
 - Ejecutar en transacciones por lotes (50 socios por transacción)
 - Implementar idempotencia: no enviar notificaciones duplicadas si el proceso se ejecuta 2 veces
 - Cache de configuración de morosidad (no consultar BD en cada iteración)
@@ -4545,9 +4529,7 @@ Generación de ficheros de remesa SEPA Core (ISO 20022 pain.008.001.08) para dom
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `RemesaSepaGenerada` | `{ remesaId: string, fechaCobro: Date, totalAdeudos: number, importeTotal: number }` | Al completar la operación principal | sistema de auditoría |
 | `RemesaSepaEnviada` | `{ remesaId: string, fechaEnvio: Date, banco: string }` | Al completar la operación principal | BC-Comunicacion (notificar socios), auditoría |
-| `MandatoSepaRegistrado` | `{ mandatoId: string, socioId: UUID, iban: string, fechaFirma: Date }` | Al completar la operación principal | sistema de configuración |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -4562,7 +4544,7 @@ Generación de ficheros de remesa SEPA Core (ISO 20022 pain.008.001.08) para dom
 - Tesorero puede descargar fichero para banco
 
 #### Notas de Implementación
-- **RNF-T-015:** Generación de 200 adeudos debe completarse en <5 segundos
+- **RNFT-015:** Generación de 200 adeudos debe completarse en <5 segundos
 - Usar librería validada para generación XML ISO 20022 (ej: `sepa-xml-generator`)
 - Validar fichero generado con herramienta externa antes de permitir descarga
 - Almacenar ficheros XML cifrados en S3 con retención de 5 años (requisito legal)
@@ -4855,9 +4837,6 @@ Gestión de adeudos devueltos por el banco, clasificación por código de motivo
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PagoDevuelto` | `{ adeudoId: UUID, socioId: UUID, remesaId: string, motivoSepa: string, fechaDevolucion: Date, gastosReintento: number }` | Al completar la operación principal | BC-Membresia (actualizar estado), BC-Comunicacion (notificar), MorosidadService |
-| `CargoMarcadoReintento` | `{ ...<campos del evento> }` | Al completar la operación principal | RemesaSepaService (incluir en próxima remesa) |
-| `MandatoSepaRevocado` | `{ ...<campos del evento> }` | Al completar la operación principal | RemesaSepaService (excluir de remesas futuras) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -4873,7 +4852,7 @@ Gestión de adeudos devueltos por el banco, clasificación por código de motivo
 - Socio notificado de la devolución
 
 #### Notas de Implementación
-- **RNF-T-025:** Auditoría completa de devoluciones (quién, cuándo, motivo)
+- **RNFT-025:** Auditoría completa de devoluciones (quién, cuándo, motivo)
 - Mantener historial completo de reintentos en el cargo
 - Contador de intentos: `cargo.numeroIntentosSepa`
 - Límite de reintentos automáticos: 3 (configurable)
@@ -5053,7 +5032,7 @@ Integración con pasarelas de pago online (Stripe/Redsys) para permitir a los so
 
 #### Notas de Implementación
 
-1. **Seguridad webhooks (RNF-T-001, RNF-T-011):**
+1. **Seguridad webhooks (RNFT-001, RNFT-011):**
    - Validar firma `stripe-signature` o HMAC Redsys en cada webhook
    - Rechazar webhooks sin firma válida (prevenir ataques)
    - Rate limiting: máximo 100 webhooks/min por IP
@@ -5068,7 +5047,7 @@ Integración con pasarelas de pago online (Stripe/Redsys) para permitir a los so
    - Cálculo de firma HMAC-SHA256
    - Notificación online (`Ds_MerchantURL`)
 
-4. **Generación QR (RNF-T-050):**
+4. **Generación QR (RNFT-050):**
    - Librería `qrcode` para generar QR en PNG (300x300px)
    - QR embebido en email como imagen inline (base64)
 
@@ -5084,7 +5063,7 @@ Integración con pasarelas de pago online (Stripe/Redsys) para permitir a los so
    - Verificar `paymentIntentId` único antes de procesar
    - Si ya procesado: responder 200 OK sin duplicar cobro
 
-8. **Logs y auditoría (RNF-T-064):**
+8. **Logs y auditoría (RNFT-064):**
    - Registrar todos los webhooks recibidos (payload completo)
    - Retention: 2 años
 
@@ -5259,7 +5238,6 @@ Registro de ingresos y gastos de la entidad con categorización contable, genera
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `MovimientoRegistrado` | `{ movimientoId: UUID, ...<campos relevantes> }` | Al completar la operación principal | sistema de auditoría, dashboards en tiempo real |
 | `EjercicioCerrado` | `{ ejercicioId: UUID, nombre: string, fechaCierre: Date, memoriaId?: UUID }` | Al completar la operación principal | BC-Documentos (archivar documentación), BC-Membresia (snapshot socios) |
 
 *Este UC no consume eventos de otros BCs*
@@ -5285,7 +5263,7 @@ Registro de ingresos y gastos de la entidad con categorización contable, genera
    - Mapeo categorías → cuentas ENL en tabla `categoria_cuentas_enl`
    - Grupos de cuentas: Activo, Pasivo, Fondo Social, Ingresos, Gastos
 
-3. **Almacenamiento facturas (RNF-T-009, RNF-T-011):**
+3. **Almacenamiento facturas (RNFT-009, RNFT-011):**
    - S3 / MinIO en bucket `facturas/{tenant_id}/{ejercicio_id}/{movimiento_id}.pdf`
    - Cifrado AES-256-GCM
    - Retention policy: 10 años (obligación legal)
@@ -5300,7 +5278,7 @@ Registro de ingresos y gastos de la entidad con categorización contable, genera
    - Genera memoria automática (resumen socios, económico, actividades)
    - Ejercicio pasa a CERRADO (no modificable)
 
-6. **Performance (RNF-T-015):**
+6. **Performance (RNFT-015):**
    - Index en `movimientos(ejercicio_id, tipo, fecha)`
    - Agregaciones de saldos cacheadas en Redis (TTL 1h)
 
@@ -5506,8 +5484,6 @@ Gestión de caja por turnos para eventos con venta de bebidas y comida (típico 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `TurnoCajaAbierto` | `{ ...<campos del evento> }` | Al completar la operación principal | sistema de notificaciones (avisar siguiente turno) |
-| `TurnoCajaCerrado` | `{ turnocajaId: UUID, motivo?: string, fechaEliminacion: Date }` | Al completar la operación principal | dashboard en tiempo real |
 | `DescuadreDetectado` | `{ ...<campos del evento> }` | Al completar la operación principal | notificar tesorero por email |
 
 *Este UC no consume eventos de otros BCs*
@@ -5533,13 +5509,13 @@ Gestión de caja por turnos para eventos con venta de bebidas y comida (típico 
    - Tabla `productos_barra`: producto_id, tenant_id, nombre, precio, activo
    - Configuración previa por tenant (cerveza, refrescos, comida, etc.)
 
-3. **Modo offline (RNF-T-024, RNF-T-037):**
+3. **Modo offline (RNFT-024, RNFT-037):**
    - PWA con Service Worker
    - IndexedDB para almacenamiento local
    - Background Sync API para sincronización automática
    - Indicador visual: "⚡ Modo offline - 23 ventas pendientes de sincronizar"
 
-4. **Performance UI (RNF-T-050):**
+4. **Performance UI (RNFT-050):**
    - Botones grandes (min 60x60px) para tablets
    - Feedback táctil inmediato (<100ms)
    - Skeleton screens durante carga
@@ -5675,7 +5651,7 @@ Permite a los organizadores crear y configurar eventos con toda la información 
 
 **FE-4: Permisos insuficientes**
 - Cuándo: Usuario sin rol `eventos:write` intenta crear evento
-- Manejo: Sistema retorna 403 Forbidden (RNF-T-003)
+- Manejo: Sistema retorna 403 Forbidden (RNFT-003)
 
 #### Eventos de Dominio
 
@@ -5683,10 +5659,10 @@ Permite a los organizadores crear y configurar eventos con toda la información 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `EventoCreado` | eventoId, tenantId, tipoEventoId, nombre, periodo | BC-Documentos (crear carpeta para el evento) |
-| `EventoPublicado` | eventoId, tenantId, nombre, periodo, requireInscripcion | BC-Comunicacion (notificar socios según preferencias), BC-Documentos (publicar en tablón) |
-| `InscripcionesAbiertas` | eventoId, tenantId, fechaCierre, aforoMaximo? | BC-Comunicacion (recordatorio a socios), Monitoring (métricas) |
-| `EventoModificado` | eventoId, cambios, modificadoPor | BC-Comunicacion (notificar inscritos si cambios relevantes) |
+| `EventoCreado` | eventoId, tenantId, tipoEventoId, nombre, periodo | Al crear el registro | BC-Documentos (crear carpeta para el evento) |
+| `EventoPublicado` | eventoId, tenantId, nombre, periodo, requireInscripcion | Al enviar/publicar | BC-Comunicacion (notificar socios según preferencias), BC-Documentos (publicar en tablón) |
+| `InscripcionesAbiertas` | eventoId, tenantId, fechaCierre, aforoMaximo? | Al ejecutar la operación | BC-Comunicacion (recordatorio a socios), Monitoring (métricas) |
+| `EventoModificado` | eventoId, cambios, modificadoPor | Al actualizar el registro | BC-Comunicacion (notificar inscritos si cambios relevantes) |
 | `EventoCancelado` | eventoId, estadoAnterior, motivoCancelacion, canceladoPor | Transición manual a estado "Cancelado" con justificación (línea 5761) | BC-Comunicacion (notificar inscritos), BC-Tesoreria (gestionar reembolsos), BC-Eventos/UC-030 (cancelar inscripciones) |
 
 *Este UC no consume eventos de otros BCs*
@@ -5716,7 +5692,7 @@ Permite a los organizadores crear y configurar eventos con toda la información 
 - **Fallo:**
   - No se persiste el evento
   - Se devuelve mensaje de error específico
-  - Auditoría registra el intento fallido (RNF-T-025)
+  - Auditoría registra el intento fallido (RNFT-025)
 
 #### Notas de Implementación
 
@@ -5733,7 +5709,7 @@ Permite a los organizadores crear y configurar eventos con toda la información 
    - Si `requierePago`, debe existir `precio > 0`
    - Referencia: `005_modelo-dominio.md` línea 671-674 (Invariants del Aggregate Evento)
 
-3. **Ubicación con Geocodificación Opcional (RNF-T-050):**
+3. **Ubicación con Geocodificación Opcional (RNFT-050):**
    - Integración con API de geocoding (Google Maps / OpenStreetMap)
    - Almacenar coordenadas GPS para mapa interactivo en el calendario
    - Exportación a iCal incluye coordenadas GEO
@@ -5745,12 +5721,12 @@ Permite a los organizadores crear y configurar eventos con toda la información 
    - Tamaño máximo por archivo: 10 MB
    - Los documentos se vinculan al Aggregate Evento mediante `documentoIds[]`
 
-5. **Auditoría Completa (RNF-T-025):**
+5. **Auditoría Completa (RNFT-025):**
    - Registrar quién creó el evento y cuándo
    - Registrar todas las modificaciones posteriores (campo modificado, valor anterior, valor nuevo, usuario, timestamp)
    - Implementado mediante Decorator `@Audit` en Application Services
 
-6. **Validación de Permisos Granular (RNF-T-007):**
+6. **Validación de Permisos Granular (RNFT-007):**
    - Permiso `eventos:write` para crear/editar eventos
    - Permiso `eventos:publish` para publicar eventos (puede ser diferente del anterior)
    - Permiso `eventos:delete` para eliminar eventos
@@ -5765,7 +5741,7 @@ Permite a los organizadores crear y configurar eventos con toda la información 
      - `EnCurso → Finalizado` (automático al llegar fecha fin)
      - `Cualquier estado → Cancelado` (manual por organizador con justificación)
 
-8. **Performance en Creación de Eventos (RNF-T-015):**
+8. **Performance en Creación de Eventos (RNFT-015):**
    - Tiempo de respuesta esperado: <300ms p95
    - Índices en BD: `(tenantId, fechaInicio)`, `(tenantId, tipoEventoId)`, `(tenantId, estado)`
    - Pre-cargar tipos de evento activos en caché Redis (TTL 1h)
@@ -5775,7 +5751,7 @@ Permite a los organizadores crear y configurar eventos con toda la información 
    - Al inscribirse, el sistema consulta el tipo de socio actual en BC-Membresia (via ACL)
    - Se aplica el precio correspondiente al generar el cargo en BC-Tesoreria
 
-10. **Notificaciones Configurables por Socio (RNF-T-042):**
+10. **Notificaciones Configurables por Socio (RNFT-042):**
     - Los socios pueden configurar preferencias de notificación en su perfil
     - BC-Comunicacion respeta estas preferencias al consumir `EventoPublicado`
     - Canales disponibles: Email, Push (PWA), SMS (opcional)
@@ -5800,7 +5776,7 @@ Proporciona un calendario visual de todos los eventos de la entidad con múltipl
 - **Sistema** (generar feeds iCal, mantener sincronización)
 
 #### Precondiciones
-- El usuario está autenticado (RNF-T-001)
+- El usuario está autenticado (RNFT-001)
 - El tenant tiene al menos un evento creado (o calendario vacío)
 
 #### Flujo Normal
@@ -5861,14 +5837,14 @@ Proporciona un calendario visual de todos los eventos de la entidad con múltipl
 
 **FE-1: Error al generar fichero iCal**
 - Cuándo: Falla la librería ical-generator (datos corruptos, fechas inválidas)
-- Manejo: Se registra error en Sentry (RNF-T-064), se retorna 500 con mensaje "Error al generar calendario. Intente nuevamente"
+- Manejo: Se registra error en Sentry (RNFT-064), se retorna 500 con mensaje "Error al generar calendario. Intente nuevamente"
 
 **FE-2: Token de feed inválido o revocado**
 - Cuándo: Alguien intenta acceder al feed con token expirado/revocado
 - Manejo: Retornar 401 Unauthorized sin más detalles (seguridad), auditar intento de acceso
 
 **FE-3: Timeout en consulta de eventos**
-- Cuándo: La query a BD tarda >2 segundos (RNF-T-015)
+- Cuándo: La query a BD tarda >2 segundos (RNFT-015)
 - Manejo: Circuit breaker cancela query, retorna eventos en caché (stale data aceptable), alerta a equipo técnico
 
 #### Eventos de Dominio
@@ -5877,8 +5853,6 @@ Proporciona un calendario visual de todos los eventos de la entidad con múltipl
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `CalendarioSuscrito` | socioId, tenantId, timestamp | Monitoring (métricas de adopción) |
-| `TokenFeedRevocado` | socioId, token, motivo | Auditoría |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -5890,7 +5864,7 @@ Proporciona un calendario visual de todos los eventos de la entidad con múltipl
 #### Poscondiciones
 
 - **Éxito (visualización):**
-  - Calendario renderizado en <500ms p95 (RNF-T-015)
+  - Calendario renderizado en <500ms p95 (RNFT-015)
   - Eventos filtrados según permisos del usuario
   - Datos en tiempo real (plazas disponibles, inscripciones)
 
@@ -5907,7 +5881,7 @@ Proporciona un calendario visual de todos los eventos de la entidad con múltipl
 
 #### Notas de Implementación
 
-1. **Librería de Calendario Frontend (RNF-T-045):**
+1. **Librería de Calendario Frontend (RNFT-045):**
    - **FullCalendar** (React): Componente robusto con vistas month/week/day/list
    - Integración con React Query para data fetching y caché
    - Soporte para drag-and-drop (solo organizadores para reprogramar eventos)
@@ -5950,13 +5924,13 @@ const CalendarioView: React.FC = () => {
 };
 ```
 
-2. **Performance en Carga de Calendario (RNF-T-015):**
+2. **Performance en Carga de Calendario (RNFT-015):**
    - Índice compuesto en BD: `(tenantId, fechaInicio, estado)`
    - Query optimizada con proyección parcial (no cargar descripción completa, solo campos necesarios)
    - Caché en Redis con TTL 5 minutos para vista mensual
    - Invalidación de caché al crear/modificar/cancelar evento
 
-3. **Actualización en Tiempo Real (RNF-T-042):**
+3. **Actualización en Tiempo Real (RNFT-042):**
    - WebSocket para notificar cambios en plazas disponibles mientras el socio ve el calendario
    - Al inscribirse alguien a un evento visible, se actualiza el contador sin recargar
 
@@ -5996,7 +5970,7 @@ const CalendarioView: React.FC = () => {
    - Permite exportar eventos filtrados (ej: solo comidas del año 2025)
    - Retorna ZIP con múltiples ficheros .ics o un único .ics con múltiples eventos
 
-10. **Accesibilidad (RNF-T-051):**
+10. **Accesibilidad (RNFT-051):**
     - Calendario navegable por teclado (Tab, Enter, flechas)
     - Screen reader friendly: etiquetas ARIA en eventos
     - Contraste de colores AAA (WCAG 2.1)
@@ -6148,7 +6122,7 @@ Permite a los socios inscribirse online a eventos que requieren inscripción pre
 - Manejo:
   - No se persiste la inscripción (transacción rollback)
   - Se retorna error "Error al procesar pago. Intente nuevamente"
-  - Se registra en Sentry para investigación (RNF-T-064)
+  - Se registra en Sentry para investigación (RNFT-064)
 
 **FE-4: Socio con estado "Baja" intenta inscribirse**
 - Cuándo: Un socio dado de baja intenta inscribirse
@@ -6164,13 +6138,9 @@ Permite a los socios inscribirse online a eventos que requieren inscripción pre
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `InscripcionRealizada` | inscripcionId, eventoId, socioId, estado, plazasDisponibles, precio? | BC-Tesoreria (generar cargo si precio), BC-Comunicacion (enviar confirmación) |
-| `InscripcionCancelada` | inscripcionId, eventoId, socioId, fechaCancelacion | BC-Tesoreria (gestionar reembolso si aplica), BC-Comunicacion (confirmación cancelación) |
-| `AforoCompletado` | eventoId, tenantId, nombreEvento | BC-Comunicacion (notificar organizador), Monitoring (métricas) |
-| `PlazaLiberada` | eventoId, posicionListaEspera | ListaEsperaService (notificar siguiente, UC-031) |
-| `PagoCobrado` | BC-Tesoreria | Confirmar inscripción pendiente de pago (estado PendientePago → Confirmada) |
-| `PagoDevuelto` | BC-Tesoreria | Registrar reembolso completado, auditar |
-| `SocioDadoDeBaja` | BC-Membresia | Cancelar automáticamente inscripciones futuras del socio |
+| `InscripcionRealizada` | inscripcionId, eventoId, socioId, estado, plazasDisponibles, precio? | Al ejecutar la operación | BC-Tesoreria (generar cargo si precio), BC-Comunicacion (enviar confirmación) |
+| `InscripcionCancelada` | inscripcionId, eventoId, socioId, fechaCancelacion | Al ejecutar la operación | BC-Tesoreria (gestionar reembolso si aplica), BC-Comunicacion (confirmación cancelación) |
+| `AforoCompletado` | eventoId, tenantId, nombreEvento | Al completar/cerrar | BC-Comunicacion (notificar organizador), Monitoring (métricas) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -6209,12 +6179,12 @@ Permite a los socios inscribirse online a eventos que requieren inscripción pre
 
 #### Notas de Implementación
 
-1. **Optimistic Locking para Evitar Double-Booking (RNF-T-019):**
+1. **Optimistic Locking para Evitar Double-Booking (RNFT-019):**
    - Campo `version: int` en tabla `eventos` (Prisma `@@map("version")`)
    - Al inscribirse, se incrementa la versión: `UPDATE eventos SET version = version + 1 WHERE id = ? AND version = ?`
    - Si la versión cambió (otro proceso inscribió simultáneamente), se reintenta con backoff exponencial (máximo 3 intentos)
 
-2. **Reserva Temporal de Plaza para Eventos de Pago (RNF-T-037):**
+2. **Reserva Temporal de Plaza para Eventos de Pago (RNFT-037):**
    - Al iniciar inscripción a evento de pago, se reserva plaza temporalmente (15 minutos)
    - Implementado con campo `reservadaHasta: DateTime?` en inscripción
    - Job programado (cada 5 min) libera plazas con reservas expiradas
@@ -6241,7 +6211,7 @@ Permite a los socios inscribirse online a eventos que requieren inscripción pre
    - Tipos: `NoReembolsable`, `ReembolsoHasta7Dias`, `ReembolsoHasta48h`, `Siempre`
    - Al cancelar, se valida si aplica reembolso según política y fecha del evento
 
-7. **Visualización en Tiempo Real de Plazas (RNF-T-042):**
+7. **Visualización en Tiempo Real de Plazas (RNFT-042):**
    - WebSocket actualiza contador de plazas sin recargar página
    - Implementado en UC-029, también aplica en detalle de evento
 
@@ -6250,7 +6220,7 @@ Permite a los socios inscribirse online a eventos que requieren inscripción pre
    - Retorna consolidado de opciones de formulario (ej: 85 menú normal, 20 vegetariano, 15 infantil)
    - Exportable a CSV/Excel para entregar a proveedores (catering, transporte)
 
-9. **Accesibilidad del Formulario (RNF-T-051):**
+9. **Accesibilidad del Formulario (RNFT-051):**
    - Labels asociados a inputs con `htmlFor`
    - Mensajes de error con `aria-describedby`
    - Validación en tiempo real con feedback visual y sonoro (screen readers)
@@ -6357,7 +6327,7 @@ Gestiona el control automático de aforo en tiempo real, previene overbooking me
 
 **FE-4: Scheduled job falla al ejecutar**
 - Cuándo: Error en CerrarInscripcionesProgramadas o ProcesarConfirmacionesExpiradas
-- Manejo: Error capturado y enviado a Sentry (RNF-T-064), el job reintenta en siguiente ejecución (5 min después), auditoría registra el fallo
+- Manejo: Error capturado y enviado a Sentry (RNFT-064), el job reintenta en siguiente ejecución (5 min después), auditoría registra el fallo
 
 #### Eventos de Dominio
 
@@ -6365,11 +6335,10 @@ Gestiona el control automático de aforo en tiempo real, previene overbooking me
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AforoCompletado` | eventoId, tenantId, nombreEvento, listaEsperaHabilitada | BC-Comunicacion (notificar organizador), Monitoring (métricas de ocupación) |
-| `SocioAgregadoListaEspera` | eventoId, socioId, posicion | BC-Comunicacion (confirmar posición en lista) |
-| `PlazaLiberada` | eventoId, socioId, posicionAnterior | ListaEsperaService (notificar siguiente) |
-| `InscripcionesCerradas` | eventoId, tenantId, motivo, totalInscritos | BC-Comunicacion (enviar listado final a organizador) |
-| `InscripcionesReabiertas` | eventoId, tenantId, nuevaFechaCierre | BC-Comunicacion (notificar a interesados) |
+| `AforoCompletado` | eventoId, tenantId, nombreEvento, listaEsperaHabilitada | Al completar/cerrar | BC-Comunicacion (notificar organizador), Monitoring (métricas de ocupación) |
+| `SocioAgregadoListaEspera` | eventoId, socioId, posicion | Al ejecutar la operación | BC-Comunicacion (confirmar posición en lista) |
+| `InscripcionesCerradas` | eventoId, tenantId, motivo, totalInscritos | Al ejecutar la operación | BC-Comunicacion (enviar listado final a organizador) |
+| `InscripcionesReabiertas` | eventoId, tenantId, nuevaFechaCierre | Al ejecutar la operación | BC-Comunicacion (notificar a interesados) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -6399,12 +6368,12 @@ Gestiona el control automático de aforo en tiempo real, previene overbooking me
 
 #### Notas de Implementación
 
-1. **Optimistic Locking Crítico (RNF-T-019):**
+1. **Optimistic Locking Crítico (RNFT-019):**
    - Implementación robusta con retry y backoff exponencial
    - Evita race conditions en las últimas plazas
    - Logging detallado de colisiones para análisis
 
-2. **WebSocket para Actualización en Tiempo Real (RNF-T-042):**
+2. **WebSocket para Actualización en Tiempo Real (RNFT-042):**
    - Namespace `/eventos` en Socket.IO
    - Rooms por tenant: `tenant:${tenantId}`
    - Emit selectivo: solo clientes viendo el evento específico
@@ -6417,7 +6386,7 @@ Gestiona el control automático de aforo en tiempo real, previene overbooking me
    - Implementado con **Bull Queue** para retry automático en fallos
    - Idempotencia garantizada (no procesar dos veces el mismo evento)
 
-4. **Notificaciones Multicanal (RNF-T-042):**
+4. **Notificaciones Multicanal (RNFT-042):**
    - Email (obligatorio): Plantilla "PLAZA_DISPONIBLE"
    - Push (PWA): Notificación urgente si app instalada
    - SMS (opcional): Solo si socio configuró número y dio consentimiento
@@ -6441,12 +6410,12 @@ Gestiona el control automático de aforo en tiempo real, previene overbooking me
      - Últimas inscripciones (stream)
    - Actualizado vía WebSocket sin recargar
 
-8. **Auditoría de Cambios de Aforo (RNF-T-025):**
+8. **Auditoría de Cambios de Aforo (RNFT-025):**
    - Registrar todos los cambios en plazas disponibles
    - Quién se inscribió/canceló, cuándo, método (web, app, manual)
    - Permite resolver disputas: "¿por qué no quedé inscrito?"
 
-9. **Performance en Consultas de Aforo (RNF-T-015):**
+9. **Performance en Consultas de Aforo (RNFT-015):**
    - Campo desnormalizado `plazasDisponibles` en tabla eventos (actualizado por triggers)
    - Evita contar inscripciones en cada query
    - Índice: `(tenantId, plazasDisponibles, estadoInscripciones)` para listar eventos con plazas
@@ -6598,9 +6567,6 @@ Permite registrar la asistencia real a eventos mediante escaneo de QR del carnet
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AsistenciaRegistrada` | asistenciaId, eventoId, socioId, horaCheckIn, metodo | Monitoring (métricas en tiempo real), BC-Membresia (estadísticas de participación) |
-| `AsistenciaAnulada` | asistenciaId, eventoId, socioId, motivo | Auditoría |
-| `CarnetValidado` | BC-Membresia | Usado para validar QR en check-in, consultar vigencia del carnet |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -6636,7 +6602,7 @@ Permite registrar la asistencia real a eventos mediante escaneo de QR del carnet
    - Detección automática sin necesidad de botón "capturar"
    - Feedback visual: recuadro verde cuando detecta QR
 
-2. **Offline-First con Service Workers (RNF-T-037):**
+2. **Offline-First con Service Workers (RNFT-037):**
    - PWA instalable en móviles para check-in sin conexión
    - IndexedDB para almacenar check-ins pendientes
    - Background Sync API para sincronización automática
@@ -6647,13 +6613,13 @@ Permite registrar la asistencia real a eventos mediante escaneo de QR del carnet
    - Caché temporal (5 min) de carnets validados para evitar consultas repetidas
    - El QR contiene: `carnetId` firmado con JWT (imposible falsificar)
 
-4. **Performance en Listados de Asistencia (RNF-T-015):**
+4. **Performance en Listados de Asistencia (RNFT-015):**
    - Paginación client-side: carga inicial de 50 inscritos
    - Virtualización de lista (react-window) si >200 inscritos
    - Búsqueda con debouncing (300ms) para evitar queries excesivas
    - Tiempo de renderizado objetivo: <100ms
 
-5. **Generación de PDFs con pdfmake (RNF-T-022):**
+5. **Generación de PDFs con pdfmake (RNFT-022):**
    - Librería client-side para generar PDFs sin servidor
    - Plantillas customizables por tenant (logo, colores, campos adicionales)
    - Exportación asíncrona para listados grandes (>500 asistentes)
@@ -6671,7 +6637,7 @@ Permite registrar la asistencia real a eventos mediante escaneo de QR del carnet
    - Validación: salida debe ser posterior a entrada
    - Útil para justificar horas de formación en subvenciones
 
-8. **Geolocalización Opcional (RNF-T-042):**
+8. **Geolocalización Opcional (RNFT-042):**
    - Si app móvil con permisos GPS: registrar coordenadas del check-in
    - Útil para verificar que el check-in se hizo en ubicación del evento
    - Campo opcional: si no hay GPS, se permite check-in igual
@@ -6683,7 +6649,7 @@ Permite registrar la asistencia real a eventos mediante escaneo de QR del carnet
    - Visualización: gráfica de líneas con evolución temporal
    - Insight: "Tu tasa de asistencia mejoró un 5% respecto al año pasado"
 
-10. **Auditoría Completa de Check-ins (RNF-T-025):**
+10. **Auditoría Completa de Check-ins (RNFT-025):**
     - Registrar: quién, cuándo, método, IP, user-agent
     - Detectar anomalías: check-ins masivos en <1 min (posible fraude)
     - Inmutabilidad: no se permite borrar check-ins, solo anular con motivo
@@ -6842,8 +6808,8 @@ CAMBIOS DESDE 10/07/2025:
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `MenuAgotado` | eventoId, codigoMenu, nombreMenu | BC-Comunicacion (notificar organizador), Monitoring (métricas de demanda) |
-| `InscripcionModificada` | inscripcionId, cambios (menuAnterior, menuNuevo) | BC-Comunicacion (notificar organizador), Auditoría |
+| `MenuAgotado` | eventoId, codigoMenu, nombreMenu | Al ejecutar la operación | BC-Comunicacion (notificar organizador), Monitoring (métricas de demanda) |
+| `InscripcionModificada` | inscripcionId, cambios (menuAnterior, menuNuevo) | Al ejecutar la operación | BC-Comunicacion (notificar organizador), Auditoría |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -6890,7 +6856,7 @@ CAMBIOS DESDE 10/07/2025:
    - Se almacena como array de strings en JSON
    - Panel de alertas destacado para organizador
 
-5. **Generación de Excel con exceljs (RNF-T-022):**
+5. **Generación de Excel con exceljs (RNFT-022):**
    - Múltiples hojas en un único archivo
    - Estilos aplicados: negrita en headers, ancho de columnas auto
    - Filtros automáticos habilitados para facilitar búsqueda
@@ -7076,12 +7042,12 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PapeletasProcesionGeneradas` | eventoId, totalGeneradas, ejercicio | BC-Comunicacion (anuncio interno) |
-| `ReservaInsigniaSolicitada` | reservaId, hermanoId, elementoTipo | BC-Comunicacion (notificar Junta si requiere aprobación) |
-| `ReservaInsigniaAprobada` | reservaId, hermanoId, elemento | BC-Comunicacion (confirmación al hermano) |
-| `ReservaInsigniaRechazada` | reservaId, hermanoId, motivo | BC-Comunicacion (notificación explicativa) |
-| `InsigniaAsignada` | hermanoId, elemento, posicion | BC-Comunicacion (confirmación definitiva) |
-| `ListasProcesionPublicadas` | eventoId, totalHermanos, fechaPublicacion | BC-Comunicacion (notificación masiva), BC-Documentos (archivar lista oficial) |
+| `PapeletasProcesionGeneradas` | eventoId, totalGeneradas, ejercicio | Al ejecutar la operación | BC-Comunicacion (anuncio interno) |
+| `ReservaInsigniaSolicitada` | reservaId, hermanoId, elementoTipo | Al ejecutar la operación | BC-Comunicacion (notificar Junta si requiere aprobación) |
+| `ReservaInsigniaAprobada` | reservaId, hermanoId, elemento | Al ejecutar la operación | BC-Comunicacion (confirmación al hermano) |
+| `ReservaInsigniaRechazada` | reservaId, hermanoId, motivo | Al ejecutar la operación | BC-Comunicacion (notificación explicativa) |
+| `InsigniaAsignada` | hermanoId, elemento, posicion | Al ejecutar la operación | BC-Comunicacion (confirmación definitiva) |
+| `ListasProcesionPublicadas` | eventoId, totalHermanos, fechaPublicacion | Al ejecutar la operación | BC-Comunicacion (notificación masiva), BC-Documentos (archivar lista oficial) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -7130,8 +7096,8 @@ Gestiona la organización de procesiones en cofradías, incluyendo la generació
 - **PDF Generation:** PDFKit para generar papeletas individuales con formato A6 (4 por página A4 para impresión)
 - **Reservas de insignias:** Implementar cola de prioridad (Priority Queue) para gestionar conflictos en reservas simultáneas
 - **Publicación programada:** Usar BullMQ scheduler para publicación automática en fecha/hora configurada
-- **RNF-T-024:** Lazy loading de imágenes de insignias en lista de reservas (puede ser grande en cofradías con muchas insignias)
-- **RNF-T-026:** Papeletas de sitio contienen datos personales → EventoDeAuditoria al generar/descargar
+- **RNFT-024:** Lazy loading de imágenes de insignias en lista de reservas (puede ser grande en cofradías con muchas insignias)
+- **RNFT-026:** Papeletas de sitio contienen datos personales → EventoDeAuditoria al generar/descargar
 - **Validación negocio:** Validar que hermanos no tengan sanciones activas antes de asignar posición destacada
 
 ---
@@ -7268,12 +7234,8 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `CuadrillaCreada` | cuadrillaId, nombrePaso, configuracion | BC-Comunicacion (anuncio de apertura de inscripciones) |
-| `IgualaRegistrada` | cuadrillaId, costaleroId, altura | - |
-| `CostaleroAsignadoATrabajadora` | cuadrillaId, costaleroId, trabajaderaId | - |
-| `EnsayoConvocado` | ensayoId, cuadrillaId, fecha, costalerosConvocados | BC-Comunicacion (notificaciones individuales) |
-| `ConfirmacionAsistenciaRegistrada` | ensayoId, costaleroId, disponible | - |
-| `AsistenciaEnsayoRegistrada` | ensayoId, asistencias (Map) | - |
+| `CuadrillaCreada` | cuadrillaId, nombrePaso, configuracion | Al ejecutar la operación | BC-Comunicacion (anuncio de apertura de inscripciones) |
+| `EnsayoConvocado` | ensayoId, cuadrillaId, fecha, costalerosConvocados | Al ejecutar la operación | BC-Comunicacion (notificaciones individuales) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -7318,7 +7280,7 @@ Gestiona cuadrillas de costaleros para pasos procesionales, incluyendo la "igual
    - Cache de 10 minutos para datos que no cambian frecuentemente
    - Timeout de 5 segundos en consultas ACL
 
-3. **Notificaciones de Ensayos (RNF-T-041):**
+3. **Notificaciones de Ensayos (RNFT-041):**
    - Envío masivo procesado en background (no bloquear la convocatoria)
    - Batch de 50 notificaciones por segundo para no saturar servicio de email
    - Recordatorio automático 48h antes del ensayo a los que no confirmaron
@@ -7466,9 +7428,9 @@ Gestiona el calendario litúrgico de cofradías, incluyendo creación de cultos 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `CultoSerieCreada` | serieId, tipoCulto, nombre, totalDias, eventoIds | BC-Comunicacion (anuncio a hermanos) |
-| `InscripcionATurnoRealizada` | eventoId, socioId, turnoId, fechaHora | BC-Comunicacion (confirmación con hora asignada) |
-| `CalendarioICalExportado` | tenantId, urlSuscripcion | BC-Documentos (archivar URL para referencia) |
+| `CultoSerieCreada` | serieId, tipoCulto, nombre, totalDias, eventoIds | Al ejecutar la operación | BC-Comunicacion (anuncio a hermanos) |
+| `InscripcionATurnoRealizada` | eventoId, socioId, turnoId, fechaHora | Al ejecutar la operación | BC-Comunicacion (confirmación con hora asignada) |
+| `CalendarioICalExportado` | tenantId, urlSuscripcion | Al ejecutar la operación | BC-Documentos (archivar URL para referencia) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -7673,11 +7635,11 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PartidoCreado` | partidoId, rival, fecha, local | BC-Comunicacion (anuncio a socios del club) |
-| `ConvocatoriaGenerada` | convocatoriaId, partidoId, jugadores | BC-Comunicacion (notificaciones individuales) |
-| `SancionCreada` | sancionId, jugadorId, partidos, motivo | BC-Comunicacion (notificar jugador y entrenador) |
-| `SancionCumplida` | sancionId, jugadorId | BC-Comunicacion (confirmación de cumplimiento) |
-| `ResultadoRegistrado` | partidoId, golesLocal, golesVisitante, ganador | BC-Comunicacion (publicación de resultado) |
+| `PartidoCreado` | partidoId, rival, fecha, local | Al crear el registro | BC-Comunicacion (anuncio a socios del club) |
+| `ConvocatoriaGenerada` | convocatoriaId, partidoId, jugadores | Al ejecutar la operación | BC-Comunicacion (notificaciones individuales) |
+| `SancionCreada` | sancionId, jugadorId, partidos, motivo | Al ejecutar la operación | BC-Comunicacion (notificar jugador y entrenador) |
+| `SancionCumplida` | sancionId, jugadorId | Al ejecutar la operación | BC-Comunicacion (confirmación de cumplimiento) |
+| `ResultadoRegistrado` | partidoId, golesLocal, golesVisitante, ganador | Al crear el registro | BC-Comunicacion (publicación de resultado) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -7720,7 +7682,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
 
 #### Notas de Implementación
 
-1. **Importación de Excel con XLSX (RNF-T-022):**
+1. **Importación de Excel con XLSX (RNFT-022):**
    - Librería `xlsx` para parsear archivos Excel y CSV
    - Validación robusta de estructura y tipos de datos
    - Procesamiento asíncrono en background para archivos grandes (>100 partidos)
@@ -7750,7 +7712,7 @@ Gestiona el ciclo completo de competiciones deportivas en clubes: calendario de 
    - Cache de 5 minutos para estadísticas de temporada
    - Exportación a Excel/CSV para análisis externo
 
-6. **Generación de Acta de Partido (RNF-T-022):**
+6. **Generación de Acta de Partido (RNFT-022):**
    - Template configurable por club (logo, colores)
    - Incluir todos los datos oficiales: alineaciones, goles, tarjetas, cambios
    - Firma digital opcional del delegado
@@ -7946,7 +7908,6 @@ Solicitud de valoración post-evento a asistentes con puntuación (1-5 estrellas
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
 | `ValoracionesEventoSolicitadas` | `{ ...<campos del evento> }` | Al completar la operación principal | BC-Comunicacion (enviar emails) |
-| `ValoracionRecibida` | `{ ...<campos del evento> }` | Al completar la operación principal | sistema de estadísticas en tiempo real |
 | `ProblemaRecurrenteDetectado` | `{ ...<campos del evento> }` | Al completar la operación principal | notificar secretario/presidente por email |
 
 *Este UC no consume eventos de otros BCs*
@@ -7979,12 +7940,12 @@ Solicitud de valoración post-evento a asistentes con puntuación (1-5 estrellas
    - Objetivo: >70% de asistentes valoran
    - Recordatorio a los 5 días mejora tasa en +30%
 
-4. **Anonimización (RNF-T-025):**
+4. **Anonimización (RNFT-025):**
    - Si `es_anonimo = true` → NO almacenar socio_id
    - Imposible trazar valoración al socio
    - Solo se almacena que inscripcion_id valoró (para evitar duplicados)
 
-5. **Performance dashboard (RNF-T-015):**
+5. **Performance dashboard (RNFT-015):**
    - Precalcular medias al recibir cada valoración (evitar agregaciones en tiempo real)
    - Cachear estadísticas en Redis (TTL 1h)
 
@@ -7992,7 +7953,7 @@ Solicitud de valoración post-evento a asistentes con puntuación (1-5 estrellas
    - Informe con resumen estadístico + todos los comentarios
    - Útil para presentar en reunión de junta directiva
 
-7. **Notificaciones a presidente (RNF-T-042):**
+7. **Notificaciones a presidente (RNFT-042):**
    - Si puntuación media evento <3/5: notificar presidente inmediatamente
    - Si problema recurrente detectado: email semanal con resumen
 
@@ -8141,10 +8102,6 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `ComunicacionEnviada` | comunicacionId, totalDestinatarios, canal | - |
-| `EmailAbierto` | envioId, comunicacionId, socioId, fechaApertura | - (tracking interno) |
-| `EnlaceClicado` | envioId, comunicacionId, socioId, url | - (tracking interno) |
-| `EmailRebotado` | envioId, socioId, email, tipoBounce (hard/soft), motivo | BC-Membresia (marcar email inválido si hard bounce) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8174,7 +8131,7 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
 
 #### Notas de Implementación
 
-1. **Servicio de Email (RNF-T-010):**
+1. **Servicio de Email (RNFT-010):**
    - Proveedor recomendado: SendGrid (API + Webhooks)
    - Alternativa: Amazon SES
    - Configuración SMTP como fallback
@@ -8186,7 +8143,7 @@ Permite al secretario enviar comunicaciones masivas por email a socios con segme
    - Progress tracking para mostrar barra de progreso en frontend
    - Redis como backend de cola
 
-3. **Tracking de Aperturas (RNF-T-041):**
+3. **Tracking de Aperturas (RNFT-041):**
    - Pixel de 1x1 transparente embebido en HTML
    - URL del pixel: `/api/tracking/email-opened/:envioId`
    - Endpoint registra apertura sin bloquear carga de email
@@ -8315,8 +8272,6 @@ Envío de SMS para comunicaciones urgentes a grupos reducidos (Junta Directiva, 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SMSEnviado` | comunicacionId, totalDestinatarios, costeTotal, creditoRestante | - |
-| `CreditoSMSInsuficiente` | tenantId, creditoActual, creditoRequerido | - (alerta al administrador) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8446,9 +8401,6 @@ Envío de notificaciones push a socios con PWA instalada. Sin coste adicional, e
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PushNotificationEnviada` | comunicacionId, totalSuscripciones, totalEnviadas | - |
-| `SuscripcionPushCreada` | suscripcionId, socioId, dispositivoInfo | - |
-| `SuscripcionPushDesactivada` | suscripcionId, socioId, motivo | - (puede ser expiración o cancelación manual) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8479,14 +8431,14 @@ Envío de notificaciones push a socios con PWA instalada. Sin coste adicional, e
 #### Notas de Implementación
 
 - **Librería:** `web-push` (npm) para envío de notificaciones siguiendo Web Push Protocol
-- **VAPID Keys:** Generar par de claves pública/privada para autenticación con navegadores (RNF-T-007)
+- **VAPID Keys:** Generar par de claves pública/privada para autenticación con navegadores (RNFT-007)
 - **Service Worker:** Implementar handler `push` event en `sw.js` para mostrar notificación
 - **Persistencia:** Almacenar suscripciones con endpoint, keys.p256dh, keys.auth (cifrado end-to-end)
 - **TTL:** Configurar Time-To-Live de notificaciones (ej: 24h). Si el dispositivo no está online en ese período, la notificación expira
 - **Badge:** Incluir badge count para mostrar número de notificaciones pendientes en icono de app
 - **Silent push:** NO implementar silent push (requiere permisos adicionales y puede violar políticas de navegadores)
-- **RNF-T-045:** Notificaciones deben ser concisas (máx 120 caracteres en body) para buena UX móvil
-- **RNF-T-026:** No incluir datos sensibles en notificación (solo avisos generales). Datos completos se consultan al abrir la app
+- **RNFT-045:** Notificaciones deben ser concisas (máx 120 caracteres en body) para buena UX móvil
+- **RNFT-026:** No incluir datos sensibles en notificación (solo avisos generales). Datos completos se consultan al abrir la app
 - **Testing:** Usar herramientas como `web-push-testing-service` para probar en desarrollo sin certificados SSL
 
 ---
@@ -8583,9 +8535,6 @@ Gestión del catálogo de plantillas de comunicación, incluyendo plantillas de 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PlantillaCreada` | plantillaId, nombre, canal | Al crear plantilla personalizada |
-| `PlantillaActualizada` | plantillaId, cambios | Al editar contenido |
-| `PlantillaDesactivada` | plantillaId | Al desactivar plantilla |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8612,7 +8561,7 @@ Gestión del catálogo de plantillas de comunicación, incluyendo plantillas de 
    - Marcadas con `esSistema: true`, `tenantId: null` (compartidas)
    - Códigos únicos: BIENVENIDA, RECORDATORIO_PAGO, AVISO_DOMICILIACION, CONVOCATORIA_EVENTO, RECORDATORIO_EVENTO, AVISO_IMPAGO_FASE1, AVISO_IMPAGO_FASE2, AVISO_IMPAGO_FASE3, CONFIRMACION_INSCRIPCION, CONFIRMACION_PAGO
 
-2. **Motor de Plantillas: Handlebars (RNF-T-022):**
+2. **Motor de Plantillas: Handlebars (RNFT-022):**
    - Sintaxis compatible: `{{variable}}`, `{{#if condicion}}...{{/if}}`, `{{#each lista}}...{{/each}}`
    - Helpers personalizados para formateo español: `{{formatDate fecha}}`, `{{formatCurrency importe}}`
    - Escape automático de HTML para evitar XSS
@@ -8638,7 +8587,7 @@ Gestión del catálogo de plantillas de comunicación, incluyendo plantillas de 
    - Útil para verificar que datos reales se ven correctos
    - Preview responsive: mostrar versión mobile y desktop de emails
 
-7. **Caché de Plantillas Compiladas (RNF-T-018):**
+7. **Caché de Plantillas Compiladas (RNFT-018):**
    - Cache en Redis de plantillas compiladas (TTL: 1 hora)
    - Key: `plantilla:{tenantId}:{plantillaId}:{version}`
    - Invalidar cache al actualizar plantilla
@@ -8648,7 +8597,7 @@ Gestión del catálogo de plantillas de comunicación, incluyendo plantillas de 
    - Campo `locale: string` en tabla `plantilla`
    - Por ahora: solo español (es-ES)
 
-9. **Auditoría de Cambios en Plantillas (RNF-T-025):**
+9. **Auditoría de Cambios en Plantillas (RNFT-025):**
    - Guardar historial de versiones de plantillas
    - Tabla `plantilla_version` con snapshot de contenido
    - Permitir rollback a versión anterior si hay error
@@ -8763,8 +8712,6 @@ Nota: La creación de la Comunicacion y las entidades Envio se realiza en UC-039
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SegmentoGuardado` | segmentoId, nombre, criterios | Al guardar segmento reutilizable |
-| `SegmentoResuelto` | segmentoId, cantidadDestinatarios | Al aplicar segmento en comunicación |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8786,7 +8733,7 @@ Nota: La creación de la Comunicacion y las entidades Envio se realiza en UC-039
 
 #### Notas de Implementación
 
-1. **Anti-Corruption Layer para BC-Membresia (RNF-T-058):**
+1. **Anti-Corruption Layer para BC-Membresia (RNFT-058):**
    - Interfaz `ISocioACL` con método `queryBuilder()` que devuelve query fluent
    - Implementación en `infrastructure/acl/SocioACLImpl.ts`
    - Aislar BC-Comunicacion de cambios en modelo de BC-Membresia
@@ -8797,7 +8744,7 @@ Nota: La creación de la Comunicacion y las entidades Envio se realiza en UC-039
    - Soportar operadores: `=`, `!=`, `IN`, `NOT IN`, `>=`, `<=`
    - Ejemplo: `where('tipoSocio', 'IN', ['Numerario', 'Aspirante']).where('estadoPago', '=', 'AlCorriente')`
 
-3. **Cache de Segmentos Resueltos (RNF-T-018):**
+3. **Cache de Segmentos Resueltos (RNFT-018):**
    - Cache en memoria (TTL: 5 minutos) para segmentos frecuentes
    - Key: `segmento:{tenantId}:{hash(criterios)}`
    - Invalidar al cambiar datos de socios (evento `SocioActualizado`)
@@ -8821,11 +8768,11 @@ Nota: La creación de la Comunicacion y las entidades Envio se realiza en UC-039
    - Tipo socio: validar contra enum permitido
    - Estado pago: validar contra enum
 
-7. **Performance en Segmentos Grandes (RNF-T-015):**
+7. **Performance en Segmentos Grandes (RNFT-015):**
    - Query optimizada con índices en: `tipo_socio`, `estado_pago`, `fecha_alta`, `estado`
    - Paginación en UI si segmento > 500 destinatarios
 
-8. **Auditoría de Segmentación (RNF-T-025):**
+8. **Auditoría de Segmentación (RNFT-025):**
    - Registrar criterios usados en cada comunicación
    - Snapshot de destinatarios en momento de envío (no recalcular retroactivamente)
    - Útil para auditorías: "¿A quién se envió esta comunicación?"
@@ -8936,9 +8883,6 @@ Permite programar el envío de comunicaciones para una fecha y hora futura espec
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `ComunicacionProgramada` | comunicacionId, fechaProgramada, destinatarios | Al programar envío |
-| `ComunicacionCancelada` | comunicacionId, motivo | Al cancelar programación |
-| `EnvioProgramadoEjecutado` | comunicacionId, fechaProgramada, fechaEjecucionReal | Al ejecutar envío |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -8959,7 +8903,7 @@ Permite programar el envío de comunicaciones para una fecha y hora futura espec
 
 #### Notas de Implementación
 
-1. **Scheduled Jobs con @nestjs/schedule (RNF-T-042):**
+1. **Scheduled Jobs con @nestjs/schedule (RNFT-042):**
    - Instalar: `npm install @nestjs/schedule`
    - Decorador `@Cron(CronExpression.EVERY_MINUTE)` para job que corre cada minuto
    - Job solo se ejecuta en una instancia si hay múltiples réplicas (usar lock distribuido)
@@ -8969,7 +8913,7 @@ Permite programar el envío de comunicaciones para una fecha y hora futura espec
    - Usar Redis con `SET NX EX` para lock: `envios_programados_lock` (TTL: 60 segundos)
    - Instancia que adquiere lock procesa, otras saltan el ciclo
 
-3. **Timezone Handling (RNF-T-045):**
+3. **Timezone Handling (RNFT-045):**
    - Guardar fechas en UTC en base de datos (tipo TIMESTAMP)
    - Convertir a Europe/Madrid en frontend para display
    - Usar librería `date-fns-tz` para conversiones confiables
@@ -8984,7 +8928,7 @@ Permite programar el envío de comunicaciones para una fecha y hora futura espec
    - Limitar a máximo 50 comunicaciones por ejecución del job
    - Si hay más de 50, procesarlas en siguiente ciclo (1 minuto después)
 
-6. **Logging y Observabilidad (RNF-T-064):**
+6. **Logging y Observabilidad (RNFT-064):**
    - Log de cada ejecución del job: cantidad procesada, tiempo de procesamiento
    - Métrica en Prometheus: `comunicaciones_programadas_procesadas_total`
    - Alerta si job no se ejecuta durante > 5 minutos (posible caída)
@@ -8999,7 +8943,7 @@ Permite programar el envío de comunicaciones para una fecha y hora futura espec
    - Badge con cuenta regresiva: "Se enviará en 2 días, 5 horas"
    - Opción de enviar inmediatamente si no se quiere esperar
 
-9. **Auditoría de Ejecución (RNF-T-025):**
+9. **Auditoría de Ejecución (RNFT-025):**
    - Registrar timestamp real de ejecución vs timestamp programado
    - Calcular delta: "Programado: 09:00, Ejecutado: 09:01, Delta: +1 min"
    - Útil para detectar problemas de performance en jobs
@@ -9097,9 +9041,6 @@ Consulta del histórico completo de comunicaciones enviadas con estadísticas de
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `EmailAbierto` | envioId, socioId, fechaApertura | Primera apertura de email |
-| `EnlaceClicado` | envioId, socioId, url, fecha | Clic en enlace trackeado |
-| `EmailRebotado` | envioId, socioId, motivoRebote | Webhook de bounce |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -9131,17 +9072,17 @@ Consulta del histórico completo de comunicaciones enviadas con estadísticas de
    - Reemplazar por URL proxy: `https://backend.com/api/tracking/link/{envioId}?url={urlOriginal}`
    - Endpoint hace 302 Redirect a URL original después de registrar clic
 
-3. **Webhook de SendGrid (RNF-T-041):**
+3. **Webhook de SendGrid (RNFT-041):**
    - Configurar webhook en SendGrid dashboard para eventos: delivered, bounce, dropped, spam_report
    - Endpoint `/api/webhooks/sendgrid` valida firma y procesa eventos
    - Actualizar estado de Envio según tipo de evento
 
-4. **Performance de Consultas de Histórico (RNF-T-015):**
+4. **Performance de Consultas de Histórico (RNFT-015):**
    - Índice en `(tenant_id, fecha_envio DESC)` para listado ordenado
    - Índice en `(tenant_id, estado, fecha_programada)` para job de programados
    - Paginación obligatoria: máximo 50 comunicaciones por página
 
-5. **Privacidad y RGPD (RNF-T-034):**
+5. **Privacidad y RGPD (RNFT-034):**
    - Pixel de tracking es personal (incluye envioId único)
    - No compartir datos de apertura con terceros
    - Permitir opt-out de tracking en preferencias del socio (futuro)
@@ -9156,7 +9097,7 @@ Consulta del histórico completo de comunicaciones enviadas con estadísticas de
    - Notificar a secretario si > 20 socios inactivos en 6 meses
    - Sugerir contacto por otro canal (teléfono, SMS)
 
-8. **Cache de Estadísticas (RNF-T-018):**
+8. **Cache de Estadísticas (RNFT-018):**
    - Estadísticas de comunicación pueden cachearse 1 hora
    - Invalidar cache al registrar nueva apertura/clic
    - Key: `stats:comunicacion:{comunicacionId}`
@@ -9270,9 +9211,6 @@ Sistema de tablón de anuncios visible en el portal del socio para publicar noti
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AnuncioPublicado` | anuncioId, titulo, destacado | Al publicar anuncio |
-| `AnuncioExpirado` | anuncioId | Job expira anuncio automáticamente |
-| `AnuncioLeido` | anuncioId, socioId | Socio marca como leído |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -9299,13 +9237,13 @@ Sistema de tablón de anuncios visible en el portal del socio para publicar noti
    - Toolbar reducido: negrita, cursiva, subrayado, listas, enlaces, imágenes inline
    - Preview en tiempo real antes de publicar
 
-2. **Sanitización de HTML (RNF-T-006):**
+2. **Sanitización de HTML (RNFT-006):**
    - Usar DOMPurify en backend antes de guardar
    - Whitelist de tags permitidos: `<p>, <br>, <b>, <i>, <u>, <a>, <ul>, <ol>, <li>, <img>`
    - Blacklist de atributos peligrosos: `onclick, onerror, onload`
    - Validar atributo `href` de enlaces: solo `http(s)://` o rutas relativas
 
-3. **Upload de Imágenes a S3/MinIO (RNF-T-011):**
+3. **Upload de Imágenes a S3/MinIO (RNFT-011):**
    - Ruta: `anuncios/{tenantId}/imagenes/{uuid}.jpg`
    - Generar thumbnail automáticamente con Sharp: 300x200px para listado
    - Presigned URL pública con expiración de 7 días
@@ -9435,12 +9373,6 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `NotificacionBienvenidaEnviada` | `{ socioId: UUID, emailId: string, fechaEnvio: Date }` | Tras enviar email de bienvenida exitoso (paso 3) | Auditoría, Reporting |
-| `RecordatorioPagoEnviado` | `{ socioId: UUID, cargoId: UUID, diasHastaVencimiento: number, fechaEnvio: Date }` | Al enviar recordatorio 3 días antes del vencimiento (paso 5) | Auditoría |
-| `AvisoDomiciliacionEnviado` | `{ socioId: UUID, remesaId: string, fechaCobro: Date, importe: number, fechaEnvio: Date }` | Al enviar aviso 2 días antes de remesa SEPA (paso 6) | Auditoría |
-| `AvisoMorosidadEnviado` | `{ socioId: UUID, fase: number, deudaTotal: number, fechaEnvio: Date }` | Al enviar aviso de morosidad por fase (paso 8) | BC-Membresia (UC-022: actualizar estado), Auditoría |
-| `ConfirmacionInscripcionEnviada` | `{ socioId: UUID, eventoId: UUID, inscripcionId: UUID, qrCode: string, fechaEnvio: Date }` | Tras enviar confirmación de inscripción (paso 10) | Auditoría |
-| `AnuncioEventoPublicado` | `{ eventoId: UUID, sociosNotificados: number, fechaPublicacion: Date }` | Al publicar evento en tablón (paso 12) | Auditoría |
 
 **Eventos Consumidos (Subscribe):**
 
@@ -9483,7 +9415,7 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
    - Events síncronos: handler se ejecuta en misma transacción
    - Events asíncronos: usar `@OnEvent('evento', { async: true })`
 
-2. **Deduplicación de Notificaciones (RNF-T-041):**
+2. **Deduplicación de Notificaciones (RNFT-041):**
    - Tabla `notificacion_enviada` con columnas: `socio_id, plantilla_codigo, referencia_externa, fecha_envio`
    - Índice único en `(socio_id, plantilla_codigo, referencia_externa)` para evitar duplicados
    - TTL de 90 días: limpiar registros antiguos con scheduled job
@@ -9498,7 +9430,7 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
    - Patrón: `SET recordatorios_pago_lock 1 NX EX 300` (5 minutos)
    - Solo instancia que adquiere lock ejecuta job
 
-5. **ACL para Consultas Cross-BC (RNF-T-058):**
+5. **ACL para Consultas Cross-BC (RNFT-058):**
    - Interfaces: `ISocioACL`, `ICargoACL`, `IEventoACL` en capa de dominio
    - Implementaciones en infrastructure/acl
    - DTOs de transferencia: minimizar acoplamiento
@@ -9519,7 +9451,7 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
    - Test integración: emitir evento real, verificar que comunicación se crea en BD
    - Test E2E: flujo completo desde registro de socio hasta recepción de email
 
-9. **Observabilidad de Notificaciones Automáticas (RNF-T-064):**
+9. **Observabilidad de Notificaciones Automáticas (RNFT-064):**
    - Métrica Prometheus: `notificaciones_automaticas_enviadas_total{plantilla, canal, estado}`
    - Log estructurado: incluir `plantillaCodigo, socioId, canal, resultado`
    - Dashboard Grafana: tasa de éxito, latencia, notificaciones por tipo
@@ -9655,9 +9587,6 @@ Gestión del libro de actas digital obligatorio según LO 1/2002 de asociaciones
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `ActaCreada` | actaId, numero, tipoReunion | Al crear acta nueva |
-| `ActaAprobada` | actaId, numero, fechaAprobacion | Al aprobar acta |
-| `CorreccionAdjuntada` | actaId, descripcionCorreccion | Al adjuntar corrección |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -9695,7 +9624,7 @@ Gestión del libro de actas digital obligatorio según LO 1/2002 de asociaciones
    - Toolbar: negrita, cursiva, listas, tabla (para votaciones)
    - Sanitización HTML con DOMPurify antes de guardar
 
-4. **Inmutabilidad tras Aprobación (RNF-T-025):**
+4. **Inmutabilidad tras Aprobación (RNFT-025):**
    - Check en Application Service: rechazar cualquier modificación si `estado === Aprobada`
    - Guard en frontend: deshabilitar formulario si acta aprobada
    - Log de auditoría: registrar toda lectura/escritura de actas aprobadas
@@ -9822,8 +9751,6 @@ Registro de asistentes a reuniones con soporte para delegaciones de voto. Cálcu
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `AsistenciaRegistrada` | actaId, totalPresentes, totalDelegaciones | Al registrar asistencia |
-| `QuorumCalculado` | actaId, alcanzado, totalVotos | Al calcular quórum |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -9855,7 +9782,7 @@ Registro de asistentes a reuniones con soporte para delegaciones de voto. Cálcu
    - Limitar delegaciones por socio (configurable, ej: máx 10)
    - Detectar ciclos con algoritmo de grafos (DFS)
 
-3. **Consulta Cross-BC con ACL (RNF-T-058):**
+3. **Consulta Cross-BC con ACL (RNFT-058):**
    - Interfaz `ISocioACL.findConDerechoVoto(criterios)`
    - Filtrado por tipo socio, estado pago, roles
    - Timeout de 10 segundos, retry si falla
@@ -9991,8 +9918,6 @@ Consulta del archivo histórico de actas aprobadas con búsqueda por texto, filt
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PDFActaGenerado` | actaId, documentoId | Al generar PDF de acta |
-| `ActaConsultada` | actaId, usuarioId | Al consultar detalle de acta (auditoría) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -10020,7 +9945,7 @@ Consulta del archivo histórico de actas aprobadas con búsqueda por texto, filt
    - Proceso asíncrono: encolar en Bull Queue para no bloquear aprobación
    - Notificar a secretario cuando PDF esté listo (push notification)
 
-2. **Librería pdfmake para Generación de PDFs (RNF-T-022):**
+2. **Librería pdfmake para Generación de PDFs (RNFT-022):**
    - `npm install pdfmake`
    - Soporte de imágenes (logo), tablas, estilos, saltos de página
    - Generación en backend (Node.js), no en navegador
@@ -10043,7 +9968,7 @@ Consulta del archivo histórico de actas aprobadas con búsqueda por texto, filt
 6. **Storage de PDFs en S3/MinIO:**
    - Ruta: `documentos/{tenantId}/actas/ACTA-2025-003.pdf`
    - Presigned URLs con expiración de 1 hora para descarga segura
-   - Backup automático (RNF-T-011)
+   - Backup automático (RNFT-011)
 
 7. **Performance de Búsqueda:**
    - Índice full-text para búsqueda en contenido
@@ -10055,7 +9980,7 @@ Consulta del archivo histórico de actas aprobadas con búsqueda por texto, filt
    - Resaltar matches con tags HTML: `<mark>presupuesto</mark>`
    - Sanitizar HTML antes de mostrar en frontend
 
-9. **Auditoría de Consultas (RNF-T-025):**
+9. **Auditoría de Consultas (RNFT-025):**
    - Registrar en tabla `auditoria` cada consulta de acta aprobada
    - Campos: usuario_id, acta_id, fecha_consulta, ip_origen
    - Útil para compliance y detectar accesos no autorizados
@@ -10155,9 +10080,6 @@ Repositorio centralizado multi-formato para almacenar toda la documentación de 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `DocumentoSubido` | documentoId, nombre, tamaño | Al subir documento |
-| `DocumentoMovido` | documentoId, categoriaOrigenId, categoriaDestinoId | Al mover entre carpetas |
-| `DocumentoArchivado` | documentoId | Al archivar |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -10179,7 +10101,7 @@ Repositorio centralizado multi-formato para almacenar toda la documentación de 
 
 #### Notas de Implementación
 
-1. **Storage en S3/MinIO (RNF-T-011):**
+1. **Storage en S3/MinIO (RNFT-011):**
    - Bucket: `documentos`
    - Ruta: `{tenantId}/files/{uuid}_{nombreOriginal}`
    - Presigned URLs con expiración de 1 hora
@@ -10318,7 +10240,6 @@ Subida de documentos con soporte multi-formato (PDF, Office, imágenes) y valida
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `DocumentoPrevisuali zado` | documentoId, usuarioId | Al visualizar documento (analytics) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -10471,8 +10392,6 @@ Sistema de búsqueda multi-criterio para localizar documentos rápidamente. Perm
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `BusquedaSinResultados` | criterios, usuarioId, timestamp | Búsqueda sin resultados (analytics) |
-| `BusquedaGuardada` | nombre, criterios, usuarioId | Usuario guarda búsqueda favorita |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -10676,10 +10595,6 @@ Sistema de control de acceso basado en roles para proteger documentos confidenci
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `PermisosCategoriaCambiados` | categoriaId, rolesAntes, rolesDespues, adminId | Administrador cambia permisos |
-| `AlmacenamientoUmbralAlcanzado` | tenantId, porcentaje, umbral (80/90/100) | Uso alcanza umbral crítico |
-| `SubidaBloqueadaPorLimite` | tenantId, usuarioId, tamañoIntentado | Usuario intenta subir sin espacio |
-| `PlanAmpliado` | BC-Identidad | tenantId, planAnterior, planNuevo, limiteNuevo | Invalidar cache de límites, recalcular uso disponible |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -10882,10 +10797,6 @@ Funcionalidades avanzadas para gestión documental: versionado de documentos con
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `DocumentoVersionado` | documentoId, versionAnterior, versionNueva, motivo | Nueva versión subida |
-| `VersionRestaurada` | documentoId, versionRestaurada, usuarioId | Versión anterior restaurada |
-| `OcrCompletado` | documentoId, datosExtraidos, confianzaMedia | OCR finalizado |
-| `DatosOcrConfirmados` | documentoId, datosOriginales, datosCorregidos | Tesorero confirma datos |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -11069,8 +10980,6 @@ Sistema completo de importación de listados de socios desde archivos Excel/CSV 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SociosImportadosEnMasa` | tenantId, totalImportados, usuarioId | Importación completada |
-| `ErrorImportacionMasiva` | tenantId, totalErrores, detalles | Importación fallida |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -11321,9 +11230,9 @@ Exportación flexible de listados de socios con selección de campos, filtros, p
   - `banco`: NumeroSocio, Nombre, IBAN (solo tesorero)
   - `subvencion`: Datos completos + DNI (para justificantes oficiales)
 - **Performance:** Para exportaciones >10,000 registros, procesar en chunks de 5,000 y generar progresivamente
-- **RNF-T-026:** Campos sensibles (DNI, IBAN) cifrados en BD, descifrados solo durante exportación
-- **RNF-T-009:** Usar presigned URLs de S3 con expiración 24h
-- **RNF-T-058:** Testear exportación con datasets grandes (>50,000 registros) para validar performance
+- **RNFT-026:** Campos sensibles (DNI, IBAN) cifrados en BD, descifrados solo durante exportación
+- **RNFT-009:** Usar presigned URLs de S3 con expiración 24h
+- **RNFT-058:** Testear exportación con datasets grandes (>50,000 registros) para validar performance
 
 ---
 
@@ -11456,7 +11365,7 @@ Este UC da soporte a las necesidades de rendición de cuentas ante asambleas, au
 - **RNF-022 (Performance):** Generación asíncrona para informes >10,000 movimientos mediante job queue, evita timeout en requests HTTP largos
 - **RNF-009 (Seguridad archivos):** URLs firmadas S3 con expiración 1h, validación de permisos `tesoreria:export` vía `PermissionsGuard`
 - **RNF-050 (Skeleton screens):** Frontend muestra skeleton durante generación, polling de estado cada 3s para jobs asíncronos
-- **RNF-T-026 (RGPD):** Parámetro `anonymize` para compartir informes externos sin datos personales, soft-delete de exports tras TTL
+- **RNFT-026 (RGPD):** Parámetro `anonymize` para compartir informes externos sin datos personales, soft-delete de exports tras TTL
 - **Librerías:** `puppeteer` (PDF generation), `@nestjs/event-emitter` (domain events), `aws-sdk` o `minio` (object storage)
 - **Performance:** Query agregado con `groupBy` reduce overhead vs N queries, índices en `(tenantId, ejercicioId, fecha)` para filtros temporales
 - **Seguridad:** Validación de ejercicioIds existentes antes de queries, rate limiting en controller (max 10 exports/hora por usuario)
@@ -11593,7 +11502,7 @@ Este UC es crítico para el cumplimiento normativo de asociaciones que reciben d
 
 - **RNF-036 (Cumplimiento normativo):** Validación XSD contra esquema oficial AEAT v2024, garantiza aceptación en presentación telemática
 - **RNF-009 (Seguridad archivos):** XML almacenado con flag `fiscalDeclaration: true` para auditoría especial, retention 7 años por normativa fiscal
-- **RNF-T-029 (Encriptación datos fiscales):** NIFs hasheados en logs, XML sin cifrar pero con acceso restringido vía presigned URL temporal
+- **RNFT-029 (Encriptación datos fiscales):** NIFs hasheados en logs, XML sin cifrar pero con acceso restringido vía presigned URL temporal
 - **Librerías:** `xmlbuilder2` (construcción XML), `libxmljs2` (validación XSD), `crypto` nativo (hash SHA-256)
 - **Performance:** Query agregado por socio reduce procesamiento, índice compuesto `(tenantId, ejercicioId, tipo, importe)` optimiza filtro donaciones
 - **Seguridad:** Validación algoritmo mod-23 para NIFs previene datos incorrectos, rate limiting estricto (1 export/ejercicio/día) evita abuso
@@ -11730,7 +11639,7 @@ Este UC es especialmente útil para eventos multitudinarios (comidas de hermanda
 
 - **RNF-022 (Performance):** Generación de QR en paralelo para eventos >100 inscritos usando `Promise.all`, reduce tiempo de export en 60%
 - **RNF-009 (Seguridad archivos):** Validación granular de permisos (global `eventos:export` o rol `organizador` específico del evento), URLs firmadas S3 2h
-- **RNF-T-045 (Accesibilidad):** Excel con alto contraste en encabezados, filtros automáticos y anchos de columna optimizados para lectura
+- **RNFT-045 (Accesibilidad):** Excel con alto contraste en encabezados, filtros automáticos y anchos de columna optimizados para lectura
 - **Librerías:** `exceljs` (v4.x, generación Excel compleja), `qrcode` (v1.x, QR codes), `@nestjs/event-emitter` (eventos)
 - **Performance:** Query `include` optimizado para evitar N+1, índices en `(tenantId, eventoId, estado)` para filtros rápidos
 - **Seguridad:** Rate limiting 20 exports/evento/día, QR codes con formato único `EVT-{eventoId}-{inscripcionId}` para prevenir falsificaciones
@@ -11837,7 +11746,6 @@ El sistema permite filtros avanzados por rango de fechas, tipo de comunicación 
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `ExportacionSolicitada` | `{ exportId: string, usuarioId: string, filtros: { fechaInicio: Date, fechaFin: Date, tipo?: string, canal?: string, estado?: string }, anonymize: boolean, includeCharts: boolean, timestamp: Date }` | Al validar parámetros exitosamente (paso 3) | Sistema de Tareas (procesamiento background) |
 | `CommunicationHistoryExported` | `{ exportId: string, tenantId: string, usuarioId: string, archivoUrl: string, checksum: string, totalRegistros: number, fechaInicio: Date, fechaFin: Date, timestamp: Date }` | Tras almacenar archivo en Object Storage (paso 11) | BC-Comunicacion (UC-047: notificar con enlace descarga) |
 | `ExportacionFallida` | `{ exportId: string, tenantId: string, usuarioId: string, motivoFallo: string, errorCode: string, timestamp: Date }` | Al capturar excepción en cualquier paso del proceso | Sistema de Alertas, BC-Comunicacion (UC-047: notificar error) |
 
@@ -11873,8 +11781,8 @@ El sistema permite filtros avanzados por rango de fechas, tipo de comunicación 
 - **Retención:** Archivos almacenados 90 días en S3 con lifecycle policy (delete after 90d)
 - **RGPD:** Si export incluye emails de socios, registrar EventoDeAuditoria (acceso a datos personales)
 - **Anonimización:** Si `anonymize: true`, aplicar SHA-256 hash a emails antes de incluir en Excel
-- **RNF-T-026:** Datos sensibles (emails, teléfonos) solo accesibles con permiso `comunicacion:audit`
-- **RNF-T-016:** Export sincrónico hasta 10,000 comunicaciones. Si >10,000, usar procesamiento asíncrono (BullMQ)
+- **RNFT-026:** Datos sensibles (emails, teléfonos) solo accesibles con permiso `comunicacion:audit`
+- **RNFT-016:** Export sincrónico hasta 10,000 comunicaciones. Si >10,000, usar procesamiento asíncrono (BullMQ)
 
 ---
 
@@ -12032,9 +11940,9 @@ Implementa política de retención configurable (30 días por defecto) para gest
 - Incluye compresión ~70% del tamaño original
 
 **RNF Relacionados:**
-- RNF-T-033: Backup automático programable
-- RNF-T-009: Cifrado de datos en reposo (S3)
-- RNF-T-044: Disponibilidad 99.5% (recuperación desde backup)
+- RNFT-033: Backup automático programable
+- RNFT-009: Cifrado de datos en reposo (S3)
+- RNFT-044: Disponibilidad 99.5% (recuperación desde backup)
 
 **Casos de Uso Relacionados:**
 - UC-010: Cierre de ejercicio (backup previo automático)
@@ -12170,8 +12078,8 @@ Dashboard con métricas clave en tiempo real: socios activos, recaudación, pró
 - **Caching:** Redis con TTL 5 minutos para KPIs calculados
 
 **RNF Relacionados:**
-- RNF-T-017: Dashboard carga en <2s
-- RNF-T-019: Caching de métricas agregadas
+- RNFT-017: Dashboard carga en <2s
+- RNFT-019: Caching de métricas agregadas
 
 **Consideraciones de Performance:**
 - KPIs pre-calculados en tabla materializada
@@ -12260,7 +12168,6 @@ Este caso de uso permite a directivos visualizar gráficos interactivos con dato
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `DashboardVisualized` | `{ userId: UUID, tenantId: UUID, dashboardType: string, periodFilter: { inicio: Date, fin: Date }, widgetsRendered: string[], timestamp: Date }` | Tras renderizar dashboard exitosamente (paso 4) | Sistema de Analytics, Telemetría de uso |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -12290,9 +12197,9 @@ Este caso de uso permite a directivos visualizar gráficos interactivos con dato
 - **Client-side caching:** @tanstack/react-query (v5.x)
 
 **RNF Relacionados:**
-- RNF-T-018: Gráficos interactivos responsivos
-- RNF-T-050: Skeleton screens durante carga
-- RNF-T-015: p95 <500ms (cache hit retorna en <50ms)
+- RNFT-018: Gráficos interactivos responsivos
+- RNFT-050: Skeleton screens durante carga
+- RNFT-015: p95 <500ms (cache hit retorna en <50ms)
 
 **Consideraciones de UX:**
 - Tooltips informativos en gráficos
@@ -12304,7 +12211,7 @@ Este caso de uso permite a directivos visualizar gráficos interactivos con dato
 - Cache Redis con TTL 5 min reduce carga en BD
 - Queries con `groupBy` optimizadas con índices en `fechaPago`, `fechaEmision`, `tipoEvento`
 - Queries ejecutadas en paralelo con `Promise.all`
-- Recharts cargado con `React.lazy()` para reducir bundle inicial (RNF-T-024)
+- Recharts cargado con `React.lazy()` para reducir bundle inicial (RNFT-024)
 - Para tenants con >100k registros, considerar pre-agregación diaria en tabla `analytics_snapshots`
 
 ---
@@ -12451,9 +12358,9 @@ Este caso de uso genera el documento PDF completo de memoria anual para presenta
 - **Optimización:** sharp (v0.33.x) para logos y gráficos insertados
 
 **RNF Relacionados:**
-- RNF-T-035: Cumplimiento Ley de Asociaciones (LO 1/2002 Art. 14)
-- RNF-T-012: Firma digital de documentos oficiales
-- RNF-T-022: Timeout Puppeteer de 60s para memorias extensas
+- RNFT-035: Cumplimiento Ley de Asociaciones (LO 1/2002 Art. 14)
+- RNFT-012: Firma digital de documentos oficiales
+- RNFT-022: Timeout Puppeteer de 60s para memorias extensas
 - RNF-064: Errores reportados a Sentry con contexto
 
 **Consideraciones Legales:**
@@ -12603,8 +12510,8 @@ Este caso de uso permite generar certificados PDF personalizables mediante siste
 - **Marca de agua:** Logo de la asociación + fecha generación
 
 **RNF Relacionados:**
-- RNF-T-011: Generación de documentos PDF/A
-- RNF-T-012: Firma digital opcional
+- RNFT-011: Generación de documentos PDF/A
+- RNFT-012: Firma digital opcional
 
 **Tipos de certificados:**
 - Certificado de asociado (vigencia, antigüedad)
@@ -12703,7 +12610,7 @@ Portal web progresivo (PWA) para que socios consulten su información sin contac
 - Socio recién registrado recibe email de bienvenida con enlace de activación
 - Enlace contiene token único de activación
 - Al acceder, sistema solicita establecer contraseña
-- Validación: mínimo 8 caracteres, mayúscula, número, carácter especial (RNF-T-001)
+- Validación: mínimo 8 caracteres, mayúscula, número, carácter especial (RNFT-001)
 - Tras establecer contraseña, sesión se crea automáticamente
 
 **FA-3: Recordar sesión (Remember Me)**
@@ -12752,10 +12659,7 @@ Portal web progresivo (PWA) para que socios consulten su información sin contac
 
 | Evento | Payload | Cuándo se emite | Consumidores potenciales |
 |--------|---------|-----------------|--------------------------|
-| `SocioAutenticado` | socioId, usuarioId, dispositivo, ip | - (auditoría) |
-| `MagicLinkGenerado` | usuarioId, token, email | BC-Comunicacion (envío email) |
-| `MagicLinkUtilizado` | usuarioId, token, fechaUso | - (auditoría) |
-| `IntentosLoginFallidos` | usuarioId, email, cantidadIntentos | - (alerta de seguridad) |
+| `MagicLinkGenerado` | usuarioId, token, email | Al generar el documento/elemento | BC-Comunicacion (envío email) |
 
 *Este UC no consume eventos de otros BCs*
 
@@ -12786,8 +12690,8 @@ Portal web progresivo (PWA) para que socios consulten su información sin contac
 - **2FA (opcional):** TOTP con QR (librería otplib)
 
 **RNF Relacionados:**
-- RNF-T-001: Autenticación JWT con refresh tokens
-- RNF-T-013: Bloqueo tras 5 intentos fallidos
+- RNFT-001: Autenticación JWT con refresh tokens
+- RNFT-013: Bloqueo tras 5 intentos fallidos
 
 **Seguridad:**
 - Contraseñas hasheadas con Argon2
@@ -12961,8 +12865,8 @@ Socios consultan y actualizan sus datos personales, ven estado de cuotas y desca
 - **Validación:** Socio solo puede modificar campos permitidos (no estado, tipo, etc.)
 
 **RNF Relacionados:**
-- RNF-T-045: Skeleton screens durante carga
-- RNF-T-050: Progressive rendering
+- RNFT-045: Skeleton screens durante carga
+- RNFT-050: Progressive rendering
 
 **UX:**
 - Vista responsive mobile-first
@@ -13149,10 +13053,10 @@ Este caso de uso materializa la filosofía self-service del portal del socio, re
 - **Pago online:** Integración con pasarela si evento tiene coste (ver UC-025)
 
 **RNF Relacionados:**
-- RNF-T-016: Validación de aforo en tiempo real
-- RNF-T-024: Gestión de concurrencia (evitar sobreventa)
+- RNFT-016: Validación de aforo en tiempo real
+- RNFT-024: Gestión de concurrencia (evitar sobreventa)
 - RNF-013: Segregación datos (validación userId === socioId)
-- RNF-T-015: Lock optimista en control de aforo
+- RNFT-015: Lock optimista en control de aforo
 
 **Casos especiales:**
 - Eventos con lista de espera
@@ -13386,10 +13290,10 @@ Los carnets digitales incluyen código QR cifrado con AES-256-GCM conteniendo pa
 - **Notificaciones:** WebSocket o polling para notificar nuevos documentos
 
 **RNF Relacionados:**
-- RNF-T-022: Pre-visualización en navegador (PDF, imágenes)
-- RNF-T-009: Documentos cifrados en S3
+- RNFT-022: Pre-visualización en navegador (PDF, imágenes)
+- RNFT-009: Documentos cifrados en S3
 - RNF-013: Segregación datos (validación userId === socioId)
-- RNF-T-064: Logging con Sentry
+- RNFT-064: Logging con Sentry
 
 **Tipos de documentos:**
 - Comunicaciones oficiales
@@ -13643,7 +13547,7 @@ El sistema garantiza que cada tratamiento de datos tenga una base legal válida 
 
 #### Notas de Implementación
 
-- **RNF-T-025 a RNF-T-030:** Cumplimiento RGPD completo, bases legales documentadas, histórico inmutable
+- **RNFT-025 a RNFT-030:** Cumplimiento RGPD completo, bases legales documentadas, histórico inmutable
 - **Tabla `consentimientos`:** INSERT-only, nunca UPDATE/DELETE, índice compuesto `(socio_id, finalidad_id, timestamp DESC)`
 - **Evidencia técnica:** Capturar IP, user agent, timestamp UTC, método de registro, versión texto legal
 - **Versionado de textos legales:** Campo `version` en tabla `finalidades_tratamiento`, cambios generan nueva versión
@@ -13959,7 +13863,7 @@ Cada derecho tiene un flujo específico: Acceso genera export completo de datos 
 
 #### Notas de Implementación
 
-- **RNF-T-031, RNF-T-032:** Plazos RGPD estrictos, scheduled jobs diarios para monitoreo de vencimientos
+- **RNFT-031, RNFT-032:** Plazos RGPD estrictos, scheduled jobs diarios para monitoreo de vencimientos
 - **Export de datos:** Formato JSON estructurado (RGPD Art. 20 portabilidad) + PDF legible
 - **Anonimización:** Sobrescribir datos personales con hash irreversible, conservar solo agregados contables
 - **Período de gracia:** 30 días antes de eliminación física para permitir reversión si error
@@ -14261,7 +14165,7 @@ El sistema mantiene el Libro Registro de Asociados actualizado automáticamente 
 
 #### Notas de Implementación
 
-- **RNF-T-035:** Cumplimiento Ley Orgánica 1/2002 de Asociaciones, formatos oficiales autonómicos
+- **RNFT-035:** Cumplimiento Ley Orgánica 1/2002 de Asociaciones, formatos oficiales autonómicos
 - **Firma digital:** Integración con AutoFirma o @firma para certificados cualificados
 - **Plantillas:** Sistema de templates con variables dinámicas (Handlebars)
 - **Numeración correlativa:** Garantizar unicidad y orden de páginas en libro registro
@@ -14735,7 +14639,7 @@ El sistema mantiene un calendario fiscal actualizado según normativa vigente (A
 
 #### Notas de Implementación
 
-- **RNF-T-036:** Alertas fiscales con calendario actualizado según normativa AEAT y Haciendas Forales
+- **RNFT-036:** Alertas fiscales con calendario actualizado según normativa AEAT y Haciendas Forales
 - **Scheduled Job:** Cron semanal (Lunes 09:00), con lock distribuido en Redis
 - **Calendario fiscal:** Tabla maestra `obligaciones_fiscales_template` mantenida por equipo de soporte
 - **Librerías:** `@nestjs/schedule`, `date-fns`, `date-holidays` (festivos que afectan plazos)
@@ -15052,7 +14956,7 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
 6. **Notas:**
    - BC-Cumplimiento como nuevo Bounded Context transversal
    - Todos los UCs incluyen validación RBAC (solo admin puede gestionar)
-   - Implementación alineada con RNF-T-025 a RNF-T-036 (RGPD)
+   - Implementación alineada con RNFT-025 a RNFT-036 (RGPD)
    - Tests con scenarios: consentimiento válido, revocación, exportación ARCO completa
    - Ready para auditoría AEPD con trazabilidad completa
 
@@ -15125,7 +15029,7 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
 7. **Notas:**
    - UC-016 fusionado con UC-015 para mantener cohesión en gestión de carnets
    - Todos los UCs incluyen validación de permisos RBAC
-   - Implementaciones alineadas con RNF-T-001 a RNF-T-066
+   - Implementaciones alineadas con RNFT-001 a RNFT-066
    - Tests con coverage objetivo: línea ≥80%, branch ≥70%
 
 ### **v1.7 (06 Febrero 2026):**
@@ -15375,7 +15279,7 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
   - UC-030: Inscripciones online (US-087, US-092, US-093)
 - ✅ Añadidas ~1.200 líneas de documentación técnica detallada
 - ✅ Incluye integración completa con BC-Tesoreria (cargos, pagos, reembolsos)
-- ✅ Implementación de optimistic locking para evitar double-booking (RNF-T-019)
+- ✅ Implementación de optimistic locking para evitar double-booking (RNFT-019)
 - ✅ Generación y sincronización de calendarios iCal/CalDAV (US-086)
 - ✅ Formularios dinámicos con campos personalizados (US-093)
 - ✅ Total casos de uso documentados: 29/71 (40.8% del proyecto)

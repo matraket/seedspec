@@ -340,14 +340,12 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 | `EstadoSocioCambiado` | Cambio de estado | socioId, estadoAnterior, estadoNuevo, motivo | BC-Tesoreria (suspender/reactivar cobros) |
 | `TipoSocioCambiado` | Cambio de categoría | socioId, tipoAnterior, tipoNuevo | BC-Tesoreria (ajustar cuota) |
 | `DatosSocioActualizados` | Modificación datos | socioId, camposModificados | BC-Tesoreria (si IBAN), BC-Comunicacion (si email) |
-| `CarnetGenerado` | Generación carnet | carnetId, socioId, ejercicioId | - |
 | `CarnetValidado` | Escaneo QR exitoso | carnetId, socioId, timestamp, ubicacion? | BC-Eventos (check-in automático) |
 | `EjercicioAbierto` | Apertura ejercicio | ejercicioId, periodo | BC-Tesoreria (generar cuotas), BC-Membresia (arrastrar socios) |
 | `EjercicioCerrado` | Cierre ejercicio | ejercicioId, estadisticas | BC-Documentos (generar memoria) |
 | `SolicitudAltaIniciada` | Nueva solicitud | solicitudId, datos | BC-Comunicacion (notificar junta) |
 | `SolicitudAltaAprobada` | Aprobación | solicitudId, socioId | BC-Comunicacion (notificar aspirante) |
 | `TipoSocioCreado` | Creación de tipo de socio | tipoSocioId, nombre, descripcion, tenantId | BC-Tesoreria (vincular planes de cuota) |
-| `TipoSocioActualizado` | Actualización de tipo de socio | tipoSocioId, camposModificados[], fechaActualizacion | Cachés de configuración |
 | `BajaPorImpago` | Baja automática por morosidad | socioId, deudaTotal, fechaBaja | BC-Comunicacion (notificar), BC-Tesoreria (cerrar cuenta) |
 
 ### 3.5 Trazabilidad RF
@@ -842,23 +840,16 @@ MotivoBajaSuscripcion (enum):
 | `PagoRegistrado` | Cobro confirmado | pagoId, cargoId, socioId, importe, metodo | BC-Membresia (actualizar estado si procede) |
 | `PagoDevuelto` | Devolución bancaria | pagoId, cargoId, motivo | BC-Comunicacion (notificar), BC-Membresia (marcar morosidad) |
 | `MorosidadDetectada` | Cargo vencido sin pago | socioId, cargoId, diasVencido | BC-Comunicacion (workflow avisos) |
-| `SocioSuspendidoPorImpago` **[Interno]** | Morosidad grave | socioId, deudaTotal | - (uso interno, el evento de negocio es `EstadoSocioCambiado`) |
-| `RemesaGenerada` **[Interno]** | Creación remesa | remesaId, numAdeudos, importeTotal | - (uso interno, el evento de negocio es `RemesaSepaGenerada`) |
-| `RemesaProcesada` **[Interno]** | Confirmación banco | remesaId, adeudosOk, adeudosKo | - (uso interno, el evento de negocio es `RemesaSepaEnviada`) |
-| `MandatoCreado` **[Interno]** | Firma mandato SEPA | mandatoId, socioId | - (uso interno, el evento de negocio es `MandatoSepaRegistrado`) |
-| `MandatoCaducado` **[Interno]** | 36 meses sin uso | mandatoId, socioId | - (uso interno, ver UC-023 FA-3) |
 | `PlanCuotaCreado` | Creación de plan | planCuotaId, codigo, nombre, tipo, importe | BC-Membresia (invalidar caché) |
 | `PlanCuotaModificado` | Modificación plan | planCuotaId, camposModificados | BC-Membresia (invalidar caché) |
 | `PlanCuotaVinculadoATipoSocio` | Vinculación N:M | planCuotaId, tipoSocioId, esDefault | BC-Membresia (invalidar caché) |
 | `CargoPagado` | Pago de cargo | cargoId, socioId, importe, fechaPago, metodoPago | BC-Comunicacion (enviar recibo), BC-Membresia (actualizar morosidad) |
 | `CargoCobrado` | Cobro efectivo de cargo | cargoId, socioId, importe, fechaCobro, remesaId? | BC-Comunicacion (confirmar pago) |
 | `CargoMarcadoReintento` | Marcado para reintento de cobro | cargoId, socioId, intentoNumero, proximaFecha | BC-Comunicacion (avisar socio) |
-| `CargaMasivaCreada` | Generación masiva de cargos | totalCargos, importeTotal, usuarioCreador, timestamp | Sistema de auditoría |
 | `ReciboGenerado` | Generación de recibo PDF | reciboId, pagoId, numeroRecibo, fechaEmision | BC-Comunicacion (enviar por email), BC-Documentos (archivar) |
 | `MandatoSepaRegistrado` | Registro mandato SEPA | mandatoId, socioId, iban, fechaFirma, estado | BC-Tesoreria (habilitar domiciliación) |
 | `MandatoSepaRevocado` | Revocación mandato SEPA | mandatoId, socioId, motivoRevocacion, fechaRevocacion | BC-Tesoreria (deshabilitar domiciliación), BC-Comunicacion (notificar) |
 | `RemesaSepaGenerada` | Generación fichero SEPA XML | remesaId, fechaCobro, totalAdeudos, importeTotal, identificadorAcreedor | BC-Comunicacion (avisar socios 2 días antes) |
-| `RemesaSepaEnviada` | Envío remesa a banco | remesaId, fechaEnvio, banco | Sistema de auditoría |
 | `EnlacePagoGenerado` | Generación enlace pago online | cargoId, socioId, url, fechaExpiracion | BC-Comunicacion (enviar email con enlace) |
 | `MorosidadRegularizada` | Regularización de morosidad | socioId, importePagado, fechaRegularizacion | BC-Membresia (restaurar estado), BC-Comunicacion (confirmar) |
 | `CertificadoDescubiertoGenerado` | Certificado de descubierto | certificadoId, socioId, deudaTotal, fechaEmision | BC-Documentos (archivar), BC-Comunicacion (notificar socio) |
@@ -866,7 +857,6 @@ MotivoBajaSuscripcion (enum):
 | `SuscripcionModificada` | Modificación suscripción | suscripcionId, camposModificados[], fechaModificacion | BC-Tesoreria (recalcular próximos cargos) |
 | `SuscripcionCerrada` | Cierre de suscripción | suscripcionId, motivoCierre, fechaCierre | BC-Tesoreria (detener generación) |
 | `GeneracionMensualCompletada` | Generación mensual de cuotas | ejercicioId, mes, totalCargosGenerados, importeTotal | BC-Comunicacion (notificar tesorero), Sistema de auditoría |
-| `MovimientoRegistrado` | Registro de movimiento contable | movimientoId, tipo, importe, concepto, fecha | Sistema de auditoría |
 | `DescuadreDetectado` | Detección de descuadre | diferencia, cuentaId, fechaDeteccion | BC-Comunicacion (alertar tesorero) |
 
 ### 4.5 Domain Services
@@ -1150,10 +1140,8 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 | `InscripcionRealizada` | Nueva inscripción | inscripcionId, eventoId, socioId | BC-Tesoreria (generar cargo si precio), BC-Comunicacion (confirmación) |
 | `InscripcionCancelada` | Cancelación inscripción | inscripcionId, eventoId | BC-Tesoreria (anular cargo) |
 | `AforoCompletado` | Aforo lleno | eventoId | BC-Comunicacion (activar lista espera) |
-| `AsistenciaRegistrada` | Check-in | inscripcionId, eventoId, hora | - |
 | `PlazaLiberada` | Baja de inscrito | eventoId, posicionListaEspera | BC-Comunicacion (notificar siguiente) |
 | `ValoracionesEventoSolicitadas` | Solicitud valoraciones post-evento | eventoId, sociosInscritos[], fechaSolicitud | BC-Comunicacion (enviar formulario) |
-| `ValoracionRecibida` | Recepción de valoración | valoracionId, eventoId, socioId, puntuacion, comentario | Sistema de analytics |
 | `ProblemaRecurrenteDetectado` | Detección patrón de problemas | eventoId, tipoProblema, frecuencia | BC-Comunicacion (alertar organizadores) |
 
 ### 5.5 Trazabilidad RF
@@ -1277,15 +1265,12 @@ BC-Comunicacion emite eventos relacionados con el ciclo de vida de las comunicac
 | Evento | Trigger | Payload | Consumidores |
 |--------|---------|---------|--------------|
 | `ComunicacionEnviada` | Envío completado | comunicacionId, totalDestinatarios, canal, fechaEnvio | - |
-| `EmailAbierto` | Tracking de apertura | envioId, comunicacionId, socioId, fechaApertura | - (tracking interno) |
-| `EnlaceClicado` | Tracking de clic | envioId, comunicacionId, socioId, url, fechaClic | - (tracking interno) |
 | `EmailRebotado` | Email rebota (bounce) | envioId, socioId, email, tipoBounce (hard/soft), motivo | BC-Membresia (marcar email inválido si hard bounce) |
 | `NotificacionBienvenidaEnviada` | Email bienvenida enviado a nuevo socio | socioId, email, fechaEnvio, plantillaId | - |
 | `RecordatorioPagoEnviado` | Recordatorio de pago enviado | socioId, email, cargoId, importe, fechaLimite | - |
 | `AvisoMorosidadEnviado` | Aviso de morosidad enviado | socioId, email, deudaTotal, fechaEnvio | - |
 | `AvisoDomiciliacionEnviado` | Aviso pre-remesa enviado | socioId, email, remesaId, importe, fechaCargo | - |
 | `ConfirmacionInscripcionEnviada` | Confirmación de inscripción a evento | socioId, email, eventoId, inscripcionId | - |
-| `AnuncioEventoPublicado` | Anuncio de evento publicado en tablón | eventoId, anuncioId, titulo, fechaPublicacion | - |
 
 **Notas:**
 - `ComunicacionEnviada`: Marca la finalización del proceso de envío masivo
@@ -1301,7 +1286,6 @@ Este BC **también es consumidor** de eventos de otros BCs:
 | `MorosidadDetectada` | Iniciar workflow de avisos |
 | `EventoPublicado` | Notificar a socios según preferencias |
 | `InscripcionRealizada` | Enviar confirmación |
-| `RemesaProcesada` | Enviar resumen a tesorero |
 
 ### 6.4 Trazabilidad RF
 
@@ -1601,15 +1585,7 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 | `UsuarioCreado` | Registro | usuarioId, email |
 | `UsuarioAutenticado` | Login exitoso | usuarioId, tenantId, email, rol, ipAddress, userAgent, timestamp |
 | `AutenticacionFallida` | Login fallido | email, intentos, ip |
-| `UsuarioBloqueado` | 5 intentos fallidos | usuarioId, hasta |
-| `RolAsignado` | Asignación/cambio de rol | userId, rolId, tenantId, assignedBy, fechaAsignacion |
-| `RolPersonalizadoCreado` | Creación de rol custom | rolId, nombre, permisos[], tenantId |
-| `TenantCreado` **[Interno]** | Alta de entidad | tenantId, datos | - (uso interno, el evento de negocio es `TenantProvisionado`) |
 | `TenantProvisionado` | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif |
-| `TenantConfigActualizado` | Actualización configuración | tenantId, camposActualizados[], fechaActualizacion |
-| `CargoDirectivoAsignado` | Asignación cargo directivo | cargoId, userId, tipoCargo, fechaInicio |
-| `TraspasoIniciado` | Inicio traspaso de cargo | traspasoId, cargoId, salienteId, entranteId, fechaInicio |
-| `TraspasoCompletado` | Finalización de traspaso | traspasoId, cargoId, salienteId, entranteId, fechaTraspaso |
 
 ### 8.5 Trazabilidad RF
 
