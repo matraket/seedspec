@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/seedspec.svg" alt="SeedSpec banner" width="100%" />
+</p>
+
 # 🌱 SeedSpec
 
 ### De la semilla al sistema: metodología de expansión documental
