@@ -1,45 +1,47 @@
-# Associated — Metodología de expansión documental
+# SeedSpec - De la semilla al sistema: metodología de expansión documental
 
 ## 1. Propósito del repositorio
 
-Este repositorio reúne la base documental del TFM **Associated**, un ERP ligero orientado a asociaciones culturales, cofradías, clubes deportivos y peñas festeras españolas. Su objetivo no es solo describir una idea de producto, sino mostrar de forma trazable cómo se pasó desde una **propuesta inicial de alto nivel** y un **análisis de necesidades** hacia un conjunto de especificaciones funcionales, de dominio, arquitectónicas, tecnológicas y operativas que conforman un corpus documental completo para el alcance definido del proyecto.
+Este repositorio reúne la base documental del Poryecto **Associated**, un ERP ligero orientado a asociaciones culturales, cofradías, clubes deportivos y peñas festeras españolas. Su objetivo no es solo describir una idea de producto, sino mostrar de forma trazable cómo una **propuesta inicial**, *"la semilla"*, germina y se desarrolla hasta convertirse en un corpus documental completo de especificaciones funcionales, de dominio, arquitectónicas, tecnológicas y operativas.
 
-En términos metodológicos, el repositorio documenta un proceso de expansión progresivo: problema de negocio → necesidades → requisitos → modelo de dominio → decisiones de arquitectura → stack → concreción técnica → historias de usuario → casos de uso → estrategia de implementación del MVP.
+En términos metodológicos, el repositorio documenta un proceso de crecimiento orgánico y progresivo: 
+
+La semilla del problema de negocio → necesidades → requisitos → modelo de dominio → decisiones de arquitectura → stack → concreción técnica → historias de usuario → casos de uso → estrategia de implementación del MVP.
 
 ---
 
-## 2. Punto de partida documental
+## 2. La semilla: punto de partida documental
 
-La construcción de la especificación parte de dos documentos base:
+La construcción de la especificación parte de dos documentos que constituyen la semilla del proyecto:
 
-- [001_propuesta-associated.md](001_propuesta-associated.md): formula el problema, el público objetivo, el valor del proyecto para el TFM y una primera intuición de bounded contexts y eventos de dominio.
+- [001_propuesta-associated.md](001_propuesta-associated.md): formula el problema, el público objetivo, el valor del proyecto para el Poryecto y una primera intuición de bounded contexts y eventos de dominio.
 - [002_analisis-necesidades.md](002_analisis-necesidades.md): amplía la propuesta mediante un análisis exhaustivo de necesidades reales de colectividades españolas, organizado en secciones temáticas y orientado a detectar pain points, obligaciones y capacidades necesarias.
 
-A partir de esos dos insumos, el repositorio desarrolla una cadena de artefactos en la que cada documento declara explícitamente sus **inputs** y su **estado**, siguiendo una lógica incremental de derivación.
+A partir de esos dos insumos, el repositorio cultiva una cadena de artefactos en la que cada documento declara explícitamente sus **inputs** y su **estado**, siguiendo una lógica de crecimiento incremental.
 
 ---
 
-## 3. Metodología seguida: expansión paso a paso
+## 3. Fases de crecimiento: expansión paso a paso
 
-### Paso 0. Delimitación del problema y tesis del proyecto
+### Paso 0. Preparar el terreno: delimitación del problema y tesis del proyecto
 
-La propuesta inicial fija el marco conceptual del TFM:
+La propuesta inicial fija el marco conceptual del Poryecto - el terreno donde crecerá todo lo demás:
 
 - dominio: gestión de colectividades españolas;
 - problema: alta carga administrativa sobre perfiles voluntarios;
 - oportunidad: ausencia de soluciones asequibles y adaptadas;
 - enfoque académico: demostrar DDD, Clean Architecture y decisiones arquitectónicas justificadas, evitando sobreingeniería.
 
-Este documento funciona como **marco de intención**: todavía no define especificaciones, pero sí orienta el tipo de solución y anticipa conceptos de dominio relevantes.
+Este documento funciona como **marco de intención**: todavía no define especificaciones, pero planta la semilla de la solución y anticipa conceptos de dominio relevantes.
 
-### Paso 1. Levantamiento y estructuración de necesidades
+### Paso 1. Primeros brotes: levantamiento y estructuración de necesidades
 
-El análisis de necesidades transforma la idea inicial en un mapa más concreto de problemas y expectativas. Su función metodológica es doble:
+El análisis de necesidades hace germinar la idea inicial en un mapa más concreto de problemas y expectativas. Su función metodológica es doble:
 
 1. **capturar lenguaje del dominio** desde casos reales o plausibles del contexto español;
 2. **organizar las necesidades por áreas funcionales** para permitir su posterior conversión a requisitos.
 
-De este modo, el documento 002 actúa como base primaria para derivar requisitos funcionales y también como soporte para RNFs, porque no solo identifica funcionalidades, sino restricciones operativas, legales y de usabilidad.
+De este modo, el documento 002 actúa como raíz primaria para derivar requisitos funcionales y también como soporte para RNFs, porque no solo identifica funcionalidades, sino restricciones operativas, legales y de usabilidad.
 
 ### Paso 2. Formalización en requisitos funcionales (RF)
 
@@ -51,7 +53,7 @@ Metodológicamente, este paso implica:
 - expresar cada capacidad como requisito verificable;
 - mantener la semántica del problema original, pero con mayor precisión operativa.
 
-Aquí aparece la primera gran estructura de trazabilidad: las necesidades dejan de ser solo narrativas y pasan a ser **un inventario formal de comportamiento esperado**.
+Aquí aparece la primera gran estructura de trazabilidad: las necesidades dejan de ser solo narrativas y echan raíces como **un inventario formal de comportamiento esperado**.
 
 ### Paso 3. Derivación de requisitos no funcionales base (RNF)
 
@@ -64,11 +66,11 @@ La lógica seguida es separar:
 
 Este nivel sigue siendo intencionalmente tecnológico-agnóstico. Todavía no se seleccionan herramientas concretas; se fijan restricciones y metas de calidad.
 
-### Paso 4. Modelado del dominio y bounded contexts
+### Paso 4. El tronco: modelado del dominio y bounded contexts
 
-El documento [005_modelo-dominio.md](005_modelo-dominio.md) integra la propuesta, el análisis de necesidades, los RF y los RNF base para construir el modelo de dominio.
+El documento [005_modelo-dominio.md](005_modelo-dominio.md) integra la propuesta, el análisis de necesidades, los RF y los RNF base para construir el modelo de dominio - el tronco estructural del que se ramifican las decisiones posteriores.
 
-La metodología de expansión en este paso consiste en:
+La metodología de crecimiento en este paso consiste en:
 
 - identificar subdominios;
 - delimitar bounded contexts;
@@ -76,7 +78,7 @@ La metodología de expansión en este paso consiste en:
 - explicitar domain events e interacciones;
 - alinear cada bloque del dominio con las secciones funcionales del catálogo RF.
 
-El resultado es una arquitectura conceptual del negocio organizada en seis bounded contexts principales:
+El resultado es una arquitectura conceptual del negocio que ramifica el dominio en seis bounded contexts principales:
 
 - `BC-Identidad`
 - `BC-Membresia`
@@ -87,7 +89,7 @@ El resultado es una arquitectura conceptual del negocio organizada en seis bound
 
 Además, los requisitos N8 a N11 se tratan como capacidades **transversales** implementadas sobre los contextos existentes, no como bounded contexts dedicados.
 
-### Paso 5. Toma de decisiones de arquitectura mediante ADRs
+### Paso 5. Ramas estructurales: decisiones de arquitectura mediante ADRs
 
 El documento [006_adrs.md](006_adrs.md) toma como base los RNF y el modelo de dominio para registrar **12 Architectural Decision Records**.
 
@@ -104,7 +106,7 @@ Este paso convierte necesidades y restricciones en decisiones explícitas, justi
 - Clean Architecture por módulo;
 - API REST + OpenAPI.
 
-La metodología aquí no consiste en “elegir tecnología porque sí”, sino en **documentar por qué una decisión arquitectónica responde a RNFs y al modelo del dominio**.
+La metodología aquí no consiste en “elegir tecnología porque sí”, sino en **documentar por qué cada rama arquitectónica responde a RNFs y al modelo del dominio**.
 
 ### Paso 6. Selección del stack tecnológico
 
@@ -115,7 +117,7 @@ La secuencia aplicada es deliberada:
 1. primero se establecen restricciones y decisiones;
 2. después se eligen tecnologías coherentes con esas decisiones.
 
-Así, el stack no nace como punto de partida, sino como consecuencia de artefactos previos. El resultado documentado incluye, entre otros, TypeScript, NestJS, React, PostgreSQL, Prisma, MinIO/S3, Vitest, Playwright, GitHub Actions y Sentry.
+Así, el stack no nace como punto de partida, sino como fruto natural de artefactos previos. El resultado documentado incluye, entre otros, TypeScript, NestJS, React, PostgreSQL, Prisma, MinIO/S3, Vitest, Playwright, GitHub Actions y Sentry.
 
 ### Paso 7. Concreción de RNF en requisitos técnicos (RNFT)
 
@@ -128,7 +130,7 @@ Este paso introduce una segunda capa de refinamiento no funcional:
 
 Por eso el documento incluye una matriz RNF → RNFT → tecnología, consolidando la trazabilidad entre calidad deseada y medios técnicos concretos.
 
-### Paso 8. Derivación de User Stories y criterios de aceptación
+### Paso 8. Floración: derivación de User Stories y criterios de aceptación
 
 El documento [009_user-stories.md](009_user-stories.md) toma como inputs los requisitos funcionales, el modelo de dominio y los RNF técnicos para generar **202 User Stories** con criterios de aceptación.
 
@@ -139,7 +141,7 @@ La metodología observada en este documento consiste en:
 - incorporar criterios de aceptación en formato verificable;
 - priorizar con MoSCoW.
 
-Este paso hace de puente entre especificación analítica y planificación de producto, porque acerca el catálogo RF al lenguaje de entrega incremental.
+Este paso hace de puente entre especificación analítica y planificación de producto: es donde el trabajo analítico florece en lenguaje de entrega incremental.
 
 ### Paso 9. Agrupación cohesiva en casos de uso y application services
 
@@ -164,9 +166,9 @@ Cada caso de uso incorpora, según el material relevado:
 
 En esta etapa el repositorio ya no describe solo “qué necesita el sistema”, sino **cómo se ejecuta operativamente cada capacidad relevante**.
 
-### Paso 10. Incorporación de la estrategia del MVP
+### Paso 10. La cosecha: incorporación de la estrategia del MVP
 
-El repositorio ya incorpora [011_mvp-strategy.md](011_mvp-strategy.md) como artefacto de cierre del ciclo documental principal. Este documento sintetiza KB-003 a KB-010 para seleccionar el subconjunto de casos de uso priorizados, delimitar los bounded contexts incluidos en el MVP y ordenar la implementación en fases con dependencias explícitas.
+El repositorio ya incorpora [011_mvp-strategy.md](011_mvp-strategy.md) como artefacto de cierre del ciclo documental principal - el momento de cosechar lo cultivado. Este documento sintetiza KB-003 a KB-010 para seleccionar el subconjunto de casos de uso priorizados, delimitar los bounded contexts incluidos en el MVP y ordenar la implementación en fases con dependencias explícitas.
 
 ---
 
@@ -213,9 +215,9 @@ Esto refuerza el carácter acumulativo y verificable del repositorio.
 
 ## 5. Orden de generación de artefactos
 
-La secuencia metodológica consolidada en el repositorio es la siguiente:
+La secuencia de crecimiento consolidada en el repositorio es la siguiente:
 
-1. **KB-001** Propuesta TFM
+1. **KB-001** Propuesta Poryecto
 2. **KB-002** Análisis de necesidades
 3. **KB-003** Requisitos funcionales
 4. **KB-004** RNF base
@@ -269,41 +271,41 @@ Se excluyen del scope documental principal las secciones **N12** y **N13**, que 
 
 ### Justificación metodológica de la exclusión
 
-La exclusión no implica irrelevancia, sino priorización del alcance del TFM. En [AGENTS.md](AGENTS.md) se justifican cuatro motivos:
+La exclusión no implica irrelevancia, sino priorización del alcance del Poryecto. En [AGENTS.md](AGENTS.md) se justifican cuatro motivos:
 
 1. complejidad de análisis desproporcionada para el objetivo académico;
 2. extensibilidad del modelo garantizada por la arquitectura modular y por bounded contexts;
-3. necesidad de mantener un scope demostrable y controlable dentro del TFM;
-4. delimitación explícita del corpus principal sobre N2-N11 como base suficiente y autocontenida para el TFM.
+3. necesidad de mantener un scope demostrable y controlable dentro del Poryecto;
+4. delimitación explícita del corpus principal sobre N2-N11 como base suficiente y autocontenida para el Poryecto.
 
 ---
 
 ## 7. Relación entre RF, RNF, BC, ADR, RNFT, US y UC
 
-La metodología del repositorio puede resumirse como una cadena de transformación y refinamiento:
+La metodología del repositorio puede resumirse como un ciclo de crecimiento orgánico - de la semilla a la cosecha:
 
 ```text
-Problema y propuesta
+Semilla: problema y propuesta
     ↓
-Necesidades de alto nivel
+Raíces: necesidades de alto nivel
     ↓
-RF (qué hace el sistema)
+Tallo: RF (qué hace el sistema)
     ↓
-RNF (cómo debe comportarse)
+Nutrientes: RNF (cómo debe comportarse)
     ↓
-BC / Modelo de dominio (cómo se divide el negocio)
+Tronco: BC / Modelo de dominio (cómo se divide el negocio)
     ↓
-ADR (decisiones estructurales)
+Ramas: ADR (decisiones estructurales)
     ↓
-Stack (tecnologías coherentes con ADR y RNF)
+Corteza: Stack (tecnologías coherentes con ADR y RNF)
     ↓
-RNFT (concreción técnica verificable)
+Savia: RNFT (concreción técnica verificable)
     ↓
-US (valor de negocio en lenguaje de producto)
+Hojas: US (valor de negocio en lenguaje de producto)
     ↓
-UC (ejecución operativa y application services)
+Flores: UC (ejecución operativa y application services)
     ↓
-MVP (selección priorizada de implementación)
+Fruto: MVP (selección priorizada de implementación)
 ```
 
 ### Papel de cada artefacto
@@ -358,20 +360,20 @@ De acuerdo con el estado actual del repositorio, la base documental principal se
 
 ## 9. Hallazgos relevantes al revisar el repositorio
 
-Durante la reconstrucción metodológica se observa un patrón claro y consistente: **cada artefacto nace como refinamiento controlado del anterior**, no como documento aislado.
+Durante la reconstrucción metodológica se observa un patrón claro y consistente: **cada artefacto brota como refinamiento controlado del anterior**, no como documento aislado.
 
-El conjunto KB-003 a KB-010 aparece articulado como un recorrido documental completo: requisitos funcionales y no funcionales, modelo de dominio, decisiones arquitectónicas, stack, concreción técnica, historias de usuario y casos de uso mantienen una secuencia metodológica continua y explícita.
+El conjunto KB-003 a KB-010 aparece articulado como un recorrido documental completo: requisitos funcionales y no funcionales, modelo de dominio, decisiones arquitectónicas, stack, concreción técnica, historias de usuario y casos de uso mantienen una secuencia de crecimiento continua y explícita.
 
-La incorporación de [011_mvp-strategy.md](011_mvp-strategy.md) cierra ese recorrido con una priorización de implementación apoyada en los artefactos previos, sin abrir nuevas fases documentales dentro del alcance principal.
+La incorporación de [011_mvp-strategy.md](011_mvp-strategy.md) cierra ese ciclo con una priorización de implementación - el fruto maduro del proceso - apoyada en los artefactos previos, sin abrir nuevas fases documentales dentro del alcance principal.
 
 ---
 
 ## 10. Cierre del corpus documental
 
-Tras la incorporación de [011_mvp-strategy.md](011_mvp-strategy.md), el repositorio presenta un corpus documental metodológicamente cerrado para el alcance definido del TFM:
+Tras la incorporación de [011_mvp-strategy.md](011_mvp-strategy.md), el repositorio presenta un corpus documental que completó su ciclo de crecimiento para el alcance definido del Poryecto:
 
 - KB-003 a KB-010 cubren el espectro analítico, funcional, arquitectónico, técnico y operativo del sistema;
 - KB-011 sintetiza ese corpus en una estrategia de implementación del MVP;
 - la trazabilidad entre necesidades, requisitos, bounded contexts, decisiones, historias y casos de uso queda expresada de forma explícita en los documentos del repositorio.
 
-En otras palabras, el repositorio ya completó la **expansión analítica, de diseño y de priorización del MVP** dentro del alcance documental establecido.
+En otras palabras, la semilla plantada en la propuesta inicial ha dado sus frutos: el repositorio completó la **expansión analítica, de diseño y de priorización del MVP** dentro del alcance documental establecido.

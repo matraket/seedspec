@@ -10,7 +10,7 @@
 
 **Las asociaciones culturales, cofradías, clubes deportivos y peñas festeras españolas comparten un problema crítico: el 75% sigue gestionando socios, cuentas y comunicaciones con hojas de Excel o papel.** Este documento consolida las necesidades identificadas en conversaciones con juntas directivas, tesoreros voluntarios y responsables de entidades reales de Aragón y otras comunidades, estableciendo los requisitos funcionales para un ERP ligero que resuelva sus pain points específicos.
 
-El tejido asociativo español —más de **300.000 asociaciones activas**— sostiene buena parte de la vida cultural, festiva y deportiva del país, especialmente en el ámbito rural. Sin embargo, la gestión de estas entidades recae mayoritariamente en voluntarios sin formación administrativa que enfrentan obligaciones legales, fiscales y de protección de datos cada vez más exigentes. La brecha entre las obligaciones y las herramientas disponibles genera frustración, errores y abandono de responsabilidades.
+El tejido asociativo español -más de **300.000 asociaciones activas**- sostiene buena parte de la vida cultural, festiva y deportiva del país, especialmente en el ámbito rural. Sin embargo, la gestión de estas entidades recae mayoritariamente en voluntarios sin formación administrativa que enfrentan obligaciones legales, fiscales y de protección de datos cada vez más exigentes. La brecha entre las obligaciones y las herramientas disponibles genera frustración, errores y abandono de responsabilidades.
 
 ---
 

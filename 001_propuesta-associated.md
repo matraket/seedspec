@@ -20,9 +20,9 @@ Las asociaciones culturales, peñas, cofradías y clubes deportivos pequeños en
 - **Domain Events:** `SocioRegistrado`, `CuotaCobrada`, `PagoRechazado`, `EventoCreado`
 - **Reglas de negocio:** Diferentes tipos de socio con cuotas distintas, períodos de gracia, penalizaciones por morosidad
 
-**Nivel de complejidad:** Medio — abordable como MVP con funcionalidad core
+**Nivel de complejidad:** Medio - abordable como MVP con funcionalidad core
 
-**Potencial de originalidad:** Alto — las soluciones existentes (Berrly, Playoff) son genéricas o caras. Un enfoque específico para peñas aragonesas con integración WhatsApp y generación de remesas SEPA sería diferenciador.
+**Potencial de originalidad:** Alto - las soluciones existentes (Berrly, Playoff) son genéricas o caras. Un enfoque específico para peñas aragonesas con integración WhatsApp y generación de remesas SEPA sería diferenciador.
 
 **Encaje con el alumno:** Experiencia en ERP personalizado en IPGSoft aplica directamente. Conocimiento del contexto local de Alcañiz y sus fiestas patronales aporta dominio rico.
 
