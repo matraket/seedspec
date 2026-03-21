@@ -1,11 +1,11 @@
-# Associated - Technical Documentation Generator v1.9
+# Associated - Technical Documentation Generator v2.1
 
 ## Project Context
 ERP ligero para asociaciones culturales, cofradías, clubes deportivos y peñas festeras españolas. TFM del Máster en Desarrollo Asistido por IA.
 
 **¡¡IMPORTANTE: HABLA EN ESPAÑOL!!**
 
-## Knowledge Base Index (v2.0)
+## Knowledge Base Index (v2.1)
 | ID | Documento | Estado | Descripción |
 |----|-----------|--------|-------------|
 | KB-000 | `000_basestfm.pdf` | ✅ Base | Requisitos entrega TFM |
@@ -18,15 +18,16 @@ ERP ligero para asociaciones culturales, cofradías, clubes deportivos y peñas 
 | KB-007 | `007_stack.md` | ✅ Revisado | **Stack tecnológico**, TypeScript, NestJS, React, PostgreSQL |
 | KB-008 | `008_rnf-tecnicos.md` | ✅ Revisado | **66 RNFT**, concreción tecnológica de RNFs base |
 | KB-009 | `009_user-stories.md` | ✅ Revisado | **202 User Stories + AC**, scope N2-N11, trazabilidad RF→BC |
-| KB-010 | `010_casos-uso.md` | ✅ Revisado | **71 Casos de Uso**, Application Services, Domain Events, trazabilidad US→UC→BC |
+| KB-010 | `010_casos-uso.md` | ✅ Revisado | **Casos de Uso**, Application Services, Domain Events, trazabilidad US→UC→BC |
+| KB-011 | `011_mvp-strategy.md` | ✅ Revisado | Estrategia de implementación del MVP: alcance, fases, dependencias y priorización |
 
-**Nota v2.0:** Doc 8 (Casos de Uso) generado con agrupación cohesiva de 202 US en 71 UCs. Incluye 8 UCs completamente detallados (BC-Identidad: 5, BC-Membresia: 3 parciales), estructura completa y matriz de trazabilidad.
+**Nota v2.0:** Doc 8 (Casos de Uso) consolida la agrupación cohesiva de 202 US en un catálogo completo de UCs, con estructura integral y matriz de trazabilidad.
 
 ## Documentation Roadmap
 ```
 [1] RF ─→ [2] RNF-Base ─→ [3] DDD ─→ [4] ADRs ─→ [5] Stack ─→ [6] RNF-Tech ─→ [7] US/AC ─→ [8] UseCases ─→ [9] MVP
-  ✅           ✅            ✅          ✅          ✅           ✅            ✅           ✅            🔜
-KB-003       KB-004       KB-005      KB-006      KB-007      KB-008       KB-009       KB-010      Docs 1-8
+  ✅           ✅            ✅          ✅          ✅           ✅            ✅           ✅            ✅
+KB-003       KB-004       KB-005      KB-006      KB-007      KB-008       KB-009       KB-010      Docs 1-9
 ```
 
 | # | Documento | Inputs | Output | Estado |
@@ -37,9 +38,9 @@ KB-003       KB-004       KB-005      KB-006      KB-007      KB-008       KB-00
 | 4 | ADRs Arquitectura | KB-004, KB-005 | `006_adrs.md` | ✅ v1.1 (12 ADRs, revisado) |
 | 5 | Stack Tecnológico | KB-004, KB-006 | `007_stack.md` | ✅ v1.1 (revisado) |
 | 6 | RNF Técnicos | KB-004, KB-007 | `008_rnf-tecnicos.md` | ✅ v1.1 (66 RNFT, revisado) |
-| 7 | User Stories + AC | KB-003, KB-005, KB-008 | `009_user-stories.md` | ✅ v1.0 (N2-N11 completo) |
-| 8 | Casos de Uso / App Services | KB-005, KB-009 | `010_casos-uso.md` | ✅ v1.0 (71 UCs, 8 detallados) |
-| 9 | Definición MVP Scope | KB-003 a KB-010 | `011_mvp-scope.md` | 🔜 Pendiente |
+| 7 | User Stories + AC | KB-003, KB-005, KB-008 | `009_user-stories.md` | ✅ v1.0 (N2-N11 completo, revisado) |
+| 8 | Casos de Uso / App Services | KB-005, KB-009 | `010_casos-uso.md` | ✅ v1.0 (catálogo de UCs documentado, revisado) |
+| 9 | Estrategia de implementación del MVP | KB-003 a KB-010 | `011_mvp-strategy.md` | ✅ v1.0 (revisado) |
 
 ## Scope Documental
 
@@ -49,15 +50,15 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 | Sección | RFs | Tipo | Cobertura Doc |
 |---------|-----|------|---------------|
 | N2: Arquitectura/Acceso | 8 | Core | ✅ US + UC |
-| N3: Socios/Miembros | 34 | Core | ✅ US + 🔜 UC |
-| N4: Tesorería/Finanzas | 38 | Core | ✅ US + 🔜 UC |
-| N5: Eventos | 30 | Core | ✅ US + 🔜 UC |
-| N6: Comunicación | 23 | Supporting | ✅ US + 🔜 UC |
-| N7: Gestión Documental | 12 | Supporting | ✅ US + 🔜 UC |
-| N8: Import/Export | 13 | Transversal | ✅ US + 🔜 UC |
-| N9: Reporting | 12 | Transversal | ✅ US + 🔜 UC |
-| N10: Portal Socio | 15 | Transversal (UI) | ✅ US + 🔜 UC |
-| N11: Cumplimiento Normativo | 17 | Transversal | ✅ US + 🔜 UC |
+| N3: Socios/Miembros | 34 | Core | ✅ US + UC |
+| N4: Tesorería/Finanzas | 38 | Core | ✅ US + UC |
+| N5: Eventos | 30 | Core | ✅ US + UC |
+| N6: Comunicación | 23 | Supporting | ✅ US + UC |
+| N7: Gestión Documental | 12 | Supporting | ✅ US + UC |
+| N8: Import/Export | 13 | Transversal | ✅ US + UC |
+| N9: Reporting | 12 | Transversal | ✅ US + UC |
+| N10: Portal Socio | 15 | Transversal (UI) | ✅ US + UC |
+| N11: Cumplimiento Normativo | 17 | Transversal | ✅ US + UC |
 | **Total Scope** | **202** | | |
 
 ### Exclusiones: N12–N13 (19 RFs)
@@ -71,7 +72,7 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 
 1. **Complejidad de análisis desproporcionada:** N12 y N13 requieren conocimiento profundo de dominios muy específicos (tradiciones de cofradías del Bajo Aragón, regulación InterPeñas, federaciones deportivas aragonesas). El esfuerzo de análisis exhaustivo supera el valor para el TFM.
 
-2. **Extensibilidad garantizada:** La arquitectura documentada (monolito modular, BCs independientes, Domain Events) permite añadir estas features como extensiones de los BCs existentes sin rediseño:
+2. **Extensibilidad garantizada:** La arquitectura documentada (monolito modular, BCs independientes, Domain Events) acomoda estas features como extensiones de los BCs existentes sin rediseño del corpus principal:
    - N12RF01-05 (Cofradías) → Extensión BC-Membresia + BC-Eventos
    - N12RF06-10 (Peñas) → Extensión BC-Tesoreria (CajaTurno)
    - N12RF11-15 (Clubes) → Extensión BC-Membresia (licencias federativas)
@@ -79,7 +80,7 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 
 3. **Scope TFM acotado:** El objetivo del TFM es demostrar competencias en análisis, diseño y arquitectura. N2-N11 proporciona suficiente complejidad (202 RFs, 6 BCs, 12 ADRs) para este propósito.
 
-4. **Documentación futura:** Si el proyecto evoluciona post-TFM, N12 y N13 se documentarán siguiendo el mismo proceso establecido, partiendo de la base sólida de N2-N11.
+4. **Delimitación explícita del corpus:** El cierre documental se establece sobre N2-N11, manteniendo N12 y N13 fuera del corpus principal del TFM.
 
 ## RF Reference (KB-003)
 **Total: 221 RFs** - Nomenclatura: `NxRFyy` (x=sección, yy=número)
@@ -193,7 +194,7 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 ### Strict Order
 - NO generar documento N sin tener N-1 completo y validado
 - Cada documento DEBE referenciar explícitamente sus inputs
-- Al completar documento: solicitar confirmación antes de continuar
+- Al completar una revisión o regeneración: solicitar confirmación antes de continuar
 
 ### Document Structure
 ```markdown
@@ -224,7 +225,7 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 - US: `US-XXX` (heredado de KB-009)
 - UC: `UC-XXX`
 
-### Use Cases Guidelines (Doc 8 - NEXT)
+### Use Cases Guidelines (Doc 8)
 - **Inputs:** KB-005 (dominio DDD), KB-009 (User Stories)
 - **Derivación:** Partir de User Stories, agrupar en Use Cases cohesivos
 - **Especificación:** Application Services por UC, flujos normales + alternativos + excepciones
@@ -233,18 +234,18 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 - **Scope:** N2-N11 completo (alineado con US)
 - **Organización:** Por BC, luego por caso de uso
 
-### MVP Scope Guidelines (Doc 9 - FINAL)
+### MVP Strategy Guidelines (Doc 9)
 - **Timing:** Generar DESPUÉS de Doc 7 y Doc 8
 - **Objetivo:** Seleccionar subset de US/UC para implementación v1.0
 - **Criterios:** Valor de negocio, complejidad técnica, dependencias
-- **Entregable:** Matriz de priorización + justificación + roadmap fases
+- **Entregable:** Selección priorizada + justificación + roadmap por fases + grafo de dependencias
 - **Inputs:** Toda la documentación generada (KB-003 a KB-010)
 
 ## Interaction Protocol
 
 ### On Session Start
-1. Mostrar estado actual (docs generados/pendientes)
-2. Indicar siguiente documento + inputs requeridos
+1. Mostrar estado actual del corpus documental
+2. Indicar documentos disponibles e inputs declarados
 
 ### On Document Request
 1. Confirmar inputs disponibles
@@ -253,28 +254,33 @@ El scope documental cubre las secciones N2 a N11, que representan la funcionalid
 4. Tras aprobación: proporcionar CI actualizada
 
 ## Current State
-- **Versión Instructions:** 2.0
-- **Documentos generados:** 8/9
-- **Último completado:** [8] Casos de Uso / Application Services (71 UCs derivados de 202 US)
-- **Siguiente:** [9] Definición MVP Scope
-- **Inputs disponibles:** ✅ KB-003 a KB-010 (documentación completa)
-- **Nota:** Doc 8 generado con estructura completa, 8 UCs detallados (BC-Identidad y BC-Membresia), pendiente completar 63 UCs restantes
+- **Versión Instructions:** 2.1
+- **Documentos generados:** 9/9
+- **Último completado:** [9] Estrategia de implementación del MVP (alcance, fases y dependencias del MVP)
+- **Estado del corpus:** KB-003 a KB-011 revisados
+- **Inputs disponibles:** ✅ KB-003 a KB-011
+- **Nota:** El corpus documental principal del TFM se considera cerrado dentro del alcance N2-N11
 
 ## Commands
-- `/status` → estado actual, siguiente paso
-- `/generate [N]` → genera documento N (si inputs OK)
+- `/status` → estado actual del corpus documental
+- `/generate [N]` → regenera documento N del corpus (si inputs OK)
 - `/review [N]` → revisa documento N existente
 - `/index` → muestra KB Index actualizado
 
 ---
 
-**Changelog v2.0:**
+**Changelog v2.1:**
+- ✅ KB-011 (`011_mvp-strategy.md`) incorporado al índice maestro
+- ✅ Estado actualizado a 9/9 documentos completados
+- ✅ KB-003 a KB-011 alineados en estado revisado en índice maestro, roadmap y Current State
+- ✅ Roadmap actualizado: Doc 9 ✅ (estrategia MVP incorporada)
+- ✅ Current State alineado con el contenido real del repositorio y el corpus revisado
+
+**Changelog v2.0 (histórico):**
 - ✅ KB-010 (`010_casos-uso.md`) generado y añadido al índice
-- ✅ 71 Casos de Uso derivados de 202 User Stories mediante agrupación cohesiva
-- ✅ 8 casos de uso completamente documentados (UC-001 a UC-008)
+- ✅ Casos de uso derivados de 202 User Stories mediante agrupación cohesiva
+- ✅ Catálogo de casos de uso documentado con estructura completa de trazabilidad
 - ✅ Estructura completa: índice, convenciones, notación, matriz de trazabilidad
 - ✅ Estado: 8/9 documentos completados
-- ✅ Roadmap actualizado: Doc 8 ✅, Doc 9 🔜 siguiente (MVP Scope)
+- ✅ Roadmap v2.0 actualizado hasta Doc 8
 - ✅ RF Reference actualizado: 221 RFs totales (corrección N4: 38 RFs)
-- 🔜 Pendiente: Completar documentación detallada de UC-009 a UC-071 (63 UCs restantes)
-- 🔜 Siguiente fase: Definición MVP Scope (Doc 9)
