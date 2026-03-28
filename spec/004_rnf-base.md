@@ -5,7 +5,7 @@
 **Fecha:** Febrero 2026  
 **Inputs:** KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales)  
 **Estado:** Validado  
-**Total RNFs:** 66
+**Total RNFs:** 67
 
 ---
 
@@ -16,7 +16,7 @@
 3. [RGPD y Cumplimiento Normativo](#3-rgpd-y-cumplimiento-normativo) (12 RNFs)
 4. [Disponibilidad y Continuidad](#4-disponibilidad-y-continuidad) (8 RNFs)
 5. [Usabilidad y Experiencia de Usuario](#5-usabilidad-y-experiencia-de-usuario) (12 RNFs)
-6. [Mantenibilidad y Operaciones](#6-mantenibilidad-y-operaciones) (10 RNFs)
+6. [Mantenibilidad y Operaciones](#6-mantenibilidad-y-operaciones) (11 RNFs)
 
 ---
 
@@ -114,7 +114,7 @@
 
 **Trazabilidad RF:** N3RF01, N4RF06
 
-**Tablas ENT:** ENT-009 (`members.iban_encrypted`), ENT-001 (`tenants.database_password_encrypted`)
+**Tablas ENT:** ENT-009 (`members.iban_encrypted`), ENT-001 (`tenants.database_password_encrypted`), ENT-018 (`sepa_mandates.iban_debtor_encrypted`)
 
 ---
 
@@ -1049,6 +1049,25 @@
 
 ---
 
+### RNF-067: Entrega Garantizada de Integration Events
+
+**Descripción:** El sistema debe garantizar la entrega at-least-once de todos los Integration Events (cross-BC) mediante Outbox Pattern. Los eventos se persisten en la base de datos principal (main DB) y son procesados de forma asíncrona por un componente dedicado (OutboxProcessor).
+
+**Criterios de aceptación:**
+
+- Integration Events se persisten en tabla `outbox_event` de la base de datos principal (main DB) con estado `pending` en la misma operación de escritura que origina el evento
+- Un OutboxProcessor único procesa eventos pendientes con polling configurable (valor por defecto: 5s) en lotes de hasta 50 eventos por tick
+- Cada evento se reintenta hasta `max_retries` (valor por defecto: 3) antes de marcarse como `failed`
+- Eventos en estado `processing` durante más de 5 minutos se resetean a `pending` al reiniciar el processor (stale recovery)
+- Errores en consumers individuales no afectan el procesamiento del resto del batch (error isolation mediante try/catch por evento)
+- Para MVP: dual-write best-effort (operación de dominio en tenant DB + Integration Event en main DB sin transacción distribuida)
+
+**Trazabilidad RF:** N/A (transversal — infraestructura de eventos cross-BC)
+**Trazabilidad ADR:** ADR-008 (Outbox Pattern)
+**Prioridad:** Alta
+
+---
+
 ## Trazabilidad
 
 ### Matriz RNF → Sección RF
@@ -1060,7 +1079,7 @@
 | RGPD           | N11 completo, N3RF01 (Datos personales), N10RF11 (Consentimientos)                 |
 | Disponibilidad | N2RF01 (Multi-tenant SaaS), Transversal                                            |
 | Usabilidad     | N10 (Portal Socio), N9 (Dashboard), Transversal                                    |
-| Mantenibilidad | N/A (operacional), Requisitos TFM                                                  |
+| Mantenibilidad | N/A (operacional), Requisitos TFM, ADR-008 (RNF-067 Outbox Integration Events)    |
 
 ### Cobertura de Secciones N11 (Cumplimiento)
 
@@ -1089,6 +1108,7 @@
 - RNF-045 a RNF-047 (Responsive, accesibilidad básica, español)
 - RNF-050, RNF-051 (Skeleton screens, progressive rendering)
 - RNF-057, RNF-058, RNF-061 (Documentación, tests unitarios, logging)
+- RNF-067 (Entrega garantizada de Integration Events)
 
 ### Importantes (Should Have)
 
@@ -1111,6 +1131,9 @@
 
 ## Changelog
 
+- v1.3 (Mar 2026):
+  - RNF-067: Entrega Garantizada de Integration Events (Outbox Pattern, at-least-once delivery, OutboxProcessor)
+  - Total: 67 RNFs
 - v1.2 (Feb 2026):
   - RNF-058: CI Quality Gates con line coverage (≥80%), branch coverage (≥70%), diff coverage PRs (≥85%/75%)
   - Corregida numeración RNF-056 a RNF-066

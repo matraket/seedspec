@@ -77,7 +77,7 @@ Esta sección define las normas que aplican a todas las entidades del modelo rel
   - **DB-Tenant:** tablas de datos de cada colectividad, una BD por tenant. ENT-007 en adelante.
 - **Enums:** almacenados como `String` en Prisma (sin enums formales de Prisma), con valores validados a nivel de dominio.
 - **Bloqueo optimista:** campo `version Int @default(0)` en aggregates donde aplica control de concurrencia (ejemplo: `members`).
-- **Outbox pattern:** tabla `outbox_events` en ambas bases de datos para garantizar entrega at-least-once de eventos de dominio (ADR-008).
+- **Outbox pattern:** tabla `outbox_event` en Main DB para Integration Events cross-BC (at-least-once delivery, procesada por OutboxProcessor — ENT-006); tabla `outbox_event` en Tenant DB para Domain Events audit-only (log inmutable write-only, sin procesador — ENT-017). Ver ADR-008.
 
 ---
 
@@ -267,26 +267,34 @@ Esta sección define las normas que aplican a todas las entidades del modelo rel
 
 **Prisma model:** `OutboxEvent`
 **Base de datos:** Main
-**Trazabilidad RNF:** RNF-015 (entrega garantizada de eventos)
-**Trazabilidad ADR:** ADR-008 (Domain Events con Outbox pattern)
+**Propósito:** Integration Events cross-BC. Procesada por OutboxProcessor. Contiene columnas de estado y retry.
+**Trazabilidad RNF:** RNF-067 (entrega garantizada de Integration Events)
+**Trazabilidad ADR:** ADR-008 (Estrategia de Eventos: Integration Events via Outbox Pattern)
 
 #### Columnas
 
-| Columna       | Tipo Prisma                 | Tipo PG      | Nullable | Default | Descripción                                        |
-| ------------- | --------------------------- | ------------ | -------- | ------- | -------------------------------------------------- |
-| id            | String (@db.Uuid)           | UUID         | No       | uuid()  | Clave primaria                                     |
-| event_type    | String (@db.VarChar(200))   | VARCHAR(200) | No       | -       | Tipo de evento de dominio (ej: TenantProvisioned)  |
-| payload       | Json                        | JSONB        | No       | -       | Payload serializado del evento                     |
-| tenant_id     | String? (@db.Uuid)          | UUID         | Sí       | NULL    | Tenant al que pertenece el evento (NULL si global) |
-| created_at    | DateTime (@db.Timestamptz)  | TIMESTAMPTZ  | No       | now()   | Timestamp de creación del evento                   |
-| processed_at  | DateTime? (@db.Timestamptz) | TIMESTAMPTZ  | Sí       | NULL    | Timestamp de procesado exitoso; NULL si pendiente  |
-| retry_count   | Int                         | INTEGER      | No       | 0       | Número de reintentos de publicación                |
-| next_retry_at | DateTime? (@db.Timestamptz) | TIMESTAMPTZ  | Sí       | NULL    | Timestamp del próximo reintento programado         |
-| last_error    | String? (@db.Text)          | TEXT         | Sí       | NULL    | Último error de publicación                        |
+| Columna        | Tipo Prisma                 | Tipo PG      | Nullable | Default     | Descripción                                                     |
+| -------------- | --------------------------- | ------------ | -------- | ----------- | --------------------------------------------------------------- |
+| id             | String (@db.Uuid)           | UUID         | No       | uuid()      | Clave primaria                                                  |
+| tenant_id      | String? (@db.Uuid)          | UUID         | Sí       | NULL        | Tenant que originó el evento (NULL para eventos de BC-Identity) |
+| bounded_context | String (@db.VarChar(100))  | VARCHAR(100) | No       | -           | BC que publica el evento (ej: BC-Membership)                    |
+| event_type     | String (@db.VarChar(200))   | VARCHAR(200) | No       | -           | Nombre del Integration Event (ej: TenantProvisioned)            |
+| aggregate_id   | String (@db.Uuid)           | UUID         | No       | -           | ID del agregado origen del evento                               |
+| aggregate_type | String (@db.VarChar(100))   | VARCHAR(100) | No       | -           | Tipo del agregado (ej: Tenant, Member)                          |
+| payload        | Json                        | JSONB        | No       | -           | Contrato público cross-BC del evento                            |
+| actor_id       | String? (@db.Uuid)          | UUID         | Sí       | NULL        | Usuario que ejecutó la acción (nullable para ops. del sistema)  |
+| status         | String (@db.VarChar(20))    | VARCHAR(20)  | No       | 'pending'   | Estado: pending / processing / processed / failed               |
+| retry_count    | Int                         | INTEGER      | No       | 0           | Número de intentos de procesado                                 |
+| max_retries    | Int                         | INTEGER      | No       | 3           | Máximo de reintentos antes de marcar como failed                |
+| created_at     | DateTime (@db.Timestamptz)  | TIMESTAMPTZ  | No       | now()       | Timestamp de publicación del evento                             |
+| processed_at   | DateTime? (@db.Timestamptz) | TIMESTAMPTZ  | Sí       | NULL        | Timestamp de procesado exitoso; NULL si pendiente               |
 
 #### Constraints e Índices
 
-- `@@index([processed_at, retry_count, next_retry_at])` - para el polling del worker de outbox
+- `@@index([status, created_at])` - índice principal para el polling del OutboxProcessor
+- `@@index([tenant_id])` - filtrado por tenant
+- `@@index([bounded_context, status])` - filtrado por BC y estado
+- `@@index([aggregate_id])` - trazabilidad por agregado
 
 #### Relaciones
 
@@ -718,27 +726,30 @@ No tiene relaciones FK declaradas (diseño intencional - tabla de auditoría inm
 
 **Prisma model:** `OutboxEvent`
 **Base de datos:** Tenant
-**Trazabilidad RNF:** RNF-015 (entrega garantizada de eventos dentro del tenant)
-**Trazabilidad ADR:** ADR-008 (Domain Events con Outbox pattern - réplica en BD-Tenant)
+**Propósito:** Domain Events intra-BC, audit-only. Log inmutable de escritura. NO procesada por OutboxProcessor.
+**Trazabilidad RNF:** N/A (audit-only, no se requiere garantía de entrega)
+**Trazabilidad ADR:** ADR-008 (Estrategia de Eventos: Domain Events audit-only en BD-Tenant)
 
 #### Columnas
 
-| Columna       | Tipo Prisma                 | Tipo PG      | Nullable | Default | Descripción                                       |
-| ------------- | --------------------------- | ------------ | -------- | ------- | ------------------------------------------------- |
-| id            | String (@db.Uuid)           | UUID         | No       | uuid()  | Clave primaria                                    |
-| event_type    | String (@db.VarChar(200))   | VARCHAR(200) | No       | -       | Tipo de evento de dominio (ej: MemberRegistered)  |
-| payload       | Json                        | JSONB        | No       | -       | Payload serializado del evento                    |
-| created_at    | DateTime (@db.Timestamptz)  | TIMESTAMPTZ  | No       | now()   | Timestamp de creación del evento                  |
-| processed_at  | DateTime? (@db.Timestamptz) | TIMESTAMPTZ  | Sí       | NULL    | Timestamp de procesado exitoso; NULL si pendiente |
-| retry_count   | Int                         | INTEGER      | No       | 0       | Número de reintentos de publicación               |
-| next_retry_at | DateTime? (@db.Timestamptz) | TIMESTAMPTZ  | Sí       | NULL    | Timestamp del próximo reintento programado        |
-| last_error    | String? (@db.Text)          | TEXT         | Sí       | NULL    | Último error de publicación                       |
+| Columna        | Tipo Prisma                | Tipo PG      | Nullable | Default | Descripción                                                     |
+| -------------- | -------------------------- | ------------ | -------- | ------- | --------------------------------------------------------------- |
+| id             | String (@db.Uuid)          | UUID         | No       | uuid()  | Clave primaria                                                  |
+| bounded_context | String (@db.VarChar(100)) | VARCHAR(100) | No       | -       | BC que originó el Domain Event (ej: BC-Membership)              |
+| event_type     | String (@db.VarChar(200))  | VARCHAR(200) | No       | -       | Nombre del Domain Event (ej: MemberRegistered)                  |
+| aggregate_id   | String (@db.Uuid)          | UUID         | No       | -       | ID del agregado afectado por el evento                          |
+| aggregate_type | String (@db.VarChar(100))  | VARCHAR(100) | No       | -       | Tipo del agregado (ej: Member, FeePlan)                         |
+| payload        | Json                       | JSONB        | No       | -       | Datos del evento (puede incluir before/after si aplica)         |
+| actor_id       | String? (@db.Uuid)         | UUID         | Sí       | NULL    | Usuario que ejecutó la acción (nullable para ops. del sistema)  |
+| occurred_at    | DateTime (@db.Timestamptz) | TIMESTAMPTZ  | No       | now()   | Timestamp de cuándo ocurrió el evento                           |
 
-**Diferencia con ENT-006:** la versión tenant no tiene columna `tenant_id` (innecesaria - cada BD ya es del tenant).
+**Diferencia con ENT-006:** ENT-017 es audit-only (sin status, sin retry, sin procesador). Es un log inmutable escrito en la misma transacción que la operación de dominio. No hay `tenant_id` porque cada BD ya pertenece al tenant.
 
 #### Constraints e Índices
 
-- `@@index([processed_at, retry_count, next_retry_at])` - para el polling del worker de outbox
+- `@@index([aggregate_id, occurred_at])` - consultas de historial por agregado
+- `@@index([bounded_context])` - filtrado por BC
+- `@@index([occurred_at])` - consultas cronológicas
 
 #### Relaciones
 
@@ -1081,7 +1092,8 @@ No tiene relaciones FK declaradas (diseño intencional para bajo acoplamiento).
 | RNF-011 | ENT-002 (failed_attempts, blocked_until)                                                         | Campos para implementar bloqueo de cuenta tras intentos fallidos de login.                                     |
 | RNF-012 | ENT-003 (role_id), ENT-004 (permissions)                                                         | RBAC implementado mediante la relación user→tenantMembership→role→permissions.                                 |
 | RNF-013 | ENT-005 (refresh_tokens)                                                                         | Gestión de renovación de sesiones JWT con revocación explícita.                                                |
-| RNF-015 | ENT-006 (main), ENT-017 (tenant)                                                                 | Outbox pattern para garantizar at-least-once delivery de domain events.                                        |
+| RNF-067 | ENT-006 (main)                                                                                   | Outbox pattern para garantizar at-least-once delivery de Integration Events cross-BC. OutboxProcessor, max_retries=3, polling 5s. |
+| N/A (audit) | ENT-017 (tenant)                                                                             | Domain Events audit-only. Log inmutable write-only. Sin garantía de entrega — no requiere RNF de delivery.    |
 | RNF-017 | ENT-010 (status_history)                                                                         | Auditoría inmutable de cambios de estado de socios mediante tabla INSERT-only.                                 |
 
 ### Resumen por Base de Datos

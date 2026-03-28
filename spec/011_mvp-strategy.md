@@ -4,7 +4,7 @@
 |--------------|------------------------------------|
 | Version      | 1.0                                |
 | Fecha        | 2026-03-21                         |
-| Estado       | Vigente                            |
+| Estado       | Verificado                         |
 | Audiencia    | CTO, Director Tecnico, Tech Leads  |
 | Proyecto     | Associated ERP                     |
 

@@ -7,9 +7,11 @@
 ### De la semilla al sistema: metodología de expansión documental
 
 ![Estado](https://img.shields.io/badge/corpus_documental-completado-brightgreen)
-![Documentos](https://img.shields.io/badge/documentos-11_artefactos-blue)
+![Documentos](https://img.shields.io/badge/documentos-13_artefactos-blue)
 ![RF](https://img.shields.io/badge/requisitos_funcionales-221-orange)
 ![US](https://img.shields.io/badge/user_stories-202-blueviolet)
+![ENT](https://img.shields.io/badge/entidades-40-teal)
+![EP](https://img.shields.io/badge/endpoints-123-red)
 ![RNF](https://img.shields.io/badge/RNF-66-yellow)
 
 ---
@@ -24,6 +26,8 @@
 - [🔬 Decisiones de alcance documental](#-decisiones-de-alcance-documental)
 - [🌳 Relación entre artefactos](#-relación-entre-artefactos)
 - [📊 Estado actual de la documentación](#-estado-actual-de-la-documentación)
+- [🗄️ Materialización: modelo de datos y endpoints](#️-materialización-modelo-de-datos-y-endpoints)
+- [📖 Documentación de referencia](#-documentación-de-referencia)
 - [🔍 Hallazgos relevantes](#-hallazgos-relevantes)
 - [🍎 Cierre del corpus documental](#-cierre-del-corpus-documental)
 
@@ -86,7 +90,7 @@ De este modo, el documento 002 actúa como raíz primaria para derivar requisito
 <details>
 <summary><strong>Paso 2 — 📝 Formalización:</strong> requisitos funcionales (RF)</summary>
 
-El documento [003_requisitos-funcionales.md](003_requisitos-funcionales.md) deriva de KB-002 y convierte las necesidades en **221 requisitos funcionales** identificados con nomenclatura `NxRFyy`.
+El documento [003_requisitos-funcionales.md](spec/003_requisitos-funcionales.md) deriva de KB-002 y convierte las necesidades en **221 requisitos funcionales** identificados con nomenclatura `NxRFyy`.
 
 Metodológicamente, este paso implica:
 
@@ -102,7 +106,7 @@ Metodológicamente, este paso implica:
 <details>
 <summary><strong>Paso 3 — 🛡️ Derivación:</strong> requisitos no funcionales base (RNF)</summary>
 
-El documento [004_rnf-base.md](004_rnf-base.md) toma como inputs el análisis de necesidades y los requisitos funcionales para identificar **66 requisitos no funcionales agnósticos de tecnología**.
+El documento [004_rnf-base.md](spec/004_rnf-base.md) toma como inputs el análisis de necesidades y los requisitos funcionales para identificar **66 requisitos no funcionales agnósticos de tecnología**.
 
 La lógica seguida es separar:
 
@@ -116,7 +120,7 @@ Este nivel sigue siendo intencionalmente tecnológico-agnóstico. Todavía no se
 <details>
 <summary><strong>Paso 4 — 🪵 El tronco:</strong> modelado del dominio y bounded contexts</summary>
 
-El documento [005_modelo-dominio.md](005_modelo-dominio.md) integra la propuesta, el análisis de necesidades, los RF y los RNF base para construir el modelo de dominio — el tronco estructural del que se ramifican las decisiones posteriores.
+El documento [005_modelo-dominio.md](spec/005_modelo-dominio.md) integra la propuesta, el análisis de necesidades, los RF y los RNF base para construir el modelo de dominio — el tronco estructural del que se ramifican las decisiones posteriores.
 
 La metodología de crecimiento en este paso consiste en:
 
@@ -144,7 +148,7 @@ Además, los requisitos N8 a N11 se tratan como capacidades **transversales** im
 <details>
 <summary><strong>Paso 5 — 🌿 Ramas estructurales:</strong> decisiones de arquitectura (ADRs)</summary>
 
-El documento [006_adrs.md](006_adrs.md) toma como base los RNF y el modelo de dominio para registrar **12 Architectural Decision Records**.
+El documento [006_adrs.md](spec/006_adrs.md) toma como base los RNF y el modelo de dominio para registrar **12 Architectural Decision Records**.
 
 Este paso convierte necesidades y restricciones en decisiones explícitas, justificadas y trazables, por ejemplo: monolito modular, multi-tenant por base de datos separada, módulos por bounded context, domain events in-process, persistencia relacional con PostgreSQL, JWT + refresh tokens, RBAC granular, outbox pattern, Clean Architecture por módulo y API REST + OpenAPI.
 
@@ -156,7 +160,7 @@ Este paso convierte necesidades y restricciones en decisiones explícitas, justi
 <details>
 <summary><strong>Paso 6 — ⚙️ Selección:</strong> stack tecnológico</summary>
 
-El documento [007_stack.md](007_stack.md) deriva de los RNF base y de los ADRs. Su función es materializar las decisiones arquitectónicas en un stack concreto.
+El documento [007_stack.md](spec/007_stack.md) deriva de los RNF base y de los ADRs. Su función es materializar las decisiones arquitectónicas en un stack concreto.
 
 La secuencia aplicada es deliberada:
 
@@ -170,7 +174,7 @@ Así, el stack no nace como punto de partida, sino como fruto natural de artefac
 <details>
 <summary><strong>Paso 7 — 🔩 Concreción:</strong> RNF en requisitos técnicos (RNFT)</summary>
 
-El documento [008_rnf-tecnicos.md](008_rnf-tecnicos.md) conecta los RNF base con el stack seleccionado y traduce los objetivos de calidad en mecanismos técnicos verificables.
+El documento [008_rnf-tecnicos.md](spec/008_rnf-tecnicos.md) conecta los RNF base con el stack seleccionado y traduce los objetivos de calidad en mecanismos técnicos verificables.
 
 Este paso introduce una segunda capa de refinamiento no funcional:
 
@@ -184,7 +188,7 @@ Por eso el documento incluye una matriz RNF → RNFT → tecnología, consolidan
 <details>
 <summary><strong>Paso 8 — 🌸 Floración:</strong> User Stories y criterios de aceptación</summary>
 
-El documento [009_user-stories.md](009_user-stories.md) toma como inputs los requisitos funcionales, el modelo de dominio y los RNF técnicos para generar **202 User Stories** con criterios de aceptación.
+El documento [009_user-stories.md](spec/009_user-stories.md) toma como inputs los requisitos funcionales, el modelo de dominio y los RNF técnicos para generar **202 User Stories** con criterios de aceptación.
 
 La metodología observada en este documento consiste en:
 
@@ -201,7 +205,7 @@ La metodología observada en este documento consiste en:
 <details>
 <summary><strong>Paso 9 — 🌼 Agrupación cohesiva:</strong> casos de uso y application services</summary>
 
-El documento [010_casos-uso.md](010_casos-uso.md) deriva del modelo de dominio y de las User Stories. Su lógica metodológica es **agrupar historias en casos de uso cohesivos** usando criterios explícitos:
+El documento [010_casos-uso.md](spec/010_casos-uso.md) deriva del modelo de dominio y de las User Stories. Su lógica metodológica es **agrupar historias en casos de uso cohesivos** usando criterios explícitos:
 
 1. Cohesión funcional.
 2. Transaccionalidad.
@@ -217,7 +221,36 @@ En esta etapa el repositorio ya no describe solo "qué necesita el sistema", sin
 <details>
 <summary><strong>Paso 10 — 🍎 La cosecha:</strong> estrategia del MVP</summary>
 
-El repositorio ya incorpora [011_mvp-strategy.md](011_mvp-strategy.md) como artefacto de cierre del ciclo documental principal — el momento de cosechar lo cultivado. Este documento sintetiza KB-003 a KB-010 para seleccionar el subconjunto de casos de uso priorizados, delimitar los bounded contexts incluidos en el MVP y ordenar la implementación en fases con dependencias explícitas.
+El repositorio ya incorpora [011_mvp-strategy.md](spec/011_mvp-strategy.md) como artefacto de cierre del ciclo documental principal — el momento de cosechar lo cultivado. Este documento sintetiza KB-003 a KB-010 para seleccionar el subconjunto de casos de uso priorizados, delimitar los bounded contexts incluidos en el MVP y ordenar la implementación en fases con dependencias explícitas.
+
+</details>
+
+<details>
+<summary><strong>Paso 11 — 🗄️ Materialización física:</strong> modelo de datos</summary>
+
+El documento [012_modelo-de-datos.md](spec/012_modelo-de-datos.md) traduce los bounded contexts y las decisiones arquitectónicas en un modelo relacional concreto: **40 entidades** distribuidas entre DB-Main (cross-tenant) y DB-Tenant (datos por asociación), con nomenclatura `ENT-XXX`.
+
+Este paso convierte el dominio abstracto en esquema persistible:
+
+- Cada entidad declara su BC propietario, los RNFs que le aplican y los ADRs que la condicionan.
+- La organización por base de datos materializa la decisión ADR-002 (multi-tenant por BD separada).
+- La trazabilidad ENT → BC + RNF + ADR permite validar que ninguna decisión de dominio o arquitectura queda sin reflejo en el modelo físico.
+
+</details>
+
+<details>
+<summary><strong>Paso 12 — 🔌 Contrato público:</strong> inventario de endpoints</summary>
+
+El documento [013_inventario-de-endpoints.md](spec/013_inventario-de-endpoints.md) define los **123 endpoints** del API REST organizados por bounded context, con contratos HTTP, permisos RBAC y trazabilidad bidireccional EP → UC + ENT.
+
+Este artefacto cierra la cadena de materialización:
+
+- Cada endpoint indica el caso de uso que lo origina y las entidades que lee o modifica.
+- Los permisos RBAC conectan con ADR-007 y el modelo de roles de BC-Identity.
+- El inventario permite validar cobertura: todo caso de uso del MVP tiene sus endpoints definidos.
+
+> [!TIP]
+> Con este paso, la cadena de trazabilidad alcanza su máxima concreción: desde la necesidad de negocio (RF) hasta el contrato HTTP público (EP), pasando por dominio, arquitectura, historias y casos de uso.
 
 </details>
 
@@ -236,6 +269,8 @@ El repositorio sigue una convención explícita de identificadores:
 | ADR | `ADR-XXX` | Decisión arquitectónica registrada |
 | User Story | `US-XXX` | Historia de usuario secuencial |
 | Caso de uso | `UC-XXX` | Caso de uso secuencial |
+| Entidad del modelo de datos | `ENT-XXX` | Entidad relacional del modelo físico |
+| Endpoint API | `EP-XXX` | Endpoint REST secuencial |
 | Documento base | `KB-XXX` | Entrada del índice de knowledge base |
 
 ### Reglas metodológicas observadas
@@ -271,6 +306,8 @@ La secuencia de crecimiento consolidada en el repositorio es la siguiente:
 | 9 | User Stories y criterios de aceptación | **KB-009** |
 | 10 | Casos de uso / Application Services | **KB-010** |
 | 11 | Estrategia de implementación del MVP | **KB-011** |
+| 12 | Modelo de datos | **KB-012** |
+| 13 | Inventario de endpoints | **KB-013** |
 
 ### Relación inputs → outputs
 
@@ -285,6 +322,8 @@ La secuencia de crecimiento consolidada en el repositorio es la siguiente:
 | RF + dominio + RNFT → US | KB-003, KB-005, KB-008 | KB-009 |
 | Dominio + US → UC | KB-005, KB-009 | KB-010 |
 | Todo el corpus analítico → MVP | KB-003 … KB-010 | KB-011 |
+| Dominio + ADR + UC → Modelo de datos | KB-005, KB-006, KB-010 | KB-012 |
+| UC + Modelo de datos + ADR → Endpoints | KB-010, KB-012, KB-006 | KB-013 |
 
 ---
 
@@ -335,9 +374,12 @@ graph TD
     H --> I["🍃 Hojas<br/><em>US · valor de negocio</em>"]
     I --> J["🌸 Flores<br/><em>UC · application services</em>"]
     J --> K["🍎 Fruto<br/><em>MVP · implementación priorizada</em>"]
+    K --> L["🗄️ Cimientos<br/><em>ENT · modelo de datos</em>"]
+    L --> M["🔌 Fachada<br/><em>EP · contrato API</em>"]
 
     style A fill:#4a7c59,stroke:#2d4a35,color:#fff
-    style K fill:#c0392b,stroke:#922b21,color:#fff
+    style K fill:#e67e22,stroke:#d35400,color:#fff
+    style M fill:#c0392b,stroke:#922b21,color:#fff
 ```
 
 ### Papel de cada artefacto
@@ -351,6 +393,8 @@ graph TD
 | **RNFT** | Traducen los RNF a mecanismos técnicos medibles sobre el stack. |
 | **US** | Expresan valor de negocio y prioridad de entrega. |
 | **UC** | Agrupan historias en operaciones ejecutables, asociadas a application services. |
+| **ENT** | Materializan bounded contexts en tablas relacionales con trazabilidad a RNF y ADR. |
+| **EP** | Definen el contrato HTTP público del API con permisos y trazabilidad a UC y ENT. |
 
 ### Relaciones de trazabilidad más relevantes
 
@@ -363,7 +407,45 @@ KB-004 + KB-006 → KB-007                 Decisiones + restricciones → selecc
 KB-004 + KB-007 → KB-008                 Requisitos de calidad → implementación técnica
 KB-003 + KB-005 + KB-008 → KB-009        Requisitos + dominio + RNFT → historias de usuario
 KB-005 + KB-009 → KB-010                 Dominio + historias → casos de uso
+KB-005 + KB-006 + KB-010 → KB-012      Dominio + ADR + casos de uso → modelo de datos
+KB-010 + KB-012 + KB-006 → KB-013      Casos de uso + modelo de datos + ADR → endpoints API
 ```
+
+---
+
+## 🗄️ Materialización: modelo de datos y endpoints
+
+Los documentos KB-012 y KB-013 extienden la cadena de trazabilidad desde la especificación funcional hasta la materialización física del sistema:
+
+```
+BC (dominio abstracto) → ENT (tabla relacional) → EP (contrato HTTP)
+```
+
+| Artefacto | Función |
+|:----------|:--------|
+| **ENT** | Traducen bounded contexts y aggregates en tablas relacionales con índices, claves foráneas y restricciones. |
+| **EP** | Definen el contrato público del API: rutas, métodos HTTP, payloads, permisos RBAC y entidades afectadas. |
+
+La trazabilidad de estos artefactos conecta en tres dimensiones:
+
+- **ENT → BC + RNF + ADR:** cada entidad declara su contexto, restricciones de calidad y decisiones arquitectónicas aplicables.
+- **EP → UC + ENT:** cada endpoint indica qué caso de uso implementa y qué entidades manipula.
+- **Cobertura:** ~2.459 referencias cruzadas verificables entre los 13 artefactos del corpus.
+
+---
+
+## 📖 Documentación de referencia
+
+Junto a los artefactos documentales, el repositorio incluye tres documentos auxiliares de lectura humana que facilitan la navegación y comprensión del corpus:
+
+| Documento | Propósito |
+|:----------|:----------|
+| [analisis-documentacion.md](spec/analisis-documentacion.md) | Análisis exhaustivo de la estructura documental: listado de archivos, esquemas de numeración, patrones de cross-referencing y métricas de las ~2.459 referencias cruzadas. |
+| [mapa-documentacion.md](spec/mapa-documentacion.md) | Mapa visual del flujo de expansión documental, sistema de codificación, cadenas de trazabilidad con ejemplos concretos y relaciones entre Bounded Contexts. |
+| [glosario-traducciones.md](spec/glosario-traducciones.md) | Glosario de traducciones ES → EN para nomenclatura de código fuente: Bounded Contexts, Aggregates, Entities, Value Objects, enums y variables, con convenciones PascalCase / camelCase / UPPER_CASE. |
+
+> [!NOTE]
+> Estos archivos no forman parte de la cadena de artefactos documentales (no tienen código KB-XXX ni participan en la trazabilidad formal), sino que actúan como **guías de referencia rápida** para orientarse en el corpus.
 
 ---
 
@@ -384,6 +466,8 @@ La base documental principal se encuentra **completada y cerrada** para el alcan
 | KB-009 · User Stories | ✅ Revisado |
 | KB-010 · Casos de uso | ✅ Revisado |
 | KB-011 · Estrategia MVP | ✅ Revisado |
+| KB-012 · Modelo de datos | ✅ Revisado |
+| KB-013 · Inventario de endpoints | ✅ Revisado |
 
 ---
 
@@ -391,19 +475,20 @@ La base documental principal se encuentra **completada y cerrada** para el alcan
 
 Durante la reconstrucción metodológica se observa un patrón claro y consistente: **cada artefacto brota como refinamiento controlado del anterior**, no como documento aislado.
 
-El conjunto KB-003 a KB-010 aparece articulado como un recorrido documental completo: requisitos funcionales y no funcionales, modelo de dominio, decisiones arquitectónicas, stack, concreción técnica, historias de usuario y casos de uso mantienen una secuencia de crecimiento continua y explícita.
+El conjunto KB-003 a KB-013 aparece articulado como un recorrido documental completo: requisitos funcionales y no funcionales, modelo de dominio, decisiones arquitectónicas, stack, concreción técnica, historias de usuario, casos de uso, modelo relacional y contrato API mantienen una secuencia de crecimiento continua y explícita.
 
-La incorporación de [011_mvp-strategy.md](011_mvp-strategy.md) cierra ese ciclo con una priorización de implementación — el fruto maduro del proceso — apoyada en los artefactos previos, sin abrir nuevas fases documentales dentro del alcance principal.
+La incorporación de [011_mvp-strategy.md](011_mvp-strategy.md) cierra el ciclo analítico con una priorización de implementación — el fruto maduro del proceso — apoyada en los artefactos previos. KB-012 y KB-013 completan la cadena de materialización: del dominio abstracto al modelo relacional y al contrato HTTP público, cerrando la trazabilidad desde la necesidad de negocio hasta cada endpoint expuesto.
 
 ---
 
 ## 🍎 Cierre del corpus documental
 
-Tras la incorporación de [011_mvp-strategy.md](011_mvp-strategy.md), el repositorio presenta un corpus documental que completó su ciclo de crecimiento para el alcance definido del Proyecto:
+Tras la incorporación de los trece artefactos, el repositorio presenta un corpus documental que completó su ciclo de crecimiento para el alcance definido del Proyecto:
 
 - **KB-003 a KB-010** cubren el espectro analítico, funcional, arquitectónico, técnico y operativo del sistema.
 - **KB-011** sintetiza ese corpus en una estrategia de implementación del MVP.
-- La **trazabilidad** entre necesidades, requisitos, bounded contexts, decisiones, historias y casos de uso queda expresada de forma explícita en los documentos del repositorio.
+- **KB-012 y KB-013** cierran la cadena de materialización: del dominio abstracto al modelo relacional y al contrato HTTP público.
+- La **trazabilidad** entre necesidades, requisitos, bounded contexts, decisiones, historias, casos de uso, entidades y endpoints queda expresada de forma explícita y verificable en los documentos del repositorio.
 
 > [!NOTE]
-> La semilla plantada en la propuesta inicial ha dado sus frutos: el repositorio completó la **expansión analítica, de diseño y de priorización del MVP** dentro del alcance documental establecido.
+> La semilla plantada en la propuesta inicial ha dado sus frutos: el repositorio completó la **expansión analítica, de diseño, de priorización del MVP y de materialización física** — desde el problema de negocio hasta el último contrato HTTP — dentro del alcance documental establecido.

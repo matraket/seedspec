@@ -55,7 +55,7 @@
     - [Decisión](#decisión-6)
     - [Consecuencias](#consecuencias-6)
     - [Trazabilidad](#trazabilidad-6)
-  - [ADR-008: Gestión de Domain Events](#adr-008-gestión-de-domain-events)
+  - [ADR-008: Estrategia de Eventos: Domain Events y Integration Events](#adr-008-estrategia-de-eventos-domain-events-y-integration-events)
     - [Estado](#estado-7)
     - [Contexto](#contexto-7)
     - [Decisión](#decisión-7)
@@ -357,73 +357,99 @@ src/
 
 Según el Context Map (KB-005 §9), los BCs necesitan comunicarse para mantener consistencia eventual. Por ejemplo, cuando se registra un socio (BC-Membership), BC-Treasury debe generar su cuota inicial y BC-Communication debe enviar email de bienvenida.
 
-**Alternativas consideradas:**
+La comunicación entre BCs tiene dos naturalezas distintas que requieren mecanismos diferentes:
+
+- **Comunicación intra-BC**: lógica de negocio que ocurre dentro del mismo Bounded Context (auditoría, efectos secundarios locales). No necesita entrega garantizada ni consumers.
+- **Comunicación cross-BC**: coordinación entre Bounded Contexts distintos que requiere consistencia eventual y entrega garantizada.
+
+**Alternativas consideradas para comunicación cross-BC:**
 
 1. **Llamadas síncronas directas**: Simple pero acopla módulos
-2. **Domain Events in-process**: Desacoplado, mismo proceso
-3. **Message Broker externo**: Máximo desacoplamiento, complejidad operacional
+2. **Domain Events in-process con dispatcher síncrono**: Desacoplado pero sin garantía de entrega — rechazado para producción
+3. **Outbox Pattern + OutboxProcessor**: Garantía de entrega at-least-once, desacoplamiento real
+4. **Message Broker externo**: Máximo desacoplamiento, complejidad operacional — diferido post-MVP
 
 ### Decisión
 
-**Adoptamos Domain Events procesados in-process** con dispatcher síncrono para el MVP, preparado para evolucionar a procesamiento asíncrono.
+**Adoptamos CQRS con @nestjs/cqrs** para Commands y Queries dentro de cada BC.
+
+Para la comunicación entre BCs, adoptamos **dos tipos de eventos con mecanismos distintos**:
+
+**1. Domain Events (intra-BC)** — registros de auditoría write-only en tenant DB. Sin despacho, sin consumers. Toda la lógica intra-BC se ejecuta directamente en el command handler que produce el evento. No hay dispatcher in-process.
+
+**2. Integration Events (cross-BC)** — Outbox Pattern en main DB. Un único `OutboxProcessor` lee de main DB y despacha a `@EventsHandler` en los BCs destino.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    FLUJO DE EVENTOS                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  BC-Membership         Event Dispatcher        Handlers     │
-│  ┌──────────┐         ┌──────────────┐      ┌──────────┐    │
-│  │ Member   │─emit───►│  In-Memory   │─────►│Treasury  │    │
-│  │Registered│         │  Dispatcher  │      │ Handler  │    │
-│  └──────────┘         └──────────────┘      └──────────┘    │
-│                              │              ┌──────────┐    │
-│                              └─────────────►│Communic. │    │
-│                                             │ Handler  │    │
-│                                             └──────────┘    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                  FLUJO DE INTEGRATION EVENTS                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  BC-Membership                                                  │
+│  ┌──────────────────┐     ┌────────────────────────────────┐    │
+│  │  CommandHandler  │────►│ IntegrationEventPublisher      │    │
+│  │ (RegisterMember) │     │ (shared/, escribe main DB)     │    │
+│  └──────────────────┘     └────────────┬───────────────────┘    │
+│                                        │                        │
+│                            main DB outbox_event (pending)       │
+│                                        │                        │
+│                           ┌────────────▼───────────────────┐    │
+│                           │      OutboxProcessor           │    │
+│                           │  (polling 5s, batch 50)        │    │
+│                           └────────────┬───────────────────┘    │
+│                                        │ EventBus.publish()     │
+│                          ┌─────────────┴──────────────┐         │
+│                          │                            │         │
+│                ┌─────────▼──────────┐   ┌────────────▼───────┐  │
+│                │  @EventsHandler    │   │  @EventsHandler    │  │
+│                │  BC-Treasury       │   │  BC-Communication  │  │
+│                └────────────────────┘   └────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Eventos clave identificados (KB-005):**
+**Integration Events clave identificados (KB-005):**
 
-| Evento                  | Productor     | Consumidores                    |
-| ----------------------- | ------------- | ------------------------------- |
-| `MemberRegistered`      | BC-Membership | BC-Treasury, BC-Communication   |
-| `MemberDeactivated`     | BC-Membership | BC-Treasury, BC-Communication   |
-| `PaymentRecorded`       | BC-Treasury   | BC-Membership                   |
-| `PaymentReturned`       | BC-Treasury   | BC-Membership, BC-Communication |
-| `DelinquencyDetected`   | BC-Treasury   | BC-Communication                |
-| `RegistrationCompleted` | BC-Events     | BC-Treasury, BC-Communication   |
-| `EventPublished`        | BC-Events     | BC-Communication                |
+| Evento                  | Productor     | Consumidores                    | Tipo              |
+| ----------------------- | ------------- | ------------------------------- | ----------------- |
+| `MemberRegistered`      | BC-Membership | BC-Treasury, BC-Communication   | Integration Event |
+| `MemberDeactivated`     | BC-Membership | BC-Treasury, BC-Communication   | Integration Event |
+| `PaymentRecorded`       | BC-Treasury   | BC-Membership                   | Integration Event |
+| `PaymentReturned`       | BC-Treasury   | BC-Membership, BC-Communication | Integration Event |
+| `DelinquencyDetected`   | BC-Treasury   | BC-Communication                | Integration Event |
+| `RegistrationCompleted` | BC-Events     | BC-Treasury, BC-Communication   | Integration Event |
+| `EventPublished`        | BC-Events     | BC-Communication                | Integration Event |
+
+**Nota sobre eventos auto-consumidos (Treasury):** Los eventos `SepaMandateRegistered` y `SubscriptionCreated` que anteriormente se auto-consumían dentro de BC-Treasury ya no se despachan como eventos. La lógica intra-BC que antes ejecutaban sus handlers ahora se ejecuta directamente en los command handlers correspondientes.
 
 ### Consecuencias
 
 **Positivas:**
 
-- Desacoplamiento entre módulos (solo conocen eventos, no implementaciones)
+- Desacoplamiento real entre módulos (producers no conocen consumers)
+- Garantía de entrega at-least-once para Integration Events via Outbox
+- Domain Events como log de auditoría inmutable en tenant DB
 - Extensibilidad: añadir handlers sin modificar productor
-- Trazabilidad: eventos como log de lo ocurrido
 - Testabilidad: handlers testeables de forma aislada
+- Un único `IntegrationEventPublisher` compartido en `shared/` — todos los BCs inyectan el mismo
 
 **Negativas:**
 
 - Consistencia eventual (no transaccional entre BCs)
-- Debugging más complejo (flujo indirecto)
-- Orden de handlers no garantizado (si importa, serializar)
+- Latencia: Integration Events no son instantáneos (procesador batch, polling 5s)
+- Debugging más complejo (flujo indirecto via OutboxProcessor)
 
 **Evolución futura:**
 
-- Fase 2: Outbox pattern para garantizar entrega
-- Fase 3: Message broker externo si se extraen microservicios
+- Message broker externo (Redis Streams, Kafka) si se extraen microservicios — sin cambios en producers/consumers gracias al puerto `IntegrationEventPublisher`
 
 ### Trazabilidad
 
-| Referencia              | Descripción                            |
-| ----------------------- | -------------------------------------- |
-| KB-005 §9               | Context Map con relaciones Pub/Sub     |
-| KB-005 §3.4, §4.4, §5.3 | Domain Events por BC                   |
-| RNF-042                 | Gestión de errores (retry en handlers) |
+| Referencia              | Descripción                                       |
+| ----------------------- | ------------------------------------------------- |
+| KB-005 §9               | Context Map con relaciones Pub/Sub                |
+| KB-005 §3.4, §4.4, §5.3 | Eventos por BC                                    |
+| ADR-008                 | Dual-outbox: main DB (Integration) + tenant DB (Domain) |
+| RNF-067                 | Entrega garantizada de Integration Events         |
 
 ---
 
@@ -663,7 +689,7 @@ Ejemplos:
 
 ---
 
-## ADR-008: Gestión de Domain Events
+## ADR-008: Estrategia de Eventos: Domain Events y Integration Events
 
 ### Estado
 
@@ -671,78 +697,151 @@ Ejemplos:
 
 ### Contexto
 
-Los Domain Events (KB-005) son el mecanismo principal de comunicación entre BCs. Necesitamos garantizar su entrega y procesamiento correcto.
+El sistema maneja dos tipos de eventos con propósitos y garantías distintas:
+
+- **Comunicación intra-BC**: necesidades de auditoría y trazabilidad local dentro del mismo Bounded Context.
+- **Comunicación cross-BC**: coordinación entre Bounded Contexts distintos que requiere entrega garantizada.
+
+La arquitectura anterior usaba una única tabla `outbox_events` multi-tenant sin distinguir entre estos dos casos, lo que generaba acoplamiento innecesario y ausencia de garantías claras.
 
 ### Decisión
 
-**Adoptamos patrón Outbox** para garantizar entrega de eventos junto con persistencia transaccional.
+**Adoptamos un diseño dual-outbox** con dos tablas `outbox_event` con propósitos claramente diferenciados: una en main DB para Integration Events (cross-BC, procesada por OutboxProcessor) y otra en cada tenant DB para Domain Events (intra-BC, log de auditoría write-only).
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    OUTBOX PATTERN                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  1. Operación de dominio (ej: registrar member)             │
-│     ┌─────────────────────────────────────────────────┐     │
-│     │              TRANSACCIÓN BD                     │     │
-│     │  ┌──────────────┐    ┌──────────────────────┐   │     │
-│     │  │INSERT member │    │ INSERT outbox_events │   │     │
-│     │  └──────────────┘    │ (MemberRegistered)   │   │     │
-│     │                      └──────────────────────┘   │     │
-│     └─────────────────────────────────────────────────┘     │
-│                                                             │
-│  2. Procesador de outbox (background job)                   │
-│     └─► Lee eventos pendientes                              │
-│     └─► Despacha a handlers                                 │
-│     └─► Marca como procesado                                │
-│     └─► Retry si falla (con backoff)                        │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     DISEÑO DUAL-OUTBOX                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  TENANT DB (por tenant)              MAIN DB (global)           │
+│  ┌──────────────────────────┐        ┌──────────────────────┐   │
+│  │  outbox_event            │        │  outbox_event        │   │
+│  │  (Domain Events)         │        │  (Integration Events)│   │
+│  │  Write-only audit log    │        │  + tenant_id         │   │
+│  │  Sin status, sin retry   │        │  + status/retry      │   │
+│  │  NO OutboxProcessor      │        │  Procesada por       │   │
+│  └──────────────────────────┘        │  OutboxProcessor     │   │
+│                                      └──────────┬───────────┘   │
+│                                                 │               │
+│                                    ┌────────────▼─────────────┐ │
+│                                    │     OutboxProcessor      │ │
+│                                    │  polling 5s, batch 50    │ │
+│                                    │  mutex de concurrencia   │ │
+│                                    └────────────┬─────────────┘ │
+│                                                 │               │
+│                              ┌──────────────────┴────────────┐  │
+│                              │ @EventsHandler en BCs destino │  │
+│                              └───────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Tabla outbox_events:**
+#### Domain Events (intra-BC) — tenant DB
+
+Registros de auditoría write-only. Se escriben en la misma transacción que la operación de dominio. No existe OutboxProcessor que los lea ni consumers. Toda la lógica intra-BC se ejecuta directamente en el command handler.
+
+**Schema en tenant DB:**
 
 ```sql
-CREATE TABLE outbox_events (
-    id UUID PRIMARY KEY,
-    event_type VARCHAR(100) NOT NULL,
-    payload JSONB NOT NULL,
-    tenant_id UUID NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    processed_at TIMESTAMP NULL,
-    retry_count INT DEFAULT 0,
-    last_error TEXT NULL
+CREATE TABLE outbox_event (
+    id             UUID PRIMARY KEY,
+    bounded_context VARCHAR(50)  NOT NULL,
+    event_type      VARCHAR(100) NOT NULL,
+    aggregate_id    UUID         NOT NULL,
+    aggregate_type  VARCHAR(100) NOT NULL,
+    payload         JSONB        NOT NULL,
+    actor_id        UUID         NULL,
+    occurred_at     TIMESTAMP    NOT NULL DEFAULT now()
 );
+
+-- Índices de consulta de auditoría
+CREATE INDEX ON outbox_event (aggregate_id, occurred_at);
+CREATE INDEX ON outbox_event (bounded_context);
+CREATE INDEX ON outbox_event (occurred_at);
 ```
+
+#### Integration Events (cross-BC) — main DB
+
+Eventos que cruzan Bounded Contexts. Se persisten en main DB mediante `IntegrationEventPublisher` (dual-write best-effort: commit tenant DB primero, luego write main DB). Procesados por el `OutboxProcessor` único.
+
+**Schema en main DB:**
+
+```sql
+CREATE TABLE outbox_event (
+    id              UUID PRIMARY KEY,
+    tenant_id       UUID         NULL,     -- NULL para eventos de BC-Identity
+    bounded_context VARCHAR(50)  NOT NULL,
+    event_type      VARCHAR(100) NOT NULL,
+    aggregate_id    UUID         NOT NULL,
+    aggregate_type  VARCHAR(100) NOT NULL,
+    payload         JSONB        NOT NULL,
+    actor_id        UUID         NULL,
+    status          VARCHAR(20)  NOT NULL DEFAULT 'pending',
+                                          -- pending | processing | processed | failed
+    retry_count     INT          NOT NULL DEFAULT 0,
+    max_retries     INT          NOT NULL DEFAULT 3,
+    created_at      TIMESTAMP    NOT NULL DEFAULT now(),
+    processed_at    TIMESTAMP    NULL
+);
+
+-- Índice principal de polling
+CREATE INDEX ON outbox_event (status, created_at);
+CREATE INDEX ON outbox_event (tenant_id);
+CREATE INDEX ON outbox_event (bounded_context, status);
+CREATE INDEX ON outbox_event (aggregate_id);
+```
+
+#### Publisher: IntegrationEventPublisher
+
+Un único publisher compartido en `shared/`. Todos los BCs inyectan el mismo:
+
+- **Puerto**: `shared/application/ports/integration-event.publisher.ts`
+- **Implementación**: `shared/infrastructure/persistence/prisma-integration-event.publisher.ts`
+- Escribe en main DB via `PrismaMainService`
+
+#### OutboxProcessor
+
+- **Polling**: cada 5s (configurable post-MVP)
+- **Batch**: 50 eventos por tick
+- **Concurrencia**: mutex/flag `isProcessing` — si el tick anterior no terminó, el siguiente no arranca
+- **Stale recovery**: al arrancar, resetea eventos `processing` con más de 5 minutos a `pending`
+- **Aislamiento de errores**: `try/catch` por evento individual — el fallo de un consumer no bloquea el tick
+- **Flujo**: `SELECT pending → UPDATE processing → EventBus.publish() → UPDATE processed/failed`
+
+#### Dual-write (MVP)
+
+Best-effort: la operación de dominio en tenant DB hace commit primero; luego `IntegrationEventPublisher` escribe en main DB. El riesgo de inconsistencia es mínimo (mismo servidor PostgreSQL). Migración futura a CDC si escala.
+
+#### Idempotencia
+
+- **Default**: idempotencia natural por lógica de negocio (upserts, checks de existencia en el domain handler).
+- **Fallback**: para acciones no-idempotentes (emails, PDFs, APIs externas), el consumer guarda `source_event_id` en su propia tabla para detectar duplicados.
+- No existe tabla genérica `processed_event` — cada consumer resuelve con su lógica de dominio.
 
 ### Consecuencias
 
 **Positivas:**
 
-- Garantía de entrega: evento se persiste en misma transacción
-- Resiliencia: reintentos automáticos ante fallos
-- Auditabilidad: registro histórico de eventos
-- Debugging: payload completo disponible
+- Garantía de entrega at-least-once para Integration Events (via Outbox + OutboxProcessor)
+- Domain Events como log de auditoría inmutable, bajo acoplamiento
+- Un único OutboxProcessor — no hay loop multi-tenant
+- Separación clara de propósitos: main DB para delivery, tenant DB para auditoría
+- Publisher compartido: los BCs no conocen detalles de infraestructura
 
 **Negativas:**
 
-- Latencia: eventos no son instantáneos (procesador batch)
-- Complejidad: tabla adicional, job de procesamiento
-- Consistencia eventual más evidente
-
-**Configuración:**
-
-- Polling interval: 1 segundo (configurable)
-- Max retries: 5
-- Backoff: exponencial (1s, 2s, 4s, 8s, 16s)
+- Latencia: Integration Events no son instantáneos (polling 5s)
+- Dual-write introduce ventana de inconsistencia pequeña (mitigada por same-server PostgreSQL)
+- Complejidad añadida: dos schemas, OutboxProcessor, gestión de retry
 
 ### Trazabilidad
 
-| Referencia  | Descripción                       |
-| ----------- | --------------------------------- |
-| KB-005 §9.2 | Relaciones Pub/Sub entre BCs      |
-| RNF-042     | Gestión de errores con reintentos |
-| RNF-007     | Auditoría (eventos como log)      |
+| Referencia  | Descripción                                          |
+| ----------- | ---------------------------------------------------- |
+| KB-005 §9.2 | Relaciones Pub/Sub entre BCs                         |
+| ADR-004     | Decisión de CQRS + Integration Events cross-BC       |
+| RNF-067     | Entrega garantizada de Integration Events            |
+| RNF-007     | Auditoría (Domain Events como log inmutable)         |
 
 ---
 
@@ -1063,11 +1162,11 @@ RNF-058/059/060 definen una pirámide de testing con umbrales específicos. Nece
 | ADR-001 | RNF-020, RNF-057          |
 | ADR-002 | RNF-004, RNF-029, RNF-038 |
 | ADR-003 | RNF-057                   |
-| ADR-004 | RNF-042                   |
+| ADR-004 | RNF-067                   |
 | ADR-005 | RNF-004, RNF-038, RNF-066 |
 | ADR-006 | RNF-001, RNF-002, RNF-005 |
 | ADR-007 | RNF-003, RNF-013          |
-| ADR-008 | RNF-007, RNF-042          |
+| ADR-008 | RNF-007, RNF-067          |
 | ADR-009 | RNF-058-060               |
 | ADR-010 | RNF-015-016, RNF-057      |
 | ADR-011 | RNF-009, RNF-022          |

@@ -4,7 +4,7 @@
 |-----------|------------------------------------------|
 | Version   | 1.0                                      |
 | Fecha     | 2026-03-21                               |
-| Estado    | Aprobado                                 |
+| Estado    | Verificado                               |
 | Audiencia | Direccion Tecnica / Product Owner        |
 
 > Para el detalle tecnico de la implementacion, consultar `doc/mvp-strategy.md`.

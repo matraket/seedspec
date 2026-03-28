@@ -79,7 +79,7 @@ Según KB-001, el MVP se centra en **2-3 bounded contexts core**:
 
 1. **Autonomía**: Cada BC puede evolucionar independientemente
 2. **Cohesión**: Conceptos relacionados permanecen juntos
-3. **Acoplamiento bajo**: Comunicación entre BCs vía Domain Events
+3. **Acoplamiento bajo**: Comunicación entre BCs vía Integration Events
 4. **Lenguaje ubicuo**: Cada BC tiene su propio vocabulario preciso
 
 ---
@@ -351,20 +351,20 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 
 ### 3.4 Domain Events
 
-| Evento                        | Trigger                       | Payload                                       | Consumidores                                                   |
-| ----------------------------- | ----------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
-| `MemberRegistered`            | Alta completada               | memberId, memberType, fecha                   | BC-Treasury (generar cuota), BC-Communication (bienvenida)     |
-| `MemberDeactivated`           | Baja cualquier tipo           | memberId, tipoBaja, motivo, fecha             | BC-Treasury (anular pendientes), BC-Communication (notificar)  |
-| `MemberStatusChanged`         | Cambio de estado              | memberId, estadoAnterior, estadoNuevo, motivo | BC-Treasury (suspender/reactivar cobros)                       |
-| `MemberTypeChanged`           | Cambio de categoría           | memberId, tipoAnterior, tipoNuevo             | BC-Treasury (ajustar cuota)                                    |
-| `MemberDataUpdated`           | Modificación datos            | memberId, camposModificados                   | BC-Treasury (si IBAN), BC-Communication (si email)             |
-| `MemberCardValidated`         | Escaneo QR exitoso            | memberCardId, memberId, timestamp, ubicacion? | BC-Events (check-in automático)                                |
-| `FiscalYearOpened`            | Apertura ejercicio            | fiscalYearId, periodo                         | BC-Treasury (generar cuotas), BC-Membership (arrastrar socios) |
-| `FiscalYearClosed`            | Cierre ejercicio              | fiscalYearId, estadisticas                    | BC-Documents (generar memoria)                                 |
-| `RegistrationRequestStarted`  | Nueva solicitud               | requestId, datos                              | BC-Communication (notificar junta)                             |
-| `RegistrationRequestApproved` | Aprobación                    | requestId, memberId                           | BC-Communication (notificar aspirante)                         |
-| `MemberTypeCreated`           | Creación de tipo de socio     | memberTypeId, name, description, tenantId     | BC-Treasury (vincular planes de cuota)                         |
-| `NonpaymentLeave`             | Baja automática por morosidad | memberId, deudaTotal, leaveDate               | BC-Communication (notificar), BC-Treasury (cerrar cuenta)      |
+| Evento                        | Trigger                       | Payload                                       | Consumidores                                                   | Tipo        |
+| ----------------------------- | ----------------------------- | --------------------------------------------- | -------------------------------------------------------------- | ----------- |
+| `MemberRegistered`            | Alta completada               | memberId, memberType, fecha                   | BC-Treasury (generar cuota), BC-Communication (bienvenida)     | Integration |
+| `MemberDeactivated`           | Baja cualquier tipo           | memberId, tipoBaja, motivo, fecha             | BC-Treasury (anular pendientes), BC-Communication (notificar)  | Integration |
+| `MemberStatusChanged`         | Cambio de estado              | memberId, estadoAnterior, estadoNuevo, motivo | BC-Treasury (suspender/reactivar cobros)                       | Integration |
+| `MemberTypeChanged`           | Cambio de categoría           | memberId, tipoAnterior, tipoNuevo             | BC-Treasury (ajustar cuota)                                    | Integration |
+| `MemberDataUpdated`           | Modificación datos            | memberId, camposModificados                   | BC-Treasury (si IBAN), BC-Communication (si email)             | Integration |
+| `MemberCardValidated`         | Escaneo QR exitoso            | memberCardId, memberId, timestamp, ubicacion? | BC-Events (check-in automático)                                | Integration |
+| `FiscalYearOpened`            | Apertura ejercicio            | fiscalYearId, periodo                         | BC-Treasury (generar cuotas), BC-Membership (arrastrar socios) | Integration |
+| `FiscalYearClosed`            | Cierre ejercicio              | fiscalYearId, estadisticas                    | BC-Documents (generar memoria)                                 | Integration |
+| `RegistrationRequestStarted`  | Nueva solicitud               | requestId, datos                              | BC-Communication (notificar junta)                             | Integration |
+| `RegistrationRequestApproved` | Aprobación                    | requestId, memberId                           | BC-Communication (notificar aspirante)                         | Integration |
+| `MemberTypeCreated`           | Creación de tipo de socio     | memberTypeId, name, description, tenantId     | BC-Treasury (vincular planes de cuota)                         | Integration |
+| `NonpaymentLeave`             | Baja automática por morosidad | memberId, deudaTotal, leaveDate               | BC-Communication (notificar), BC-Treasury (cerrar cuenta)      | Integration |
 
 ### 3.5 Trazabilidad RF
 
@@ -864,30 +864,30 @@ SubscriptionCancelReason (enum):
 
 ### 4.4 Domain Events
 
-| Evento                          | Trigger                         | Payload                                                                 | Consumidores                                                           |
-| ------------------------------- | ------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `ChargeGenerated`               | Creación de cargo               | chargeId, memberId, amount, description                                 | BC-Communication (aviso)                                               |
-| `PaymentRecorded`               | Cobro confirmado                | paymentId, chargeId, memberId, amount, metodo                           | BC-Membership (actualizar estado si procede)                           |
-| `PaymentReturned`               | Devolución bancaria             | paymentId, chargeId, motivo                                             | BC-Communication (notificar), BC-Membership (marcar morosidad)         |
-| `DelinquencyDetected`           | Cargo vencido sin pago          | memberId, chargeId, diasVencido                                         | BC-Communication (workflow avisos)                                     |
-| `FeePlanCreated`                | Creación de plan                | feePlanId, code, name, type, amount                                     | BC-Membership (invalidar caché)                                        |
-| `FeePlanModified`               | Modificación plan               | feePlanId, camposModificados                                            | BC-Membership (invalidar caché)                                        |
-| `FeePlanLinkedToMemberType`     | Vinculación N:M                 | feePlanId, memberTypeId, isDefault                                      | BC-Membership (invalidar caché)                                        |
-| `ChargePaid`                    | Pago de cargo                   | chargeId, memberId, amount, paymentDate, paymentMethod                  | BC-Communication (enviar recibo), BC-Membership (actualizar morosidad) |
-| `ChargeCollected`               | Cobro efectivo de cargo         | chargeId, memberId, amount, fechaCobro, remittanceId?                   | BC-Communication (confirmar pago)                                      |
-| `ChargeMarkedForRetry`          | Marcado para reintento de cobro | chargeId, memberId, intentoNumero, proximaFecha                         | BC-Communication (avisar socio)                                        |
-| `ReceiptGenerated`              | Generación de recibo PDF        | reciboId, paymentId, numeroRecibo, issueDate                            | BC-Communication (enviar por email), BC-Documents (archivar)           |
-| `SepaMandateRegistered`         | Registro mandato SEPA           | mandateId, memberId, iban, signatureDate, status                        | BC-Treasury (habilitar domiciliación)                                  |
-| `SepaMandateRevoked`            | Revocación mandato SEPA         | mandateId, memberId, motivoRevocacion, fechaRevocacion                  | BC-Treasury (deshabilitar domiciliación), BC-Communication (notificar) |
-| `SepaRemittanceGenerated`       | Generación fichero SEPA XML     | remittanceId, chargeDate, totalAdeudos, totalAmount, creditorIdentifier | BC-Communication (avisar socios 2 días antes)                          |
-| `PaymentLinkGenerated`          | Generación enlace pago online   | chargeId, memberId, url, expirationDate                                 | BC-Communication (enviar email con enlace)                             |
-| `DelinquencyRegularized`        | Regularización de morosidad     | memberId, paidAmount, fechaRegularizacion                               | BC-Membership (restaurar estado), BC-Communication (confirmar)         |
-| `OverdraftCertificateGenerated` | Certificado de descubierto      | certificadoId, memberId, deudaTotal, issueDate                          | BC-Documents (archivar), BC-Communication (notificar socio)            |
-| `SubscriptionCreated`           | Creación suscripción cuota      | subscriptionId, memberId, feePlanId, fechaInicio, status                | BC-Treasury (programar generación mensual)                             |
-| `SubscriptionModified`          | Modificación suscripción        | subscriptionId, camposModificados[], fechaModificacion                  | BC-Treasury (recalcular próximos cargos)                               |
-| `SubscriptionClosed`            | Cierre de suscripción           | subscriptionId, motivoCierre, fechaCierre                               | BC-Treasury (detener generación)                                       |
-| `MonthlyGenerationCompleted`    | Generación mensual de cuotas    | fiscalYearId, mes, totalCargosGenerados, totalAmount                    | BC-Communication (notificar tesorero), Sistema de auditoría            |
-| `DiscrepancyDetected`           | Detección de descuadre          | diferencia, cuentaId, fechaDeteccion                                    | BC-Communication (alertar tesorero)                                    |
+| Evento                          | Trigger                         | Payload                                                                 | Consumidores                                                           | Tipo        |
+| ------------------------------- | ------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------- |
+| `ChargeGenerated`               | Creación de cargo               | chargeId, memberId, amount, description                                 | BC-Communication (aviso)                                               | Integration |
+| `PaymentRecorded`               | Cobro confirmado                | paymentId, chargeId, memberId, amount, metodo                           | BC-Membership (actualizar estado si procede)                           | Integration |
+| `PaymentReturned`               | Devolución bancaria             | paymentId, chargeId, motivo                                             | BC-Communication (notificar), BC-Membership (marcar morosidad)         | Integration |
+| `DelinquencyDetected`           | Cargo vencido sin pago          | memberId, chargeId, diasVencido                                         | BC-Communication (workflow avisos)                                     | Integration |
+| `FeePlanCreated`                | Creación de plan                | feePlanId, code, name, type, amount                                     | BC-Membership (invalidar caché)                                        | Integration |
+| `FeePlanModified`               | Modificación plan               | feePlanId, camposModificados                                            | BC-Membership (invalidar caché)                                        | Integration |
+| `FeePlanLinkedToMemberType`     | Vinculación N:M                 | feePlanId, memberTypeId, isDefault                                      | BC-Membership (invalidar caché)                                        | Integration |
+| `ChargePaid`                    | Pago de cargo                   | chargeId, memberId, amount, paymentDate, paymentMethod                  | BC-Communication (enviar recibo), BC-Membership (actualizar morosidad) | Integration |
+| `ChargeCollected`               | Cobro efectivo de cargo         | chargeId, memberId, amount, fechaCobro, remittanceId?                   | BC-Communication (confirmar pago)                                      | Integration |
+| `ChargeMarkedForRetry`          | Marcado para reintento de cobro | chargeId, memberId, intentoNumero, proximaFecha                         | BC-Communication (avisar socio)                                        | Integration |
+| `ReceiptGenerated`              | Generación de recibo PDF        | reciboId, paymentId, numeroRecibo, issueDate                            | BC-Communication (enviar por email), BC-Documents (archivar)           | Integration |
+| `SepaMandateRegistered`         | Registro mandato SEPA           | mandateId, memberId, iban, signatureDate, status                        | BC-Treasury (habilitar domiciliación)                                  | Domain      |
+| `SepaMandateRevoked`            | Revocación mandato SEPA         | mandateId, memberId, motivoRevocacion, fechaRevocacion                  | BC-Treasury (deshabilitar domiciliación), BC-Communication (notificar) | Integration |
+| `SepaRemittanceGenerated`       | Generación fichero SEPA XML     | remittanceId, chargeDate, totalAdeudos, totalAmount, creditorIdentifier | BC-Communication (avisar socios 2 días antes)                          | Integration |
+| `PaymentLinkGenerated`          | Generación enlace pago online   | chargeId, memberId, url, expirationDate                                 | BC-Communication (enviar email con enlace)                             | Integration |
+| `DelinquencyRegularized`        | Regularización de morosidad     | memberId, paidAmount, fechaRegularizacion                               | BC-Membership (restaurar estado), BC-Communication (confirmar)         | Integration |
+| `OverdraftCertificateGenerated` | Certificado de descubierto      | certificadoId, memberId, deudaTotal, issueDate                          | BC-Documents (archivar), BC-Communication (notificar socio)            | Integration |
+| `SubscriptionCreated`           | Creación suscripción cuota      | subscriptionId, memberId, feePlanId, fechaInicio, status                | BC-Treasury (programar generación mensual)                             | Domain      |
+| `SubscriptionModified`          | Modificación suscripción        | subscriptionId, camposModificados[], fechaModificacion                  | BC-Treasury (recalcular próximos cargos)                               | Domain      |
+| `SubscriptionClosed`            | Cierre de suscripción           | subscriptionId, motivoCierre, fechaCierre                               | BC-Treasury (detener generación)                                       | Domain      |
+| `MonthlyGenerationCompleted`    | Generación mensual de cuotas    | fiscalYearId, mes, totalCargosGenerados, totalAmount                    | BC-Communication (notificar tesorero), Sistema de auditoría            | Integration |
+| `DiscrepancyDetected`           | Detección de descuadre          | diferencia, cuentaId, fechaDeteccion                                    | BC-Communication (alertar tesorero)                                    | Integration |
 
 ### 4.5 Domain Services
 
@@ -1167,17 +1167,17 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 
 ### 5.4 Domain Events
 
-| Evento                   | Trigger                            | Payload                                      | Consumidores                                                           |
-| ------------------------ | ---------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------- |
-| `EventCreated`           | Creación evento                    | eventId, tipo, fecha                         | BC-Communication (publicar)                                            |
-| `EventPublished`         | Apertura inscripciones             | eventId                                      | BC-Communication (notificar socios)                                    |
-| `EventCancelled`         | Cancelación                        | eventId, motivo                              | BC-Communication (notificar inscritos), BC-Treasury (reembolsos)       |
-| `RegistrationCompleted`  | Nueva inscripción                  | registrationId, eventId, memberId            | BC-Treasury (generar cargo si precio), BC-Communication (confirmación) |
-| `RegistrationCancelled`  | Cancelación inscripción            | registrationId, eventId                      | BC-Treasury (anular cargo)                                             |
-| `CapacityReached`        | Aforo lleno                        | eventId                                      | BC-Communication (activar lista espera)                                |
-| `SlotReleased`           | Baja de inscrito                   | eventId, posicionListaEspera                 | BC-Communication (notificar siguiente)                                 |
-| `EventFeedbackRequested` | Solicitud valoraciones post-evento | eventId, registeredMembers[], fechaSolicitud | BC-Communication (enviar formulario)                                   |
-| `RecurringIssueDetected` | Detección patrón de problemas      | eventId, tipoProblema, frecuencia            | BC-Communication (alertar organizadores)                               |
+| Evento                   | Trigger                            | Payload                                      | Consumidores                                                           | Tipo        |
+| ------------------------ | ---------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------- | ----------- |
+| `EventCreated`           | Creación evento                    | eventId, tipo, fecha                         | BC-Communication (publicar)                                            | Integration |
+| `EventPublished`         | Apertura inscripciones             | eventId                                      | BC-Communication (notificar socios)                                    | Integration |
+| `EventCancelled`         | Cancelación                        | eventId, motivo                              | BC-Communication (notificar inscritos), BC-Treasury (reembolsos)       | Integration |
+| `RegistrationCompleted`  | Nueva inscripción                  | registrationId, eventId, memberId            | BC-Treasury (generar cargo si precio), BC-Communication (confirmación) | Integration |
+| `RegistrationCancelled`  | Cancelación inscripción            | registrationId, eventId                      | BC-Treasury (anular cargo)                                             | Integration |
+| `CapacityReached`        | Aforo lleno                        | eventId                                      | BC-Communication (activar lista espera)                                | Integration |
+| `SlotReleased`           | Baja de inscrito                   | eventId, posicionListaEspera                 | BC-Communication (notificar siguiente)                                 | Integration |
+| `EventFeedbackRequested` | Solicitud valoraciones post-evento | eventId, registeredMembers[], fechaSolicitud | BC-Communication (enviar formulario)                                   | Integration |
+| `RecurringIssueDetected` | Detección patrón de problemas      | eventId, tipoProblema, frecuencia            | BC-Communication (alertar organizadores)                               | Integration |
 
 ### 5.5 Trazabilidad RF
 
@@ -1303,15 +1303,15 @@ Gestiona el envío de comunicaciones a socios: emails, notificaciones push, SMS 
 ### 6.3 Domain Events
 
 BC-Communication emite eventos relacionados con el ciclo de vida de las comunicaciones:
-| Evento | Trigger | Payload | Consumidores |
-|--------|---------|---------|--------------|
-| `CommunicationSent` | Envío completado | communicationId, totalDestinatarios, canal, fechaEnvio | - |
-| `EmailBounced` | Email rebota (bounce) | envioId, memberId, email, tipoBounce (hard/soft), motivo | BC-Membership (marcar email inválido si hard bounce) |
-| `WelcomeNotificationSent` | Email bienvenida enviado a nuevo socio | memberId, email, fechaEnvio, templateId | - |
-| `PaymentReminderSent` | Recordatorio de pago enviado | memberId, email, cargoId, importe, fechaLimite | - |
-| `DelinquencyNoticeSent` | Aviso de morosidad enviado | memberId, email, deudaTotal, fechaEnvio | - |
-| `DirectDebitNoticeSent` | Aviso pre-remesa enviado | memberId, email, remesaId, importe, fechaCargo | - |
-| `RegistrationConfirmationSent` | Confirmación de inscripción a evento | memberId, email, eventId, registrationId | - |
+| Evento | Trigger | Payload | Consumidores | Tipo |
+|--------|---------|---------|--------------|------|
+| `CommunicationSent` | Envío completado | communicationId, totalDestinatarios, canal, fechaEnvio | - | Domain |
+| `EmailBounced` | Email rebota (bounce) | envioId, memberId, email, tipoBounce (hard/soft), motivo | BC-Membership (marcar email inválido si hard bounce) | Integration |
+| `WelcomeNotificationSent` | Email bienvenida enviado a nuevo socio | memberId, email, fechaEnvio, templateId | - | Domain |
+| `PaymentReminderSent` | Recordatorio de pago enviado | memberId, email, cargoId, importe, fechaLimite | - | Domain |
+| `DelinquencyNoticeSent` | Aviso de morosidad enviado | memberId, email, deudaTotal, fechaEnvio | - | Domain |
+| `DirectDebitNoticeSent` | Aviso pre-remesa enviado | memberId, email, remesaId, importe, fechaCargo | - | Domain |
+| `RegistrationConfirmationSent` | Confirmación de inscripción a evento | memberId, email, eventId, registrationId | - | Domain |
 
 **Notas:**
 
@@ -1440,9 +1440,9 @@ Repositorio centralizado de documentos de la entidad: estatutos, actas, facturas
 ### 7.3 Domain Events
 
 BC-Documents emite eventos relacionados con la generación y gestión de documentos:
-| Evento | Trigger | Payload | Consumidores |
-|--------|---------|---------|--------------|
-| `AssemblyReportGenerated` | Informe de Asamblea General generado | informeId, fiscalYearId, tipoInforme, fechaGeneracion, generadoPor | BC-Documents (almacenar en repositorio) |
+| Evento | Trigger | Payload | Consumidores | Tipo |
+|--------|---------|---------|--------------|------|
+| `AssemblyReportGenerated` | Informe de Asamblea General generado | informeId, fiscalYearId, tipoInforme, fechaGeneracion, generadoPor | BC-Documents (almacenar en repositorio) | Domain |
 
 **Notas:**
 
@@ -1638,12 +1638,12 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 
 ### 8.4 Domain Events
 
-| Evento                 | Trigger                      | Payload                                                                      |
-| ---------------------- | ---------------------------- | ---------------------------------------------------------------------------- |
-| `UserCreated`          | Registro                     | userId, email                                                                |
-| `UserAuthenticated`    | Login exitoso                | userId, tenantId, email, rol, ipAddress, userAgent, timestamp                |
-| `AuthenticationFailed` | Login fallido                | email, intentos, ip                                                          |
-| `TenantProvisioned`    | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif |
+| Evento                 | Trigger                      | Payload                                                                      | Consumidores                    | Tipo        |
+| ---------------------- | ---------------------------- | ---------------------------------------------------------------------------- | ------------------------------- | ----------- |
+| `UserCreated`          | Registro                     | userId, email                                                                | -                               | Domain      |
+| `UserAuthenticated`    | Login exitoso                | userId, tenantId, email, rol, ipAddress, userAgent, timestamp                | -                               | Domain      |
+| `AuthenticationFailed` | Login fallido                | email, intentos, ip                                                          | -                               | Domain      |
+| `TenantProvisioned`    | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif | BC-Communication (bienvenida)   | Integration |
 
 ### 8.5 Trazabilidad RF
 
@@ -1660,26 +1660,28 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 
 ---
 
-## 8.5 Domain Events Transversales
+## 8.5 Integration Events Transversales
 
-Eventos emitidos por Application Services que operan sobre múltiples BCs (requisitos N8-N11):
+Integration Events emitidos por Application Services que operan sobre múltiples BCs (requisitos N8-N11):
 
-| Evento                         | Trigger                                | Payload                                                            | Consumidores                           |
-| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------ | -------------------------------------- |
-| `DashboardVisualized`          | Usuario visualiza dashboard            | userId, tenantId, timestamp, seccionesVistas                       | - (analytics interno)                  |
-| `ExportRequested`              | Usuario solicita exportación de datos  | exportacionId, userId, tipoEntidad, formato, filtros               | Application Service Export             |
-| `ExportFailed`                 | Exportación falla por error            | exportacionId, tipoError, mensaje, timestamp                       | BC-Communication (notificar usuario)   |
-| `CommunicationHistoryExported` | Histórico de comunicaciones exportado  | exportacionId, fechaInicio, fechaFin, formato, totalRegistros      | -                                      |
-| `EconomicReportGenerated`      | Informe económico generado             | informeId, tipo, fiscalYearId, fechaGeneracion, generadoPor        | BC-Documents (almacenar)               |
-| `Modelo182Generated`           | Modelo 182 (AEAT) generado             | modeloId, fiscalYearId, totalSocios, totalImporte, fechaGeneracion | BC-Documents (almacenar)               |
-| `PlanUpgraded`                 | Plan de suscripción ampliado           | tenantId, planAnterior, planNuevo, limites, fechaCambio            | BC-Identity (actualizar tenant config) |
-| `CashRegisterOpened`           | Turno de caja abierto (peñas festeras) | turnoId, userId, fechaApertura, saldoInicial                       | BC-Treasury (registrar apertura)       |
-| `CashRegisterClosed`           | Turno de caja cerrado                  | turnoId, userId, fechaCierre, saldoFinal, diferencia               | BC-Treasury (conciliar caja)           |
+| Evento                         | Trigger                                | Payload                                                            | Consumidores                           | Tipo        |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------ | -------------------------------------- | ----------- |
+| `DashboardVisualized`          | Usuario visualiza dashboard            | userId, tenantId, timestamp, seccionesVistas                       | - (analytics interno)                  | Domain      |
+| `ExportRequested`              | Usuario solicita exportación de datos  | exportacionId, userId, tipoEntidad, formato, filtros               | Application Service Export             | Domain      |
+| `ExportFailed`                 | Exportación falla por error            | exportacionId, tipoError, mensaje, timestamp                       | BC-Communication (notificar usuario)   | Integration |
+| `CommunicationHistoryExported` | Histórico de comunicaciones exportado  | exportacionId, fechaInicio, fechaFin, formato, totalRegistros      | -                                      | Domain      |
+| `EconomicReportGenerated`      | Informe económico generado             | informeId, tipo, fiscalYearId, fechaGeneracion, generadoPor        | BC-Documents (almacenar)               | Integration |
+| `Modelo182Generated`           | Modelo 182 (AEAT) generado             | modeloId, fiscalYearId, totalSocios, totalImporte, fechaGeneracion | BC-Documents (almacenar)               | Integration |
+| `PlanUpgraded`                 | Plan de suscripción ampliado           | tenantId, planAnterior, planNuevo, limites, fechaCambio            | BC-Identity (actualizar tenant config) | Integration |
+| `CashRegisterOpened`           | Turno de caja abierto (peñas festeras) | turnoId, userId, fechaApertura, saldoInicial                       | BC-Treasury (registrar apertura)       | Integration |
+| `CashRegisterClosed`           | Turno de caja cerrado                  | turnoId, userId, fechaCierre, saldoFinal, diferencia               | BC-Treasury (conciliar caja)           | Integration |
 
 **Notas:**
 
 - Estos eventos son emitidos por Application Services que implementan requisitos transversales (N8: Import/Export, N9: Reporting, N10: Portal Socio, N11: Cumplimiento)
 - No pertenecen a un BC específico pero pueden ser consumidos por múltiples BCs
+- `DashboardVisualized` y `CommunicationHistoryExported` no tienen consumidores cross-BC — se clasifican como Domain Events (audit-only)
+- `ExportRequested` desencadena lógica intra-sistema (Application Service Export), sin consumidores en otros BCs — Domain Event
 - `CashRegisterOpened` y `CashRegisterClosed` son features específicas de peñas festeras (N12RF06-10) pero se documentan aquí por su naturaleza transversal
 
 ---
@@ -1720,8 +1722,8 @@ Eventos emitidos por Application Services que operan sobre múltiples BCs (requi
 │                                                                            │
 │  Leyenda:                                                                  │
 │    ───ACL───► : Anticorruption Layer (traduce conceptos)                   │
-│    ───PUB───► : Publisher (emite Domain Events)                            │
-│    ◄──SUB─── : Subscriber (consume Domain Events)                          │
+│    ───PUB───► : Publisher (emite Integration Events)                       │
+│    ◄──SUB─── : Subscriber (consume Integration Events)                     │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1907,101 +1909,101 @@ Nunca se almacenan datos de un tenant en la BD de otro.
 
 ---
 
-## 9.5 Event Nomenclature: Business vs Internal Events
+## 9.5 Event Nomenclature: Integration Events vs Domain Events
 
 ### Propósito
 
-Esta sección clarifica la distinción entre **Eventos de Negocio** (Business Events) para integración cross-BC y **Eventos Internos** (Internal Events) del ciclo de vida de Aggregates, para evitar confusión durante la documentación de UCs y la implementación del sistema.
+Esta sección clarifica la distinción entre **Integration Events** para integración cross-BC y **Domain Events** (audit-only, intra-BC) para el registro de operaciones de dominio, conforme a la estrategia de eventos definida en ADR-004 y ADR-008.
 
-### Eventos de Negocio (Business Events) - Integración Cross-BC
+### Integration Events (cross-BC)
 
 **Características:**
 
-- Publicados para consumo por otros Bounded Contexts
+- Publicados para consumo por otros Bounded Contexts vía Outbox Pattern
 - Representan **operaciones de negocio completadas** con contexto completo
 - Documentados en las tablas de eventos de los UCs (sección "Eventos Publicados")
 - Nomenclatura: `<Entidad><AcciónCompletaConContexto>` (ej. `SepaRemittanceGenerated`, `TenantProvisioned`)
+- Tipo: `Integration` en las tablas de eventos de cada BC
+
+**Infraestructura:**
+
+- Persistidos en tabla `outbox_event` de la **main DB** (con `tenant_id`) en la misma transacción
+- Un único `IntegrationEventPublisher` compartido en `shared/` — todos los BCs inyectan el mismo
+- Schema: `id`, `tenant_id`, `bounded_context`, `event_type`, `aggregate_id`, `aggregate_type`, `payload` (JSONB), `actor_id`, `status` (ENUM: pending/processing/processed/failed), `retry_count`, `max_retries`, `created_at`, `processed_at`
+- `OutboxProcessor` único lee de main DB: polling 5s, batch 50, mutex de concurrencia, stale recovery tras 5min
+- Consumers: `@EventsHandler` en BCs destino. Idempotencia natural (upserts) como default
 
 **Propósito:**
 
 - Integración y orquestación cross-BC
 - Trigger de workflows en otros contextos
 - Notificaciones visibles al usuario (vía BC-Communication)
+- Dual-write MVP: best-effort write a main DB post-commit en tenant DB
 
 **Ejemplo:** `TenantProvisioned`
 
 - Trigger: Tras completar el provisionamiento completo del tenant (UC-001 paso 6)
 - Payload: Información completa (tenantId, nombreColectividad, tipoColectividad, adminUserId, cif)
-- Consumidores: BC-Communication (email bienvenida), Sistema de Monitorización
+- Consumidores: BC-Communication (email bienvenida)
 
-### Eventos Internos (Internal Events) - Ciclo de Vida de Aggregates
+### Domain Events (intra-BC, audit-only)
 
 **Características:**
 
-- Emitidos durante cambios de estado internos del Aggregate
-- Representan **operaciones técnicas de grano fino**
-- NO documentados en tablas de eventos de UCs (solo en KB-005)
-- Nomenclatura: `<Entidad><AcciónSimple>` (ej. `SepaRemittanceGenerated`, `TenantCreado`)
+- Registros de auditoría write-only. Se persisten en tabla `outbox_event` de la **tenant DB** en la misma transacción que la operación de dominio
+- Sin despacho (no `EventBus.publish()`). Sin consumers. Toda lógica intra-BC va directamente en command handlers
+- Tipo: `Domain` en las tablas de eventos de cada BC
+
+**Infraestructura:**
+
+- Persistidos en tabla `outbox_event` de la **tenant DB** sin status ni retry
+- Schema: `id`, `bounded_context`, `event_type`, `aggregate_id`, `aggregate_type`, `payload` (JSONB), `actor_id`, `occurred_at`
+- Índices: `(aggregate_id, occurred_at)`, `(bounded_context)`, `(occurred_at)`
+- Sin OutboxProcessor — puro log inmutable, no hay entrega garantizada
 
 **Propósito:**
 
-- Auditoría y trazabilidad interna
-- Implementación futura de event sourcing
-- Tracking del ciclo de vida del Aggregate
+- Auditoría y trazabilidad interna del tenant
+- Registro inmutable de operaciones de dominio
+- Base para análisis posterior y cumplimiento normativo
 
-**Ejemplo:** `TenantCreado`
-
-- Trigger: Cuando se crea por primera vez el Aggregate Tenant (UC-001 paso 2)
-- Payload: Información técnica (tenantId, datos básicos)
-- Consumidores: Ninguno (solo uso interno)
-- Evento de Negocio: `TenantProvisioned` se emite posteriormente cuando el provisionamiento se completa
-
-### Mapeo: Eventos Internos → Eventos de Negocio
-
-| Evento Interno (KB-005)        | Evento de Negocio (UCs)    | Contexto                                           |
-| ------------------------------ | -------------------------- | -------------------------------------------------- |
-| `TenantCreado`                 | `TenantProvisioned`        | UC-001: Provisionamiento de tenant                 |
-| `SepaRemittanceGenerated`      | `SepaRemittanceGenerated`  | UC-023: Generación de remesa SEPA                  |
-| `SepaRemittanceSent`           | `SepaRemittanceSent`       | UC-023: Procesamiento de remesa SEPA               |
-| `SepaMandateRegistered`        | `SepaMandateRegistered`    | UC-023: Registro de mandato SEPA                   |
-| `SepaMandateExpired`           | (Implícito en UC-023 FA-3) | UC-023: Caducidad de mandato tras 36 meses         |
-| `MemberSuspendedForNonpayment` | `MemberStatusChanged`      | UC-007/UC-022: Evento genérico de cambio de estado |
+**Nota sobre self-consuming events:** Eventos que anteriormente se auto-consumían dentro del mismo BC (ej. `SepaMandateRegistered` → BC-Treasury, `SubscriptionCreated` → BC-Treasury) se reclasifican como Domain Events. La lógica correspondiente se mueve directamente al command handler.
 
 ### Guías de Implementación
 
 **Al documentar UCs:**
 
-1. Incluir SOLO Eventos de Negocio en las tablas "Eventos Publicados"
-2. Los Eventos Internos pueden mencionarse en las descripciones de flujo pero no en tablas de eventos
-3. Si existen ambos tipos de eventos, emitir primero el Interno, luego el de Negocio
+1. Incluir SOLO Integration Events en las tablas "Eventos Publicados"
+2. Los Domain Events pueden mencionarse en las descripciones de flujo pero no en tablas de eventos de UCs
+3. Si existen ambos tipos para la misma operación, el Domain Event se persiste en tenant DB y el Integration Event en main DB, en la misma transacción
 
-**Al implementar Event-Driven Architecture:**
+**Al implementar la arquitectura de eventos:**
 
-1. Publicar Eventos de Negocio en message broker (ej. RabbitMQ, Kafka)
-2. Almacenar Eventos Internos en event store para auditoría (opcional)
-3. Los consumidores externos NO deben depender NUNCA de Eventos Internos
+1. Integration Events: inyectar `IntegrationEventPublisher` (shared/) y llamar `.publish()` tras el commit
+2. Domain Events: persistir directamente en `outbox_event` de tenant DB via repositorio, sin publicar
+3. Los consumers externos NO deben depender NUNCA de Domain Events — solo de Integration Events
 
 ---
 
 ## Changelog
 
-- v1.5 (Feb 2026): Clasificación de eventos internos vs eventos de negocio
-  - **Nueva sección 9.5:** Event Nomenclature - Business vs Internal Events
-    - Definición formal de eventos de negocio (cross-BC integration)
-    - Definición formal de eventos internos (Aggregate lifecycle)
-    - Tabla de mapeo: eventos internos → eventos de negocio
+- v1.5 (Feb 2026): Clasificación de Domain Events vs Integration Events
+  - **Nueva sección 9.5:** Event Nomenclature - Integration Events vs Domain Events
+    - Definición formal de Integration Events (cross-BC integration)
+    - Definición formal de Domain Events (Aggregate lifecycle)
+    - Columna "Tipo: Integration | Domain" en tablas de eventos
     - Guías de implementación para UCs y Event-Driven Architecture
-  - **Marcados 6 eventos internos** en tablas de Domain Events:
-    - **BC-Identity (1):** `TenantCreado` [Interno] → evento negocio: `TenantProvisioned`
+  - **Marcados 6 Domain Events** en tablas de eventos (tipo Domain):
+    - **BC-Identity (1):** `TenantCreado` [Domain] → Integration Event: `TenantProvisioned`
     - **BC-Treasury (5):**
-      - `MemberSuspendedForNonpayment` [Interno] → evento negocio: `MemberStatusChanged`
-      - `SepaRemittanceGenerated` [Interno] → evento negocio: `SepaRemittanceGenerated`
-      - `SepaRemittanceSent` [Interno] → evento negocio: `SepaRemittanceSent`
-      - `SepaMandateRegistered` [Interno] → evento negocio: `SepaMandateRegistered`
-      - `SepaMandateExpired` [Interno] → evento negocio: implícito en UC-023 FA-3
-  - **Propósito:** Clarificar qué eventos deben documentarse en tablas de UCs (solo eventos de negocio)
-  - **Total eventos:** 87 (81 eventos de negocio + 6 eventos internos)
-  - **Script actualizado:** `inventario_eventos.py` v2.1 detecta marcador `[Interno]`
+      - `MemberSuspendedForNonpayment` [Domain] → Integration Event: `MemberStatusChanged`
+      - `SepaRemittanceGenerated` [Domain] → Integration Event: `SepaRemittanceGenerated`
+      - `SepaRemittanceSent` [Domain] → Integration Event: `SepaRemittanceSent`
+      - `SepaMandateRegistered` [Domain] → Integration Event: `SepaMandateRegistered`
+      - `SepaMandateExpired` [Domain] → Integration Event: implícito en UC-023 FA-3
+  - **Propósito:** Clarificar qué eventos deben documentarse en tablas de UCs (solo Integration Events)
+  - **Total eventos:** 87 (81 Integration Events + 6 Domain Events)
+  - **Script actualizado:** `inventario_eventos.py` v2.1 detecta marcador `[Domain]`
 
 - v1.4 (Feb 2026): Corrección de nomenclatura de eventos para alineación con UCs
   - **BC-Membership:** Corregidos 2 nombres de eventos para consistencia con UC-012 y UC-015
@@ -2038,7 +2040,7 @@ Esta sección clarifica la distinción entre **Eventos de Negocio** (Business Ev
     - `WelcomeNotificationSent`, `PaymentReminderSent`, `DelinquencyNoticeSent`, etc.
   - **BC-Documents:** Nueva sección 7.3 Domain Events
     - `AssemblyReportGenerated`
-  - **Nueva sección 8.5:** Domain Events Transversales (9 eventos)
+  - **Nueva sección 8.5:** Integration Events Transversales (9 eventos)
     - Eventos de Application Services cross-BC: exports, reporting, analytics, caja
   - Total Domain Events documentados: 146 (de 100 a 146)
   - Verificado con `inventario_eventos.py`: **Cobertura 100%**

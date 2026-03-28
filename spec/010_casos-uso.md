@@ -1,4 +1,4 @@
-# Matriz de Trazabilidad: User Stories → Casos de Uso
+# Casos de Uso
 
 **Proyecto:** Associated - ERP para Colectividades Españolas  
 **Versión:** 2.6  
@@ -753,6 +753,7 @@ Proceso formal de traspaso de cargo directivo (especialmente Presidente) con wor
 
      [Rechazar] [Aceptar Cargo]
      ```
+
 6. Usuario entrante pulsa "Aceptar Cargo"
 7. **Paso 3:** Ejecución del traspaso
    - `HandoverService.executeHandover(handover_id)`
@@ -1120,6 +1121,7 @@ Gestión del ciclo de vida del estado del socio con transiciones controladas, re
      → Suspendido (motivo: sanción)
      → BajaVoluntaria (proceso de baja)
      ```
+
 2. Secretario selecciona nuevo estado y proporciona motivo
 3. `MemberService.changeStatus(memberId, new_status, motivo, user_id)`
    - Valida que la transición esté permitida según **Tabla 1: Matriz de Transiciones de Estado:**
@@ -1858,9 +1860,9 @@ _Este UC no consume eventos de otros BCs_
    - Cálculo de tendencias: `((valor_actual - valor_anterior) / valor_anterior) * 100`
    - Generación de gráficos con Chart.js
 
-7. **Eventos de dominio (ADR-004, ADR-008):**
-   - `FiscalYearOpened` consumido por BC-Treasury para iniciar proceso mensual de cargos
-   - Outbox Pattern: eventos guardados en tabla `outbox_events` y procesados de forma asíncrona
+7. **Eventos (ADR-004, ADR-008):**
+   - `FiscalYearOpened` Integration Event consumido por BC-Treasury para iniciar proceso mensual de cargos
+   - Outbox Pattern: Integration Events guardados en `outbox_event` en main DB y procesados por OutboxProcessor
 
 ---
 
@@ -2106,9 +2108,9 @@ _Este UC no consume eventos de otros BCs_
    - INSERT socio, INSERT suscripción, INSERT cargo en misma transacción
    - Si falla email de bienvenida: no revierte transacción (se reintenta async)
 
-6. **Eventos de dominio (ADR-008):**
-   - Outbox Pattern: guardar eventos en `outbox_events` antes de commit
-   - Procesamiento asíncrono por worker que lee outbox cada 5 segundos
+6. **Integration Events (ADR-008):**
+   - Outbox Pattern: guardar Integration Events en `outbox_event` (main DB) en misma transacción
+   - OutboxProcessor lee Integration Events de main DB cada 5 segundos y despacha a `@EventsHandler` en BCs destino
 
 7. **Performance (RNFT-015):**
    - Proceso de alta completo < 500ms p95
@@ -8533,7 +8535,7 @@ _Este UC no consume eventos de otros BCs_
 - UC-039: SMTP con SendGrid/SES, tracking aperturas con pixel invisible
 - UC-040: Integración Twilio/Clickatell, límite 160 caracteres
 - UC-041: Web Push API, soporte notificaciones push en PWA offline
-- UC-047: Event-driven architecture, subscriptores a Domain Events
+- UC-047: Event-driven architecture, subscriptores a Integration Events via OutboxProcessor
 
 ---
 
@@ -9945,13 +9947,13 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
 
 #### Precondiciones
 
-- Event Bus configurado (NestJS EventEmitter o Redis Pub/Sub)
+- OutboxProcessor activo consumiendo Integration Events desde main DB
 - Plantillas de sistema cargadas en base de datos
 - Configuración de notificaciones automáticas habilitada por tenant
 
 #### Flujo Normal
 
-1. **Sistema escucha eventos de dominio** de otros BCs mediante Event Handlers.
+1. **Sistema escucha Integration Events** de otros BCs mediante Event Handlers.
 
 2. **Event Handler para bienvenida de nuevo socio** (US-122):
 
@@ -10055,12 +10057,12 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
 
 #### Notas de Implementación
 
-1. **Event Bus: NestJS EventEmitter vs Redis Pub/Sub (ADR-004):**
-   - Fase 1 (MVP): Usar NestJS EventEmitter in-process
-   - Fase 2 (escalado): Migrar a Redis Pub/Sub para multi-instancia
-   - Decorador `@OnEvent('evento.nombre')` para handlers
-   - Events síncronos: handler se ejecuta en misma transacción
-   - Events asíncronos: usar `@OnEvent('evento', { async: true })`
+1. **Integration Events via OutboxProcessor (ADR-004, ADR-008):**
+   - OutboxProcessor hace polling sobre `outbox_event` en main DB (status=pending) cada 5 segundos en lotes de 50
+   - Por cada evento, llama a `EventBus.publish()` despachando al `@EventsHandler` correspondiente en BC-Communication
+   - Cada handler está envuelto en try/catch — el fallo de un handler no bloquea el tick ni el resto de eventos
+   - Eventos en estado `processing` durante más de 5 minutos se resetean a `pending` al arrancar el OutboxProcessor (stale recovery)
+   - Los handlers en BC-Communication son clases anotadas con `@EventsHandler` (NestJS CQRS), no `@OnEvent`
 
 2. **Deduplicación de Notificaciones (RNFT-041):**
    - Tabla `notificacion_enviada` con columnas: `member_id, plantilla_codigo, referencia_externa, fecha_envio`
@@ -10104,9 +10106,9 @@ Sistema de notificaciones automáticas que escucha eventos de otros Bounded Cont
    - Dashboard Grafana: tasa de éxito, latencia, notificaciones por tipo
 
 10. **Retry Logic para Event Handlers Fallidos:**
-    - Si handler falla, reintenta 3 veces con backoff: 1min, 5min, 15min
-    - Usar Dead Letter Queue (DLQ) para eventos que fallan definitivamente
-    - Revisión manual de DLQ por administrador
+    - Si handler falla, OutboxProcessor marca el evento con `retry_count + 1`
+    - Tras alcanzar `max_retries=3`, el evento queda en `status=failed`
+    - Revisión manual de eventos en `status=failed` en main DB por administrador
 
 ---
 
@@ -10619,7 +10621,7 @@ _Este UC no consume eventos de otros BCs_
 #### Notas de Implementación
 
 1. **Generación Automática de PDF tras Aprobación:**
-   - Event Handler `@OnEvent('acta.aprobada')` dispara generación de PDF
+   - El Command Handler de aprobación de acta invoca directamente `PdfGenerationService.generateActaPdf(acta)` al finalizar la aprobación (sin event bus)
    - Proceso asíncrono: encolar en Bull Queue para no bloquear aprobación
    - Notificar a secretario cuando PDF esté listo (push notification)
 
@@ -15535,6 +15537,7 @@ El sistema mantiene un calendario fiscal actualizado según normativa vigente (A
      ```
 
    - Sistema genera calendario fiscal personalizado según configuración
+
 3. Sistema crea instancias de obligaciones tributarias aplicables
 
 **Parte 2: Ejecución automática de revisión semanal** (US-201, US-202)
@@ -16271,7 +16274,7 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
   - Scheduled job diario a medianoche para expirar anuncios vencidos
   - Archivo histórico de anuncios expirados para consulta
 - ✅ **UC-047 Highlights (Comunicaciones Automáticas):**
-  - Event Handlers con @OnEvent para eventos de BC-Membership, BC-Treasury, BC-Events
+  - Event Handlers con @EventsHandler para Integration Events de BC-Membership, BC-Treasury, BC-Events via OutboxProcessor
   - Workflow de morosidad con escalado automático por fases (30, 60, 90 días)
   - Scheduled jobs para recordatorios programados: pago (7 días antes), eventos (2 días antes)
   - Deduplicación con tabla notificacion_enviada para evitar spam (TTL 24h)
