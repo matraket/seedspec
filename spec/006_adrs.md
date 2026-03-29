@@ -5,7 +5,7 @@
 **Fecha:** Febrero 2026  
 **Inputs:** KB-004 (RNF Base), KB-005 (Modelo de Dominio)  
 **Estado:** Verificado  
-**Total ADRs:** 12
+**Total ADRs:** 13
 
 ---
 
@@ -85,6 +85,12 @@
     - [Decisión](#decisión-11)
     - [Consecuencias](#consecuencias-11)
     - [Trazabilidad](#trazabilidad-11)
+  - [ADR-013: Transición SUSPENDED → NONPAYMENT\_LEAVE](#adr-013-transición-suspended--nonpayment_leave)
+    - [Estado](#estado-12)
+    - [Contexto](#contexto-12)
+    - [Decisión](#decisión-12)
+    - [Consecuencias](#consecuencias-12)
+    - [Trazabilidad](#trazabilidad-12)
   - [Trazabilidad General](#trazabilidad-general)
     - [Matriz ADR → RNF](#matriz-adr--rnf)
     - [Matriz ADR → BC](#matriz-adr--bc)
@@ -1153,6 +1159,54 @@ RNF-058/059/060 definen una pirámide de testing con umbrales específicos. Nece
 
 ---
 
+## ADR-013: Transición SUSPENDED → NONPAYMENT_LEAVE
+
+### Estado
+
+**Aceptado**
+
+### Contexto
+
+UC-007 define la tabla de transiciones de estado de socio. Las transiciones documentadas desde SUSPENDED son:
+- SUSPENDED → ACTIVE (rehabilitación por pago)
+- SUSPENDED → DISCIPLINARY_LEAVE (baja disciplinaria)
+
+Sin embargo, el StatusTransitionValidator del backend permite además SUSPENDED → NONPAYMENT_LEAVE, que no estaba en la spec original. Esta transición se descubrió durante el flujo SDD leave-flow-completion (marzo 2026).
+
+El escenario de negocio es real: un socio suspendido por impago que acumula suficiente deuda debería poder transicionar directamente a baja por impago, sin necesidad de pasar primero por otro estado intermedio.
+
+### Decisión
+
+**Se acepta SUSPENDED → NONPAYMENT_LEAVE como transición válida.** Justificación:
+- Semánticamente correcta: la suspensión por impago es el paso previo natural a la baja por impago
+- Ya implementada y verificada en el backend (StatusTransitionValidator)
+- El frontend (LeaveActions + NonpaymentLeavePage) ya la consume vía useAvailableTransitions
+- Eliminarla obligaría a un workaround artificial (ej: reactivar → suspender → dar de baja)
+
+Actualizar la tabla de transiciones de UC-007 para incluirla.
+
+### Consecuencias
+
+**Positivas:**
+
+- Flujo de baja por impago directo desde suspensión, sin pasos intermedios artificiales
+- Alineación entre spec, backend y frontend
+
+**Negativas:**
+
+- Amplía la superficie de transiciones de estado (una más que mantener)
+
+### Trazabilidad
+
+| Referencia               | Descripción                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| UC-007                   | Tabla de transiciones de estado del socio                                             |
+| UC-013                   | Baja de socio                                                                         |
+| US-033                   | Baja por impago                                                                       |
+| StatusTransitionValidator | `api/src/membership/domain/services/status-transition-validator.ts`                  |
+
+---
+
 ## Trazabilidad General
 
 ### Matriz ADR → RNF
@@ -1171,6 +1225,7 @@ RNF-058/059/060 definen una pirámide de testing con umbrales específicos. Nece
 | ADR-010 | RNF-015-016, RNF-057      |
 | ADR-011 | RNF-009, RNF-022          |
 | ADR-012 | RNF-058, RNF-059, RNF-060 |
+| ADR-013 | —                         |
 
 ### Matriz ADR → BC
 
@@ -1188,6 +1243,7 @@ RNF-058/059/060 definen una pirámide de testing con umbrales específicos. Nece
 | ADR-010 | Todos (exposición API)                   |
 | ADR-011 | BC-Documents                             |
 | ADR-012 | Todos                                    |
+| ADR-013 | BC-Membership                            |
 
 ---
 
