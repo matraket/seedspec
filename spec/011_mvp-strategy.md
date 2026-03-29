@@ -12,7 +12,7 @@
 
 ## 1. Resumen Ejecutivo
 
-Associated es un ERP ligero disenado para colectividades espanolas (asociaciones, clubs, federaciones) que implementa una arquitectura de Modular Monolith con aislamiento multi-tenant por base de datos. El MVP cubre los 3 Bounded Contexts criticos (Identity, Membership, Treasury) con 19 casos de uso (18 Must + 1 Should), distribuidos en 37 tareas a lo largo de 4 fases (Scaffold + 3 fases funcionales). La estrategia de implementacion sigue un modelo de capas de dependencia que garantiza que cada fase entrega valor incremental verificable, respetando el grafo de dependencias entre UCs y minimizando el riesgo de integracion.
+Associated es un ERP ligero disenado para colectividades espanolas (asociaciones, clubs, federaciones) que implementa una arquitectura de Modular Monolith con aislamiento multi-tenant por base de datos. El MVP cubre los 3 Bounded Contexts criticos (Identity, Membership, Treasury) con 20 casos de uso (19 Must + 1 Should), distribuidos en 38 tareas a lo largo de 4 fases (Scaffold + 3 fases funcionales). La estrategia de implementacion sigue un modelo de capas de dependencia que garantiza que cada fase entrega valor incremental verificable, respetando el grafo de dependencias entre UCs y minimizando el riesgo de integracion.
 
 ---
 
@@ -40,11 +40,11 @@ Associated es un ERP ligero disenado para colectividades espanolas (asociaciones
 +----------------------------------+--------+
 | Metrica                          | Valor  |
 +----------------------------------+--------+
-| Casos de uso totales             |     19 |
-|   - Must Have                    |     18 |
+| Casos de uso totales             |     20 |
+|   - Must Have                    |     19 |
 |   - Should Have                  |      1 |
-| Tareas totales                   |     37 |
-|   - Backend                      |     19 |
+| Tareas totales                   |     38 |
+|   - Backend                      |     20 |
 |   - Frontend                     |     18 |
 | User Stories cubiertas           |    ~56 |
 | Requisitos funcionales trazados  |    ~40 |
@@ -128,11 +128,11 @@ Los BCs se comunican exclusivamente via Domain Events (ADR-008), manteniendo aco
 
 ---
 
-### FASE 1: Fundacion y Core (18 tareas: 12 back + 6 front)
+### FASE 1: Fundacion y Core (20 tareas: 14 back + 6 front)
 
 **Objetivo estrategico:** Entregar un sistema funcional minimo donde un tenant puede operar el ciclo completo: alta de socios, configuracion de cuotas, generacion de cargos y registro de cobros.
 
-**Backend (12 tareas):**
+**Backend (14 tareas):**
 
 ```
 +------+--------+-------------------------------------------+-----------------+
@@ -140,16 +140,17 @@ Los BCs se comunican exclusivamente via Domain Events (ADR-008), manteniendo aco
 +------+--------+-------------------------------------------+-----------------+
 |    1 | UC-001 | Provision de nuevo tenant                 | BC-Identity     |
 |    2 | UC-002 | Autenticacion multi-tenant                | BC-Identity     |
-|    3 | UC-008 | Configuracion de tipos de socio           | BC-Membership   |
-|    4 | UC-010 | Gestion de ejercicios                     | BC-Membership   |
-|    5 | UC-007 | Gestion de estados del socio              | BC-Membership   |
-|    6 | UC-006 | Gestion de ficha de socio                 | BC-Membership   |
-|    7 | UC-011 | Alta simple de socio                      | BC-Membership   |
-|    8 | UC-013 | Baja de socio                             | BC-Membership   |
-|    9 | UC-017 | Configuracion de planes de cuota          | BC-Treasury     |
-|   10 | UC-018 | Gestion de suscripciones de cuota         | BC-Treasury     |
-|   11 | UC-019 | Generacion masiva de cargos periodicos    | BC-Treasury     |
-|   12 | UC-021 | Registro de cobros                        | BC-Treasury     |
+|    3 | UC-003 | Configuracion de tenant                   | BC-Identity     |
+|    4 | UC-008 | Configuracion de tipos de socio           | BC-Membership   |
+|    5 | UC-010 | Gestion de ejercicios                     | BC-Membership   |
+|    6 | UC-007 | Gestion de estados del socio              | BC-Membership   |
+|    7 | UC-006 | Gestion de ficha de socio                 | BC-Membership   |
+|    8 | UC-011 | Alta simple de socio                      | BC-Membership   |
+|    9 | UC-013 | Baja de socio                             | BC-Membership   |
+|   10 | UC-017 | Configuracion de planes de cuota          | BC-Treasury     |
+|   11 | UC-018 | Gestion de suscripciones de cuota         | BC-Treasury     |
+|   12 | UC-019 | Generacion masiva de cargos periodicos    | BC-Treasury     |
+|   13 | UC-021 | Registro de cobros                        | BC-Treasury     |
 +------+--------+-------------------------------------------+-----------------+
 ```
 
@@ -170,6 +171,7 @@ Los BCs se comunican exclusivamente via Domain Events (ADR-008), manteniendo aco
 
 **Justificacion del orden:**
 - UC-001 y UC-002 son prerequisitos absolutos (sin tenant ni auth, nada funciona).
+- UC-003 (configuracion de tenant) se incluye inmediatamente despues de provision, ya que branding y configuracion inicial son parte del setup fundacional del tenant.
 - UC-008 antes de UC-006 porque los tipos de socio son prerequisito para crear fichas.
 - UC-010 habilitado en paralelo (ejercicios son independientes de fichas).
 - UC-017 antes de UC-018/UC-019 porque sin planes de cuota no hay suscripciones ni cargos.
@@ -214,6 +216,8 @@ Los BCs se comunican exclusivamente via Domain Events (ADR-008), manteniendo aco
 |    8 | UC-024 | Gestion de devoluciones SEPA              |
 +------+--------+-------------------------------------------+
 ```
+
+> **Nota:** Las fases representan una estrategia de entrega incremental orientada al TFM, no una priorización MoSCoW. El MVP completo comprende las 3 fases — un UC clasificado como Must puede estar en cualquier fase. El producto no sale al mercado hasta completar todas las fases. UC-004 es Must y aparece en Fase 2 porque en Fase 1 se opera con roles hardcoded; la granularidad real de permisos se implementa una vez el ciclo core está estable.
 
 **Justificacion del orden:**
 - UC-004 (roles) se pospone a Fase 2 porque en Fase 1 se trabaja con roles hardcoded/seeding. Ahora se necesita granularidad real.
@@ -499,6 +503,7 @@ Requisito Funcional (RF)          Bounded Context          User Story (US)      
 
 N2RF01 (Crear tenant)       --->  BC-Identity        --->  US-001             --->  UC-001
 N2RF02 (Login multi-tenant) --->  BC-Identity        --->  US-002             --->  UC-002
+N2RF03 (Config. tenant)     --->  BC-Identity        --->  US-003             --->  UC-003
 N2RF04, N2RF05 (Roles)      --->  BC-Identity        --->  US-004, US-005     --->  UC-004
 
 N3RF01..N3RF05 (Ficha)      --->  BC-Membership      --->  US-009..US-013     --->  UC-006
@@ -575,7 +580,7 @@ RNF-058 (Calidad)         ---> Quality gates CI        --->  ADR-011 (Testing st
 La implementacion sigue un modelo de 8 capas que respeta estrictamente el grafo de dependencias:
 
 ```
-Capa 0 --- Fundacion ----------- UC-001, UC-002
+Capa 0 --- Fundacion ----------- UC-001, UC-002, UC-003
   |
   v
 Capa 1 --- Configuracion ------- UC-004, UC-008

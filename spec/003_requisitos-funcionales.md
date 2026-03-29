@@ -26,6 +26,10 @@
 
 ---
 
+> **Nota:** La sección §1 del análisis de necesidades (002) corresponde al contexto general del problema y no genera requisitos funcionales directos. La numeración comienza en N2 alineada con §2 del análisis.
+
+---
+
 ## N2: Necesidades de Arquitectura y Acceso al Sistema
 
 ### N2RF01: Aislamiento Multi-Tenant

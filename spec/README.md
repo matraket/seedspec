@@ -1,6 +1,6 @@
 # Especificación - Associated
 
-**221 requisitos · 202 user stories · 76 casos de uso · ~32.600 líneas · ~1.800 referencias cruzadas**
+**221 requisitos · 202 user stories · 77 casos de uso · ~32.600 líneas · ~1.800 referencias cruzadas**
 
 ---
 
@@ -41,13 +41,13 @@ Cada documento responde a una pregunta distinta sobre el mismo sistema:
 | #   | Documento                                                     | Contenido                                            | Líneas |
 | :-- | :------------------------------------------------------------ | :--------------------------------------------------- | -----: |
 | 003 | [Requisitos Funcionales](003_requisitos-funcionales.md)       | 221 RFs organizados en 12 secciones temáticas        |  2.433 |
-| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 66 RNFs agnósticos de tecnología                     |  1.046 |
+| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 67 RNFs agnósticos de tecnología                     |  1.046 |
 | 005 | [Bounded Contexts y Modelo de Dominio](005_modelo-dominio.md) | 6 BCs con aggregates, entities y value objects (DDD) |  1.991 |
 | 006 | [Architectural Decision Records](006_adrs.md)                 | 12 ADRs con contexto, decisión y consecuencias       |  1.038 |
 | 007 | [Stack Tecnológico](007_stack.md)                             | Selección y justificación de tecnologías             |    838 |
 | 008 | [Requisitos No Funcionales Técnicos](008_rnf-tecnicos.md)     | Concreción técnica de los RNFs (mapeo 1:1)           |  1.565 |
 | 009 | [User Stories y Criterios de Aceptación](009_user-stories.md) | 202 US con priorización MoSCoW                       |  7.726 |
-| 010 | [Casos de Uso](010_casos-uso.md)                              | 76 UCs con happy path, alternativas y excepciones    | 15.315 |
+| 010 | [Casos de Uso](010_casos-uso.md)                              | 77 UCs con happy path, alternativas y excepciones    | 15.315 |
 
 ### Documentos auxiliares
 

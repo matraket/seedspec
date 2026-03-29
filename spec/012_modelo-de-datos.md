@@ -5,7 +5,7 @@
 **Fecha:** Marzo 2026
 **Inputs:** KB-005 (Modelo de Dominio), KB-006 (ADRs), KB-007 (Stack Tecnológico)
 **Estado:** Borrador
-**Total Entidades:** 40
+**Total Entidades:** 41
 
 ---
 
@@ -59,7 +59,9 @@
    - [ENT-038: documents](#ent-038-documents)
    - [ENT-039: document_categories](#ent-039-document_categories)
    - [ENT-040: meeting_minutes](#ent-040-meeting_minutes)
-9. [Trazabilidad](#9-trazabilidad)
+9. [Transversal (Tenant) - Auditoría](#9-transversal-tenant---auditoría)
+   - [ENT-041: audit_log](#ent-041-audit_log)
+10. [Trazabilidad](#10-trazabilidad)
 
 ---
 
@@ -100,8 +102,8 @@ Esta sección define las normas que aplican a todas las entidades del modelo rel
 | slug                        | String (@db.VarChar(63))   | VARCHAR(63)  | No       | -         | Identificador URL-friendly. Único global.          |
 | name                        | String (@db.VarChar(200))  | VARCHAR(200) | No       | -         | Nombre de la colectividad                          |
 | cif                         | String (@db.VarChar(20))   | VARCHAR(20)  | No       | -         | CIF de la entidad. Único global.                   |
-| type                        | String (@db.VarChar(50))   | VARCHAR(50)  | No       | -         | Tipo de colectividad (asociacion, cofradia, club…) |
-| status                      | String (@db.VarChar(20))   | VARCHAR(20)  | No       | 'pending' | Estado de provisión del tenant                     |
+| type                        | String (@db.VarChar(50))   | VARCHAR(50)  | No       | -         | Tipo de colectividad (PENA, COFRADIA, CLUB_DEPORTIVO, ASOCIACION_CULTURAL) |
+| status                      | String (@db.VarChar(20))   | VARCHAR(20)  | No       | 'PENDING' | Estado de provisión del tenant                     |
 | database_name               | String (@db.VarChar(100))  | VARCHAR(100) | No       | -         | Nombre de la BD de tenant asignada                 |
 | database_user               | String? (@db.VarChar(100)) | VARCHAR(100) | Sí       | NULL      | Usuario de la BD de tenant                         |
 | database_password_encrypted | String? (@db.Text)         | TEXT         | Sí       | NULL      | Contraseña cifrada de la BD de tenant (RNF-006)    |
@@ -284,6 +286,7 @@ Esta sección define las normas que aplican a todas las entidades del modelo rel
 | payload        | Json                        | JSONB        | No       | -           | Contrato público cross-BC del evento                            |
 | actor_id       | String? (@db.Uuid)          | UUID         | Sí       | NULL        | Usuario que ejecutó la acción (nullable para ops. del sistema)  |
 | status         | String (@db.VarChar(20))    | VARCHAR(20)  | No       | 'pending'   | Estado: pending / processing / processed / failed               |
+| processing_started_at | DateTime? (@db.Timestamptz) | TIMESTAMPTZ | Sí | NULL | Timestamp de transición a processing. Usado por stale recovery para detectar eventos stuck (>5 min). Se setea en cada pending → processing, se resetea a NULL al volver a pending. |
 | retry_count    | Int                         | INTEGER      | No       | 0           | Número de intentos de procesado                                 |
 | max_retries    | Int                         | INTEGER      | No       | 3           | Máximo de reintentos antes de marcar como failed                |
 | created_at     | DateTime (@db.Timestamptz)  | TIMESTAMPTZ  | No       | now()       | Timestamp de publicación del evento                             |
@@ -292,6 +295,7 @@ Esta sección define las normas que aplican a todas las entidades del modelo rel
 #### Constraints e Índices
 
 - `@@index([status, created_at])` - índice principal para el polling del OutboxProcessor
+- `@@index([status, processing_started_at])` - stale recovery: detecta eventos stuck en processing >5 min
 - `@@index([tenant_id])` - filtrado por tenant
 - `@@index([bounded_context, status])` - filtrado por BC y estado
 - `@@index([aggregate_id])` - trazabilidad por agregado
@@ -695,7 +699,7 @@ No tiene relaciones FK declaradas (diseño intencional - tabla de auditoría inm
 | payment_date      | DateTime (@db.Date)        | DATE         | No       | -           | Fecha del pago                                        |
 | payment_reference | String (@db.VarChar(30))   | VARCHAR(30)  | No       | -           | Referencia única del pago. Única global en el tenant. |
 | receipt_number    | String? (@db.VarChar(30))  | VARCHAR(30)  | Sí       | NULL        | Número de recibo generado. Único.                     |
-| receipt_document  | Bytes?                     | BYTEA        | Sí       | NULL        | PDF del recibo almacenado en BD                       |
+| receipt_document_url | String? (@db.VarChar(500)) | VARCHAR(500) | Sí       | NULL        | URL/key del recibo en almacenamiento de objetos (S3/MinIO) — ver ADR-011 |
 | notes             | String? (@db.VarChar(500)) | VARCHAR(500) | Sí       | NULL        | Notas adicionales del pago                            |
 | registered_by     | String (@db.Uuid)          | UUID         | No       | -           | UserId del usuario que registró el pago               |
 | status            | String (@db.VarChar(20))   | VARCHAR(20)  | No       | 'CONFIRMED' | Estado: CONFIRMED, RETURNED, CANCELLED                |
@@ -1036,7 +1040,43 @@ No tiene relaciones FK declaradas (diseño intencional para bajo acoplamiento).
 
 ---
 
-## 9. Trazabilidad
+## 9. Transversal (Tenant) - Auditoría
+
+### ENT-041: audit_log
+
+> **Bounded Context:** Transversal | **Aggregate:** AuditLog
+
+**Prisma model:** `AuditLog`
+**Base de datos:** Tenant
+**Propósito:** Log de auditoría inmutable de acciones de usuario sobre entidades críticas. No hay `tenant_id` porque cada BD pertenece ya a un tenant (contexto implícito).
+**Trazabilidad RNF:** RNF-007 (retención 5 años, Must — auditoría de operaciones críticas)
+
+#### Columnas
+
+| Columna       | Tipo Prisma                | Tipo PG      | Nullable | Default | Descripción                                                              |
+| ------------- | -------------------------- | ------------ | -------- | ------- | ------------------------------------------------------------------------ |
+| id            | String (@default(cuid()))  | TEXT         | No       | cuid()  | Clave primaria                                                           |
+| actor_id      | String                     | TEXT         | No       | -       | FK lógica → users.id (DB-Main). El usuario que ejecutó la acción.       |
+| action        | String                     | TEXT         | No       | -       | Acción ejecutada (ej: 'MEMBER_STATUS_CHANGED', 'IBAN_MODIFIED', 'PAYMENT_CREATED') |
+| target_entity | String                     | TEXT         | No       | -       | Entidad afectada (ej: 'members', 'payments')                            |
+| target_id     | String                     | TEXT         | No       | -       | ID del registro afectado                                                 |
+| payload       | Json?                      | JSONB        | Sí       | NULL    | Detalles adicionales del cambio (before/after, metadata)                 |
+| ip_address    | String?                    | TEXT         | Sí       | NULL    | IP del actor (nullable para operaciones internas del sistema)            |
+| created_at    | DateTime (@default(now())) | TIMESTAMPTZ  | No       | now()   | Timestamp de cuándo ocurrió la acción (inmutable)                       |
+
+#### Constraints e Índices
+
+- `@@index([target_entity, target_id])` - consultas de historial por entidad y registro
+- `@@index([actor_id])` - consultas por usuario
+- `@@index([created_at])` - consultas cronológicas y purga por retención
+
+#### Relaciones
+
+No tiene FK declaradas (diseño intencional: `actor_id` referencia DB-Main, sin FK cross-DB). Log append-only — sin UPDATE ni DELETE.
+
+---
+
+## 10. Trazabilidad
 
 ### Matriz Entidad → Aggregate
 
@@ -1082,23 +1122,25 @@ No tiene relaciones FK declaradas (diseño intencional para bajo acoplamiento).
 | ENT-038 | documents              | Document            | BC-Documents     | Tenant |
 | ENT-039 | document_categories    | Categoria           | BC-Documents     | Tenant |
 | ENT-040 | meeting_minutes        | Acta                | BC-Documents     | Tenant |
+| ENT-041 | audit_log              | AuditLog            | Transversal      | Tenant |
 
 ### Matriz Entidad → RNF
 
 | RNF     | ENTs afectadas                                                                                   | Impacto en esquema                                                                                             |
 | ------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| RNF-004 | ENT-001…ENT-006 (Main), ENT-007…ENT-040 (Tenant)                                                 | Separación estricta en dos bases de datos. Main para identidad global, Tenant para datos de cada colectividad. |
+| RNF-004 | ENT-001…ENT-006 (Main), ENT-007…ENT-041 (Tenant)                                                 | Separación estricta en dos bases de datos. Main para identidad global, Tenant para datos de cada colectividad. |
 | RNF-006 | ENT-001 (database_password_encrypted), ENT-009 (iban_encrypted), ENT-018 (iban_debtor_encrypted) | Datos sensibles cifrados en reposo con sufijo `_encrypted`.                                                    |
 | RNF-011 | ENT-002 (failed_attempts, blocked_until)                                                         | Campos para implementar bloqueo de cuenta tras intentos fallidos de login.                                     |
 | RNF-012 | ENT-003 (role_id), ENT-004 (permissions)                                                         | RBAC implementado mediante la relación user→tenantMembership→role→permissions.                                 |
 | RNF-013 | ENT-005 (refresh_tokens)                                                                         | Gestión de renovación de sesiones JWT con revocación explícita.                                                |
 | RNF-067 | ENT-006 (main)                                                                                   | Outbox pattern para garantizar at-least-once delivery de Integration Events cross-BC. OutboxProcessor, max_retries=3, polling 5s. |
 | N/A (audit) | ENT-017 (tenant)                                                                             | Domain Events audit-only. Log inmutable write-only. Sin garantía de entrega — no requiere RNF de delivery.    |
+| RNF-007 | ENT-041 (audit_log)                                                                              | Log de auditoría inmutable de acciones de usuario. Retención 5 años (Must). Append-only, sin UPDATE ni DELETE. |
 | RNF-017 | ENT-010 (status_history)                                                                         | Auditoría inmutable de cambios de estado de socios mediante tabla INSERT-only.                                 |
 
 ### Resumen por Base de Datos
 
-| Base de datos | Tablas                                                                                                                                                                                                                                                 | BCs                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Main          | ENT-001…ENT-006 (tenants, users, tenant_memberships, roles, refresh_tokens, outbox_events)                                                                                                                                                             | BC-Identity, Transversal                                                           |
-| Tenant        | ENT-007…ENT-040 (member_types, fiscal_years, members, status_history, fee_plans, member_type_fee_plans, member_accounts, fee_subscriptions, charges, payments, outbox_events, sepa_mandates, sepa_remittances, sepa_debits, y placeholders pendientes) | BC-Membership, BC-Treasury, BC-Events, BC-Communication, BC-Documents, Transversal |
+| Base de datos | Tablas                                                                                                                                                                                                                                                                  | BCs                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Main          | ENT-001…ENT-006 (tenants, users, tenant_memberships, roles, refresh_tokens, outbox_events)                                                                                                                                                                              | BC-Identity, Transversal                                                           |
+| Tenant        | ENT-007…ENT-041 (member_types, fiscal_years, members, status_history, fee_plans, member_type_fee_plans, member_accounts, fee_subscriptions, charges, payments, outbox_events, sepa_mandates, sepa_remittances, sepa_debits, placeholders pendientes, **audit_log**) | BC-Membership, BC-Treasury, BC-Events, BC-Communication, BC-Documents, Transversal |

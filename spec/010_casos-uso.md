@@ -3,7 +3,7 @@
 **Proyecto:** Associated - ERP para Colectividades Españolas  
 **Versión:** 2.6  
 **Fecha:** Febrero 2026  
-**Total:** 76 Casos de Uso derivados de 202 User Stories
+**Total:** 77 Casos de Uso derivados de 225 User Stories (ver nota en Resumen Ejecutivo)
 
 ---
 
@@ -11,7 +11,7 @@
 
 - [Resumen Ejecutivo](#resumen-ejecutivo)
 - [Notación y Convenciones](#1-notación-y-convenciones)
-- [BC-Identity (UC-001 a UC-005)](#bc-identidad)
+- [BC-Identity (UC-001 a UC-005b)](#bc-identidad)
 - [BC-Membership (UC-006 a UC-016)](#bc-membresia)
 - [BC-Treasury (UC-017 a UC-027)](#bc-tesoreria)
 - [BC-Events (UC-028 a UC-038)](#bc-eventos)
@@ -30,7 +30,7 @@
 
 | Columna                 | Descripción                                         |
 | ----------------------- | --------------------------------------------------- |
-| **UC**                  | Identificador del Caso de Uso (UC-001 a UC-076)     |
+| **UC**                  | Identificador del Caso de Uso (UC-001 a UC-076, más UC-005b)     |
 | **Nombre UC**           | Descripción corta del caso de uso                   |
 | **User Stories**        | IDs de las User Stories que agrupa (formato US-XXX) |
 | **BC**                  | Bounded Context destino                             |
@@ -42,7 +42,7 @@
 
 ## Resumen Ejecutivo
 
-Este documento define los **76 Casos de Uso** del sistema Associated, derivados de las **202 User Stories** documentadas en KB-009. Cada caso de uso describe:
+Este documento define los **77 Casos de Uso** del sistema Associated, derivados de las **202 User Stories** documentadas en KB-009. Cada caso de uso describe:
 
 - **Application Services** responsables de la ejecución
 - **Flujos normales** (happy path)
@@ -55,17 +55,19 @@ Este documento define los **76 Casos de Uso** del sistema Associated, derivados 
 
 | BC                                 | Casos de Uso | User Stories Agrupadas | Tipo          |
 | ---------------------------------- | ------------ | ---------------------- | ------------- |
-| **BC-Identity**                    | 5            | 8                      | Generic       |
+| **BC-Identity**                    | 6            | 8                      | Generic       |
 | **BC-Membership**                  | 10           | 34                     | Core          |
-| **BC-Treasury**                    | 11           | 38                     | Core          |
-| **BC-Events**                      | 11           | 29                     | Core          |
-| **BC-Communication**               | 9            | 23                     | Supporting    |
-| **BC-Documents**                   | 8            | 12                     | Supporting    |
+| **BC-Treasury**                    | 11           | 40                     | Core          |
+| **BC-Events**                      | 11           | 36                     | Core          |
+| **BC-Communication**               | 9            | 25                     | Supporting    |
+| **BC-Documents**                   | 8            | 29                     | Supporting    |
 | **Transversal N8 (Import/Export)** | 8            | 13                     | Cross-cutting |
-| **Transversal N9 (Reporting)**     | 4            | 12                     | Cross-cutting |
+| **Transversal N9 (Reporting)**     | 4            | 11                     | Cross-cutting |
 | **Transversal N10 (Portal Socio)** | 4            | 15                     | Cross-cutting |
 | **Transversal N11 (Cumplimiento)** | 5            | 15                     | Cross-cutting |
-| **Total**                          | **76**       | **202**                |               |
+| **Total**                          | **77**       | **224**                |               |
+
+<!-- Nota: El total de 224 User Stories en este documento difiere del total de 202 declarado en KB-009. Las cifras por BC han sido alineadas con los totales acumulados al final de cada sección del presente documento (fuente de verdad). La discrepancia con KB-009 debe resolverse reconciliando las US de cada BC. -->
 
 ### Criterios de Agrupación Aplicados
 
@@ -195,10 +197,11 @@ Usuario → Controller → AppService → Aggregate → Repository
 | UC-001 | Provisión de nuevo tenant     | US-001                 | BC-Identity | TenantProvisioningService | Must      | Alta        |
 | UC-002 | Autenticación multi-tenant    | US-002                 | BC-Identity | AuthenticationService     | Must      | Alta        |
 | UC-003 | Configuración de tenant       | US-003                 | BC-Identity | TenantConfigService       | Must      | Media       |
-| UC-004 | Gestión de roles y permisos   | US-004, US-005         | BC-Identity | RoleManagementService     | Must      | Alta        |
-| UC-005 | Traspaso de cargos directivos | US-006, US-007, US-008 | BC-Identity | HandoverService           | Should    | Media       |
+| UC-004  | Gestión de roles y permisos              | US-004, US-005         | BC-Identity | RoleManagementService     | Must      | Alta        |
+| UC-005  | Traspaso de cargos directivos            | US-007, US-008         | BC-Identity | HandoverService           | Should    | Media       |
+| UC-005b | Consulta y exportación de auditoría      | US-006                 | BC-Identity | AuditService              | Must      | Media       |
 
-**Total BC-Identity:** 5 UCs cubriendo 8 User Stories (US-001 a US-008)
+**Total BC-Identity:** 6 UCs cubriendo 8 User Stories (US-001 a US-008)
 
 ---
 
@@ -362,7 +365,7 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
        "permissions": ["treasury:fees:read", "treasury:fees:write", ...]
      }
      ```
-   - Genera Refresh Token (30 días) almacenado en BD
+   - Genera Refresh Token (7 días) almacenado en BD
 8. Sistema redirige a dashboard del tenant seleccionado
 9. Todas las queries subsiguientes usan el `tenant_id` del JWT para enrutar a la BD correcta
 10. Sistema muestra confirmación: "Acceso exitoso. Bienvenido a Peña El Tambor"
@@ -434,7 +437,7 @@ _Este UC no consume eventos de otros BCs_
 - Usuario puede acceder a recursos del tenant seleccionado
 - Evento de dominio `UserAuthenticated` emitido
 - Registro de acceso creado en auditoría (IP, user agent, timestamp)
-- Refresh Token almacenado con expiración de 30 días
+- Refresh Token almacenado con expiración de 7 días
 
 **Fallo:**
 
@@ -449,7 +452,7 @@ _Este UC no consume eventos de otros BCs_
 - El `tenant_id` en JWT es crítico: NestJS TenantGuard lo extrae y configura conexión DB
 - No usar WHERE tenant_id en queries (la conexión ya está aislada por BD)
 - Implementar rate limiting en endpoint de login (RNFT-011)
-- Refresh Token permite renovar Access Token sin re-login hasta 30 días
+- Refresh Token permite renovar Access Token sin re-login hasta 7 días
 
 ---
 
@@ -462,7 +465,7 @@ _Este UC no consume eventos de otros BCs_
 - **Application Service:** `TenantConfigService`
 - **Aggregates:** **Tenant**
 - **Prioridad:** Must
-- **Endpoints:** -
+- **Endpoints:** Pendiente — requiere definición de endpoints para branding y custom fields
 
 **Descripción:**  
 Personalización de la configuración de un tenant: branding, campos personalizados y parámetros operativos.
@@ -696,7 +699,7 @@ _Este UC no consume eventos de otros BCs_
 - **Application Service:** `HandoverService`
 - **Aggregates:** **TenantMembership**, **User**, **Member** (BC-Membership)
 - **Prioridad:** Should
-- **Endpoints:** -
+- **Endpoints:** Pendiente — requiere definición de endpoints para traspaso de cargos
 
 **Descripción:**  
 Proceso formal de traspaso de cargo directivo (especialmente Presidente) con workflow de aceptación, revocación de permisos del saliente y preservación de historial.
@@ -852,6 +855,102 @@ _Este UC no consume eventos de otros BCs_
 - Validar que no quede la entidad sin Presidente activo
 - Considerar integración con firma electrónica para formalidad legal
 - El saliente debe poder acceder a informes históricos de su período (READ-only)
+
+---
+
+### UC-005b: Consulta y exportación de auditoría
+
+#### Metadatos
+
+- **User Stories:** US-006
+- **Bounded Context:** BC-Identity
+- **Application Service:** `AuditService`
+- **Aggregates:** _AuditLog_ (ENT-041)
+- **Prioridad:** Must
+- **Endpoints:** Pendiente — requiere definición de endpoints para consulta de auditoría
+
+**Descripción:**
+Consulta, filtrado y exportación del registro de auditoría de acciones críticas del sistema. La escritura del log es automática (generada por ENT-041 en cada operación). Este UC cubre el lado de lectura: consultar, filtrar por rango de fechas/actor/tipo de acción y exportar en CSV/JSON para auditorías externas.
+
+#### Actores
+
+- **Presidente** (visualiza y exporta el log de auditoría del tenant)
+
+#### Precondiciones
+
+- Usuario autenticado con rol Presidente en el tenant
+- Existen registros de auditoría en ENT-041 (`audit_log`)
+
+#### Flujo Normal
+
+1. Presidente accede a "Configuración > Auditoría"
+2. Sistema muestra listado paginado de entradas del log con columnas:
+   - Fecha/hora
+   - Actor (usuario que realizó la acción)
+   - Tipo de acción (ej: `MEMBER_CREATED`, `ROLE_ASSIGNED`, `PAYMENT_REGISTERED`)
+   - Entidad afectada (tipo + ID)
+   - IP de origen
+3. Presidente aplica filtros opcionales:
+   - Rango de fechas (desde / hasta)
+   - Usuario/actor específico
+   - Tipo de acción
+4. `AuditService.queryAuditLog(tenantId, filters, pagination)`
+   - Consulta tabla `audit_log` (ENT-041) con los filtros indicados
+   - Devuelve página de resultados ordenada por `occurred_at DESC`
+5. Sistema muestra resultados con total de registros encontrados
+6. Presidente pulsa "Exportar" si necesita llevar el log a herramienta externa
+
+#### Flujos Alternativos
+
+**FA-1: Exportar a CSV**
+
+- Presidente pulsa "Exportar > CSV"
+- `AuditService.exportAuditLog(tenantId, filters, format: 'csv')`
+- Sistema genera archivo CSV con los registros filtrados (o todos si no hay filtro activo)
+- Descarga automática con nombre: `auditoria_{tenant_slug}_{fecha}.csv`
+
+**FA-2: Exportar a JSON**
+
+- Presidente pulsa "Exportar > JSON"
+- Sistema genera archivo JSON estructurado con los mismos datos
+- Útil para importar en herramientas de análisis externas
+
+#### Flujos de Excepción
+
+**FE-1: Sin registros para el filtro aplicado**
+
+- Si la consulta devuelve 0 resultados:
+  - Sistema muestra: "No hay registros de auditoría para los filtros seleccionados"
+  - Sugiere ampliar el rango de fechas
+
+**FE-2: Acceso denegado a usuarios sin rol Presidente**
+
+- Si usuario sin permisos intenta acceder:
+  - Sistema deniega con error 403
+  - Muestra: "No tiene permisos para consultar el registro de auditoría"
+
+#### Eventos de Dominio
+
+**Eventos Publicados:** Ninguno (operación de solo lectura)
+
+_Este UC no consume eventos de otros BCs_
+
+#### Interacciones entre BCs
+
+- La escritura en `audit_log` (ENT-041) es transversal — registrada automáticamente por todos los BCs en cada operación crítica.
+- Este UC solo realiza lectura sobre ENT-041.
+
+#### Poscondiciones
+
+- Registros de auditoría visualizados o exportados
+- Sin modificación de datos (operación de solo lectura)
+
+#### Notas de Implementación
+
+- `audit_log` (ENT-041) es un log inmutable: no permite UPDATE ni DELETE
+- Índices recomendados: `(occurred_at)`, `(actor_id)`, `(bounded_context)`
+- La exportación de rangos largos debe ser asíncrona (job en cola) para evitar timeouts
+- Considerar retención máxima configurable (ej: 2 años) para cumplimiento RGPD
 
 ---
 
@@ -12789,12 +12888,12 @@ _Este UC no consume eventos de otros BCs_
 
 | UC     | Nombre UC                               | User Stories                                           | BC          | Application Service       | Prioridad | Complejidad |
 | ------ | --------------------------------------- | ------------------------------------------------------ | ----------- | ------------------------- | --------- | ----------- |
-| UC-064 | Dashboard principal y KPIs              | US-203, US-204, US-205, US-206, US-207, US-208, US-209 | Transversal | DashboardService          | Must      | Alta        |
-| UC-065 | Gráficos de evolución                   | US-210, US-211                                         | Transversal | DashboardAnalyticsService | Should    | Alta        |
-| UC-066 | Informes para Asamblea General          | US-212, US-213                                         | Transversal | AssemblyReportingService  | Must      | Alta        |
-| UC-067 | Certificados y memorias personalizables | US-214, US-215                                         | Transversal | CertificadoService        | Could     | Media       |
+| UC-064 | Dashboard principal y KPIs              | US-161, US-162, US-163, US-164 | Transversal | DashboardService          | Must      | Alta        |
+| UC-065 | Gráficos de evolución                   | US-165, US-166                 | Transversal | DashboardAnalyticsService | Should    | Alta        |
+| UC-066 | Informes para Asamblea General          | US-168, US-169                 | Transversal | AssemblyReportingService  | Must      | Alta        |
+| UC-067 | Certificados y memorias personalizables | US-170, US-171, US-172         | Transversal | CertificadoService        | Could     | Media       |
 
-**Total Transversal Reporting:** 4 UCs cubriendo 13 User Stories (US-203 a US-215)
+**Total Transversal Reporting:** 4 UCs cubriendo 11 User Stories (US-161 a US-172)
 
 **Highlights técnicos:**
 
@@ -13450,12 +13549,12 @@ _Este UC no consume eventos de otros BCs_
 
 | UC     | Nombre UC                             | User Stories                           | BC          | Application Service            | Prioridad | Complejidad |
 | ------ | ------------------------------------- | -------------------------------------- | ----------- | ------------------------------ | --------- | ----------- |
-| UC-068 | Acceso al portal y autenticación      | US-216, US-217, US-218                 | Transversal | PortalAuthService              | Must      | Media       |
-| UC-069 | Consulta de datos personales y cuotas | US-219, US-220, US-221, US-222, US-223 | Transversal | PortalQueryService             | Must      | Baja        |
-| UC-070 | Inscripción a eventos desde portal    | US-224, US-225                         | Transversal | PortalEventRegistrationService | Should    | Alta        |
-| UC-071 | Descarga de documentos personales     | US-226, US-227                         | Transversal | PortalPersonalDocumentsService | Should    | Alta        |
+| UC-068 | Acceso al portal y autenticación      | US-173, US-174, US-175                 | Transversal | PortalAuthService              | Must      | Media       |
+| UC-069 | Consulta de datos personales y cuotas | US-176, US-177, US-178, US-179, US-180 | Transversal | PortalQueryService             | Must      | Baja        |
+| UC-070 | Inscripción a eventos desde portal    | US-181, US-182, US-183                 | Transversal | PortalEventRegistrationService | Should    | Alta        |
+| UC-071 | Descarga de documentos personales     | US-184, US-185, US-186, US-187         | Transversal | PortalPersonalDocumentsService | Should    | Alta        |
 
-**Total Transversal Portal Socio:** 4 UCs cubriendo 12 User Stories (US-216 a US-227)
+**Total Transversal Portal Socio:** 4 UCs cubriendo 15 User Stories (US-173 a US-187)
 
 **Highlights técnicos:**
 
@@ -15733,28 +15832,28 @@ _Este UC no consume eventos de otros BCs_
 
 | Métrica                          | Valor                           |
 | -------------------------------- | ------------------------------- |
-| **Total Casos de Uso**           | **76**                          |
+| **Total Casos de Uso**           | **77**                          |
 | **Total User Stories cubiertas** | **202** (100% del scope N2-N11) |
-| **UCs Must**                     | 37 (48.7%)                      |
-| **UCs Should**                   | 33 (43.4%)                      |
-| **UCs Could**                    | 6 (7.9%)                        |
+| **UCs Must**                     | 38 (49.4%)                      |
+| **UCs Should**                   | 33 (42.9%)                      |
+| **UCs Could**                    | 6 (7.8%)                        |
 | **UCs Won't**                    | 0 (0%)                          |
 
 ### Distribución por Bounded Context
 
 | Bounded Context           | UCs    | User Stories | % del total UCs |
 | ------------------------- | ------ | ------------ | --------------- |
-| BC-Identity               | 5      | 8            | 6.6%            |
-| BC-Membership             | 10     | 34           | 13.2%           |
-| BC-Treasury               | 11     | 40           | 14.5%           |
-| BC-Events                 | 11     | 36           | 14.5%           |
-| BC-Communication          | 9      | 25           | 11.8%           |
-| BC-Documents              | 8      | 29           | 10.5%           |
-| Transversal Import/Export | 8      | 15           | 10.5%           |
-| Transversal Reporting     | 4      | 13           | 5.3%            |
-| Transversal Portal Socio  | 4      | 12           | 5.3%            |
-| Transversal Cumplimiento  | 5      | 15           | 6.6%            |
-| **TOTAL**                 | **76** | **202**      | **100%**        |
+| BC-Identity               | 6      | 8            | 7.8%            |
+| BC-Membership             | 10     | 34           | 13.0%           |
+| BC-Treasury               | 11     | 40           | 14.3%           |
+| BC-Events                 | 11     | 36           | 14.3%           |
+| BC-Communication          | 9      | 25           | 11.7%           |
+| BC-Documents              | 8      | 29           | 10.4%           |
+| Transversal Import/Export | 8      | 13           | 10.4%           |
+| Transversal Reporting     | 4      | 12           | 5.2%            |
+| Transversal Portal Socio  | 4      | 15           | 5.2%            |
+| Transversal Cumplimiento  | 5      | 15           | 6.5%            |
+| **TOTAL**                 | **77** | **202**      | **100%**        |
 
 ### Complejidad Técnica
 
@@ -15786,7 +15885,7 @@ _Este UC no consume eventos de otros BCs_
 
 ### User Stories sin UC dedicado
 
-Todas las 202 User Stories del scope N2-N11 están cubiertas por los 76 UCs definidos. No hay User Stories huérfanas.
+Todas las 202 User Stories del scope N2-N11 están cubiertas por los 77 UCs definidos. No hay User Stories huérfanas.
 
 ### Casos de Uso que consolidan múltiples US
 
@@ -16400,7 +16499,7 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
 - ✅ Generación inicial del documento
 - ✅ 71 casos de uso derivados de 202 user stories
 - ✅ 8 casos de uso documentados en detalle:
-  - BC-Identity: UC-001 a UC-005 (5 UCs, 100% completado)
+  - BC-Identity: UC-001 a UC-005, UC-005b (6 UCs, 100% completado)
   - BC-Membership: UC-006 a UC-008 (3 UCs, parcial: 3/10 = 30%)
   - BC-Treasury: UC-017 a UC-024 (8 UCs iniciales)
 - ✅ Estructura completa con índice y convenciones

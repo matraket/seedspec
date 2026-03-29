@@ -8,7 +8,7 @@ Esta propuesta permite demostrar Clean Architecture, DDD y TDD sin sobre-ingenie
 
 ## Associated: ERP ligero para asociaciones culturales y peñas
 
-Las asociaciones culturales, peñas, cofradías y clubes deportivos pequeños en España gestionan socios, eventos y finanzas con Excel o papel. Los **900.000+ asociaciones** registradas en España carecen de herramientas adaptadas a sus necesidades específicas: carnets digitales, cobro de cuotas por SEPA, gestión de eventos con asistencia, y contabilidad conforme a la normativa de entidades sin ánimo de lucro.
+Las asociaciones culturales, peñas, cofradías y clubes deportivos pequeños en España gestionan socios, eventos y finanzas con Excel o papel. Las **300.000 asociaciones activas** en España carecen de herramientas adaptadas a sus necesidades específicas: carnets digitales, cobro de cuotas por SEPA, gestión de eventos con asistencia, y contabilidad conforme a la normativa de entidades sin ánimo de lucro.
 
 **Problema que resuelve:** Tesoreros voluntarios dedican horas a tareas administrativas. La morosidad en cuotas es alta por falta de automatización. La transparencia contable es difícil de mantener sin herramientas adecuadas.
 

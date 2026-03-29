@@ -96,8 +96,10 @@ BC responsable de la gestión de tenants, usuarios, autenticación y control de 
 
 - UC-001 (Provisión de tenant) - Implementado Fase 1
 - UC-002 (Autenticación multi-tenant) - Implementado Fase 1
-- UC-003 (Gestión de usuarios del tenant) - Implementado Fase 1
+- UC-003 (Configuración de tenant) - Pendiente — sin endpoints definidos
 - UC-004 (Gestión de roles y permisos) - Pendiente Fase 2
+- UC-005 (Traspaso de cargos directivos) - Pendiente
+- UC-005b (Consulta y exportación de auditoría) - Pendiente
 
 ---
 

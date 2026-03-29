@@ -23,7 +23,7 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
               ▼              ▼              ▼
   ┌───────────────┐  ┌────────────┐  ┌────────────┐
   │ 003 RF        │  │ 004 RNF    │  │ 005 Modelo │
-  │ 221 requisitos│  │ 66 req. NF │  │ 6 BCs DDD  │
+  │ 221 requisitos│  │ 67 req. NF │  │ 6 BCs DDD  │
   │ funcionales   │  │ (agnóstico)│  │ Aggregates │
   │ [KB-002]      │  │ [KB-002,   │  │ [KB-001..  │
   │ v1.0 Validado │  │  KB-003]   │  │  KB-004]   │
@@ -83,7 +83,7 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
           ▼
   ┌───────────────┐
   │ 010 UC        │
-  │ 76 casos de   │
+  │ 77 casos de   │
   │ uso detallados│
   │ [KB-009]      │
   │ v2.6 (activo) │
@@ -93,7 +93,7 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
           ▼
   ┌───────────────┐
   │ 012 ENT       │
-  │ 40 entidades  │
+  │ 41 entidades  │
   │ modelo datos  │
   │ [KB-005,      │
   │  KB-006,      │
@@ -127,8 +127,8 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
 | `ADR-xxx`  | 006       | ADR-{001..012}                                                        | 12          |
 | `RNFT-xxx` | 008       | RNFT-{001..061} - mapeo 1:1 con RNF-xxx                               | ~40+        |
 | `US-xxx`   | 009       | US-{001..202}                                                         | 202         |
-| `UC-xxx`   | 010       | UC-{001..076}                                                         | 76          |
-| `ENT-xxx`  | 012       | ENT-{001..040}                                                        | 40          |
+| `UC-xxx`   | 010       | UC-{001..076} + UC-005b                                               | 77          |
+| `ENT-xxx`  | 012       | ENT-{001..041}                                                        | 41          |
 | `EP-xxx`   | 013       | EP-{001..123}                                                         | 123         |
 
 ### Detalle de secciones RF (003)
@@ -383,8 +383,8 @@ N3RF01       RNF-006      BC-Memb.     US-009       UC-006         ENT-009      
 | Total ADRs            | 12                                        |
 | Total BCs             | 6 (3 Core + 3 Supporting) + transversales |
 | Total User Stories    | 202 (80 Must / 110 Should / 12 Could)     |
-| Total Casos de Uso    | 76                                        |
-| Total Entidades (ENT) | 40                                        |
+| Total Casos de Uso    | 77                                        |
+| Total Entidades (ENT) | 41                                        |
 | Total Endpoints (EP)  | 123                                       |
 | Referencias cruzadas  | ~2.459 menciones                          |
 | Matrices trazabilidad | 7 explícitas                              |

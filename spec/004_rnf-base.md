@@ -82,7 +82,7 @@
 
 **Trazabilidad RF:** N2RF01, N2RF03
 
-**Tablas ENT:** ENT-001..006 (DB-Main, compartidas cross-tenant), ENT-007..017 (DB-Tenant, aisladas por tenant)
+**Tablas ENT:** ENT-001..006 (DB-Main, compartidas cross-tenant), ENT-007..041 (DB-Tenant, aisladas por tenant)
 
 ---
 

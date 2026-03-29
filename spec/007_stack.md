@@ -33,6 +33,7 @@
 | **Frontend**       | React + TypeScript      | React 19.x          |
 | **Base de Datos**  | PostgreSQL              | 18.x                |
 | **ORM**            | Prisma                  | 7.x                 |
+| **Caché / Colas**  | Redis                   | 7.x                 |
 | **Object Storage** | MinIO (dev) / S3 (prod) | -                   |
 | **Contenedores**   | Docker + Docker Compose | 29.x                |
 | **CI/CD**          | GitHub Actions          | -                   |
@@ -291,15 +292,21 @@ const tenantPrisma = new PrismaClient({
 });
 ```
 
-### 4.3 Caché: Sin caché dedicada (MVP)
+### 4.3 Caché: Redis 7.x
 
-Para el MVP, no se incluye Redis u otra caché dedicada. Se usará:
+**Seleccionado:** Redis 7.x (latest stable)
 
-- Caché en memoria de Prisma (query results)
-- HTTP caching headers
-- React Query cache en frontend
+**Justificación:**
 
-**Evolución futura:** Redis/Valkey si métricas indican necesidad.
+- Caching de sesiones server-side (RNFT-002)
+- Bull Queue para procesamiento asíncrono y operaciones masivas (RNFT-018)
+- BC-Communication: emails, notificaciones
+- Locks distribuidos para operaciones críticas (remesas SEPA, generación de cargos masivos)
+
+**Complemento en cliente:**
+
+- React Query cache en frontend (stale-while-revalidate)
+- HTTP caching headers para recursos estáticos
 
 ---
 
@@ -329,6 +336,7 @@ services:
     depends_on:
       - postgres
       - minio
+      - redis
 
   web:
     build: ./web
@@ -351,9 +359,22 @@ services:
     volumes:
       - minio_data:/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   minio_data:
+  redis_data: {}
 ```
 
 ### 5.2 Object Storage: MinIO / S3
@@ -755,6 +776,7 @@ Sentry.init({
 | JWT + Passport      | ADR-006          | RNF-001, RNF-002          |
 | Guards NestJS       | ADR-007          | RNF-003, RNF-013          |
 | PostgreSQL          | ADR-005          | RNF-004, RNF-038          |
+| Redis               | -                | RNFT-002, RNFT-018, RNF-019 |
 | Prisma              | ADR-002, ADR-005 | RNF-066                   |
 | React + Mantine     | ADR-010          | RNF-045, RNF-046, RNF-050 |
 | React Query         | -                | RNF-015, RNF-016          |
@@ -774,6 +796,7 @@ nestjs: 11.x
 react: 19.x
 postgresql: 18.x
 prisma: 7.x
+redis: 7.x
 
 # Testing
 vitest: 4.x

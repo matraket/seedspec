@@ -76,8 +76,8 @@ Esquema de Numeración: US-xxx (ej: US-001, US-202)
 Archivo: 010_casos-uso.md
 Líneas: 15,390
 Versión: 2.6
-Propósito: Define 76 Casos de Uso agrupando User Stories con flujos y eventos
-Esquema de Numeración: UC-xxx (ej: UC-001, UC-076)
+Propósito: Define 77 Casos de Uso agrupando User Stories con flujos y eventos
+Esquema de Numeración: UC-xxx (ej: UC-001, UC-076 más UC-005b)
 ```
 
 ────────────────────────────────────────
@@ -86,8 +86,8 @@ Esquema de Numeración: UC-xxx (ej: UC-001, UC-076)
 Archivo: 012_modelo-de-datos.md
 Líneas: 1,132
 Versión: 1.0
-Propósito: Define 40 Entidades del modelo relacional organizadas por BC y base de datos (DB-Main/DB-Tenant)
-Esquema de Numeración: ENT-xxx (ej: ENT-001, ENT-040)
+Propósito: Define 41 Entidades del modelo relacional organizadas por BC y base de datos (DB-Main/DB-Tenant)
+Esquema de Numeración: ENT-xxx (ej: ENT-001, ENT-041)
 ```
 
 ────────────────────────────────────────
@@ -132,9 +132,9 @@ Requisitos Funcionales (RF) - 003_requisitos-funcionales.md
 
 Requisitos No Funcionales Base (RNF) - 004_rnf-base.md
 
-- Formato: RNF-xxx (RNF-001 a RNF-066)
+- Formato: RNF-xxx (RNF-001 a RNF-067)
 - Categorías: Seguridad, Rendimiento, RGPD, Disponibilidad, Usabilidad, Mantenibilidad
-- Total: 66 RNFs agnósticos de tecnología
+- Total: 67 RNFs agnósticos de tecnología
 
 Requisitos No Funcionales Técnicos (RNFT) - 008_rnf-tecnicos.md
 
@@ -171,7 +171,7 @@ User Stories (US) - 009_user-stories.md
 
 Casos de Uso (UC) - 010_casos-uso.md
 
-- Formato: UC-xxx (UC-001 a UC-076)
+- Formato: UC-xxx (UC-001 a UC-076, más UC-005b)
 - Agrupación: Múltiples USs en un UC cuando comparten:
   - Objetivo de negocio
   - Mismo Application Service
@@ -195,10 +195,10 @@ Bounded Contexts (BC) - 005_modelo-dominio.md
 
 Entidades del Modelo de Datos (ENT) - 012_modelo-de-datos.md
 
-- Formato: ENT-xxx (ENT-001 a ENT-040)
+- Formato: ENT-xxx (ENT-001 a ENT-041)
 - Organización: Por BD (DB-Main, DB-Tenant) y por BC
-- Estados: Implementada Fase 1 (17), Pendiente Fase 2 (3), Placeholder (20)
-- Total: 40 entidades
+- Estados: Implementada Fase 1 (17), Pendiente Fase 2 (3), Placeholder (20), Auditoría (1)
+- Total: 41 entidades
 
 Endpoints del API (EP) - 013_inventario-de-endpoints.md
 
@@ -218,7 +218,7 @@ KB-002 (Análisis de Necesidades)
     ↓
     ├→ 003_requisitos-funcionales.md (221 RFs: N2RF01-N13RF04)
     │       ↓
-    │       ├→ 004_rnf-base.md (66 RNFs con "Trazabilidad RF: NxRFyy")
+    │       ├→ 004_rnf-base.md (67 RNFs con "Trazabilidad RF: NxRFyy")
     │       │       ↓
     │       │       ├→ 008_rnf-tecnicos.md (RNFTs 1:1 mapping)
     │       │       │       ↓
@@ -229,7 +229,7 @@ KB-002 (Análisis de Necesidades)
     │               ↓
     │               └→ 009_user-stories.md (202 USs con "RF Origen: NxRFyy")
     │                       ↓
-    │                       └→ 010_casos-uso.md (76 UCs con "User Stories: US-xxx")
+    │                       └→ 010_casos-uso.md (77 UCs con "User Stories: US-xxx")
     │                               ↓
     │                               └→ 012_modelo-de-datos.md (40 ENTs con "BC: BC-xxx")
     │                                       ↓
@@ -336,7 +336,7 @@ Matriz de Impacto (Cambios en Upstream afectan Downstream)
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 RF         │ ~1-3 RNFs (promedio)  │ 221 RFs × 1.3 ≈ 287 impactos            │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
-│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 66 RNFs × 3 ≈ 198 impactos              │
+│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 67 RNFs × 3 ≈ 201 impactos              │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 BC         │ ~8 RFs + 15 USs       │ 6 BCs × 23 ≈ 138 impactos               │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
@@ -593,7 +593,7 @@ Ejemplo:
 ├──────────────────────────────────┼────────────────────────────────────────┤
 │ Total User Stories               │ 202                                    │
 ├──────────────────────────────────┼────────────────────────────────────────┤
-│ Total Casos de Uso               │ 76                                     │
+│ Total Casos de Uso               │ 77                                     │
 ├──────────────────────────────────┼────────────────────────────────────────┤
 │ Total Entidades (ENT)            │ 40                                     │
 ├──────────────────────────────────┼────────────────────────────────────────┤

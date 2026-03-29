@@ -236,7 +236,7 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 │                                                             │
 │ Properties:                                                 │
 │   - name: string (ej: "2026", "Temporada 2025-26")          │
-│   - estado: FiscalYearStatus (PREPARATION, activo, cerrado) │
+│   - estado: FiscalYearStatus (PREPARATION, ACTIVE, CLOSED)  │
 │   - previousFiscalYear: FiscalYearId?                       │
 │                                                             │
 │ Invariants:                                                 │
@@ -266,7 +266,7 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 │   - entryDate: DateTime                                     │
 │   - exitDate: DateTime? (al procesar)                       │
 │   - reason: ListExitReason? (aprobado, rechazado, etc.)     │
-│   - estado: WaitingListStatus (activo, procesado)           │
+│   - estado: WaitingListStatus (ACTIVE, PROCESSED)           │
 │                                                             │
 │ Invariants:                                                 │
 │   - Posición única en lista activa                          │
@@ -344,7 +344,7 @@ Responsable del ciclo de vida completo del socio: desde la solicitud de alta has
 | `WaitingPosition`   | numero: int                      | Orden cronológico en lista espera                                                                              |
 | `RegistrationDate`  | fecha: DateTime                  | Timestamp de entrada en lista                                                                                  |
 | `ListExitReason`    | enum                             | APPROVED, REJECTED, EXPIRED, VOLUNTARY                                                                         |
-| `WaitingListStatus` | enum                             | ACTIVE, Procesado                                                                                              |
+| `WaitingListStatus` | enum                             | ACTIVE, PROCESSED                                                                                              |
 | `InfractionType`    | enum                             | MINOR, SERIOUS, VERY_SERIOUS                                                                                   |
 | `SanctionType`      | enum                             | WARNING, SUSPENSION, EXPULSION                                                                                 |
 | `CaseStatus`        | enum                             | OPEN, UNDER_REVIEW, CLOSED                                                                                     |
@@ -686,7 +686,7 @@ SubscriptionCancelReason (enum):
 │                                                             │
 │ Value Objects:                                              │
 │   - SignedURL (token único criptográfico)                   │
-│   - LinkStatus (enum: pendiente, pagado, expirado)          │
+│   - LinkStatus (enum: PENDING, PAID, EXPIRED)               │
 │                                                             │
 │ Properties:                                                 │
 │   - chargeId: ChargeId (cargo a liquidar)                   │
@@ -736,7 +736,7 @@ SubscriptionCancelReason (enum):
 │   - fechaCierre: DateTime?                                  │
 │   - importeApertura: Money (efectivo inicial)               │
 │   - importeCierre: Money? (efectivo final)                  │
-│   - status: ShiftStatus (abierto, cerrado, cuadrado)        │
+│   - status: ShiftStatus (OPEN, CLOSED, RECONCILED)          │
 │   - diferenciaContable: Money? (descuadre si existe)        │
 │   - observaciones: string?                                  │
 │                                                             │
@@ -810,7 +810,7 @@ SubscriptionCancelReason (enum):
 │   - name: string (ej: "Ejercicio 2026")                     │
 │   - fechaInicio: Date                                       │
 │   - fechaFin: Date                                          │
-│   - status: AccountingYearStatus (abierto, cerrado)         │
+│   - status: AccountingYearStatus (OPEN, CLOSED)             │
 │   - saldoInicial: Money                                     │
 │   - saldoFinal: Money? (calculado al cierre)                │
 │   - totalIngresos: Money (acumulado)                        │
@@ -846,7 +846,7 @@ SubscriptionCancelReason (enum):
 | `PaymentMethod`            | type: enum, referencia: string    | Tipos: CASH, TRANSFER, DIRECT_DEBIT, BIZUM, CARD                                                          |
 | `ChargeStatus`             | enum                              | PENDING, PAID, PARTIALLY_PAID, CANCELLED                                                                  |
 | `PaymentStatus`            | enum                              | CONFIRMED, RETURNED, CANCELLED                                                                            |
-| `DelinquencyStatus`        | enum                              | UP_TO_DATE, MINOR_DELINQUENCY, MAJOR_DELINQUENCY, Suspendido                                              |
+| `DelinquencyStatus`        | enum                              | UP_TO_DATE, MINOR_DELINQUENCY, MAJOR_DELINQUENCY, SUSPENDED                                              |
 | `SepaSequence`             | enum                              | FRST, RCUR, OOFF, FNAL                                                                                    |
 | `RemittanceStatus`         | enum                              | DRAFT, GENERATED, SENT, PROCESSED, WITH_RETURNS                                                           |
 | `CreditorIdentifier`       | valor: string                     | Formato ES + 2 dígitos + sufijo (14 chars)                                                                |
@@ -855,11 +855,11 @@ SubscriptionCancelReason (enum):
 | `SubscriptionCancelReason` | enum                              | PLAN_CHANGE, MEMBER_LEAVE, EXEMPTION, ONE_TIME_COMPLETED                                                  |
 | `BillingMonths`            | int[]                             | Array de meses (1-12) en que se generan cargos. Vacío para planes ONE_TIME.                               |
 | `SignedURL`                | token: string                     | Hash criptográfico único para enlaces de pago                                                             |
-| `LinkStatus`               | enum                              | PENDING, PAID, Expirado                                                                                   |
-| `ShiftStatus`              | enum                              | OPEN, Cerrado, Cuadrado                                                                                   |
+| `LinkStatus`               | enum                              | PENDING, PAID, EXPIRED                                                                                    |
+| `ShiftStatus`              | enum                              | OPEN, CLOSED, RECONCILED                                                                                  |
 | `AccountCode`              | code: string                      | Según plan ENL o personalizado (ej: "7.1")                                                                |
 | `CategoryType`             | enum                              | INCOME, EXPENSE, ASSET, LIABILITY                                                                         |
-| `AccountingYearStatus`     | enum                              | OPEN, Cerrado                                                                                             |
+| `AccountingYearStatus`     | enum                              | OPEN, CLOSED                                                                                              |
 | `AccountingPeriod`         | fechaInicio: Date, fechaFin: Date | Periodo fiscal del ejercicio                                                                              |
 
 ### 4.4 Domain Events
@@ -1003,7 +1003,7 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 │ Properties:                                                 │
 │   - confirmada: boolean                                     │
 │   - horaEntrada: DateTime?                                  │
-│   - metodoCheckin: CheckinMethod (QR, Manual)               │
+│   - metodoCheckin: CheckinMethod (QR, MANUAL, NFC)          │
 │   - registradoPor: UserId?                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -1132,7 +1132,7 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 │   - categoria: string (senior, juvenil, infantil...)        │
 │   - competicion: string (liga, copa, amistoso)              │
 │   - resultado: MatchResult?                                 │
-│   - estado: MatchStatus (convocado, jugado, suspendido)     │
+│   - estado: MatchStatus (CALLED, PLAYED, SUSPENDED)         │
 │   - observaciones: string?                                  │
 │                                                             │
 │ Invariants:                                                 │
@@ -1155,15 +1155,15 @@ Gestiona el ciclo de vida de eventos y actividades: planificación, inscripcione
 | `EventPeriod`        | fechaInicio: DateTime, fechaFin: DateTime                              | FechaFin >= FechaInicio                                                                   |
 | `Location`           | direccion: string, coordenadas?: LatLng, sala?: string                 | Dirección no vacía                                                                        |
 | `RegistrationConfig` | openDate: Date, closeDate: Date, requierePago: boolean, precio?: Money | FechaCierre <= fechaInicio evento                                                         |
-| `EventStatus`        | enum                                                                   | Borrador, Publicado, Inscripciones Abiertas, Inscripciones Cerradas, Realizado, Cancelado |
-| `RegistrationStatus` | enum                                                                   | Confirmada, ListaEspera, Cancelada, Asistencia Registrada                                 |
-| `CheckinMethod`      | enum                                                                   | QR, Manual, NFC                                                                           |
+| `EventStatus`        | enum                                                                   | DRAFT, PUBLISHED, REGISTRATION_OPEN, REGISTRATION_CLOSED, COMPLETED, CANCELLED           |
+| `RegistrationStatus` | enum                                                                   | CONFIRMED, WAITLISTED, CANCELLED, ATTENDANCE_REGISTERED                                   |
+| `CheckinMethod`      | enum                                                                   | QR, MANUAL, NFC                                                                           |
 | `MenuOption`         | nombre: string, precio: Money                                          | Nombre no vacío                                                                           |
 | `RestaurantData`     | nombre: string, direccion: string, telefono: string                    | Todos obligatorios                                                                        |
 | `IdentifierColor`    | valor: string                                                          | Color hex o nombre CSS válido                                                             |
 | `MatchResult`        | golesLocal: int, golesVisitante: int                                   | >= 0 ambos                                                                                |
 | `OpponentData`       | nombre: string, escudo?: URL                                           | Nombre obligatorio                                                                        |
-| `MatchStatus`        | enum                                                                   | Convocado, Jugado, Suspendido, Aplazado                                                   |
+| `MatchStatus`        | enum                                                                   | CALLED, PLAYED, SUSPENDED, POSTPONED                                                      |
 
 ### 5.4 Domain Events
 

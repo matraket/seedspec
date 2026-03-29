@@ -13,7 +13,7 @@
 
 ## 1. Resumen Ejecutivo
 
-El MVP de Associated cubre 19 de los 76 casos de uso especificados (25%), distribuidos en 3 fases de entrega mas una fase previa de infraestructura. La seleccion prioriza las tres areas funcionales que hacen operativo el sistema --identidad, gestion de socios y tesoreria--, dejando fuera deliberadamente eventos, comunicaciones y documentos. Esta estrategia permite entregar un producto funcional con el minimo alcance necesario para que una colectividad gestione su operativa diaria: dar de alta socios, cobrar cuotas y controlar su economia.
+El MVP de Associated cubre 20 de los 77 casos de uso especificados (26%), distribuidos en 3 fases de entrega mas una fase previa de infraestructura. La seleccion prioriza las tres areas funcionales que hacen operativo el sistema --identidad, gestion de socios y tesoreria--, dejando fuera deliberadamente eventos, comunicaciones y documentos. Esta estrategia permite entregar un producto funcional con el minimo alcance necesario para que una colectividad gestione su operativa diaria: dar de alta socios, cobrar cuotas y controlar su economia.
 
 ---
 
@@ -23,11 +23,11 @@ La seleccion del MVP responde a una pregunta concreta: **cual es el minimo neces
 
 **Criterio principal: operatividad core.** Sin gestion de identidad no hay acceso al sistema. Sin gestion de socios no hay a quien gestionar. Sin tesoreria no hay sostenibilidad economica. Estos tres pilares son indivisibles -- quitar cualquiera de ellos hace el sistema inutilizable.
 
-**Concentracion en lo esencial.** Los 19 UCs seleccionados cubren entre el 60% y el 73% de cada area funcional core (Identity, Membership, Treasury), mientras que los tres areas excluidas (Events, Communication, Documents) quedan al 0%. No es un recorte arbitrario: es una decision de producto. Las colectividades pueden gestionar eventos con hojas de calculo, enviar comunicaciones por email directo y manejar documentos en carpetas compartidas. Lo que NO pueden hacer sin software es gestionar cobros recurrentes, generar remesas bancarias o controlar el estado de 500 socios.
+**Concentracion en lo esencial.** Los 20 UCs seleccionados cubren entre el 60% y el 80% de cada area funcional core (Identity, Membership, Treasury), mientras que los tres areas excluidas (Events, Communication, Documents) quedan al 0%. No es un recorte arbitrario: es una decision de producto. Las colectividades pueden gestionar eventos con hojas de calculo, enviar comunicaciones por email directo y manejar documentos en carpetas compartidas. Lo que NO pueden hacer sin software es gestionar cobros recurrentes, generar remesas bancarias o controlar el estado de 500 socios.
 
-**Composicion:** 18 casos de uso con prioridad Must (obligatorios segun especificacion) mas 1 Should (UC-065, graficos de evolucion). Esta unica excepcion se justifica porque complementa el dashboard principal y cierra la propuesta de valor analitica del MVP.
+**Composicion:** 19 casos de uso con prioridad Must (obligatorios segun especificacion) mas 1 Should (UC-065, graficos de evolucion). Esta unica excepcion se justifica porque complementa el dashboard principal y cierra la propuesta de valor analitica del MVP.
 
-**Los 24 Must excluidos** se concentran en tres categorias: areas funcionales completas no-core (Events, Communication, Documents suman 15 UCs), funcionalidades transversales no bloqueantes (portal del socio, exportacion, cumplimiento normativo) y funcionalidades avanzadas dentro de areas core que pueden incorporarse despues (workflow de morosidad, registro contable, carnets).
+**Los 23 Must excluidos** se concentran en tres categorias: areas funcionales completas no-core (Events, Communication, Documents suman 15 UCs), funcionalidades transversales no bloqueantes (portal del socio, exportacion, cumplimiento normativo) y funcionalidades avanzadas dentro de areas core que pueden incorporarse despues (workflow de morosidad, registro contable, carnets).
 
 ---
 
@@ -37,7 +37,7 @@ La seleccion del MVP responde a una pregunta concreta: **cual es el minimo neces
 
 | Area funcional   | Tipo       | UCs en MVP | UCs totales | Cobertura | Estado       |
 |------------------|------------|------------|-------------|-----------|--------------|
-| Identity         | Soporte    | 3          | 5           | 60%       | INCLUIDA     |
+| Identity         | Soporte    | 4          | 5           | 80%       | INCLUIDA     |
 | Membership       | Core       | 6          | 10          | 60%       | INCLUIDA     |
 | Treasury         | Core       | 7          | 11          | 64%       | INCLUIDA     |
 | Transversal      | Transversal| 3          | 21          | 14%       | PARCIAL      |
@@ -70,8 +70,8 @@ La seleccion del MVP responde a una pregunta concreta: **cual es el minimo neces
 
 | Metrica                     | Valor                         |
 |-----------------------------|-------------------------------|
-| Casos de uso                | 19 de 76 (25%)                |
-| Tareas de implementacion    | 37 (19 backend + 18 frontend) |
+| Casos de uso                | 20 de 77 (26%)                |
+| Tareas de implementacion    | 38 (20 backend + 18 frontend) |
 | User stories cubiertas      | ~56 de 202                    |
 | Requisitos funcionales      | ~40 de 221                    |
 | Areas core cubiertas        | 3 de 6                        |
@@ -81,7 +81,7 @@ La seleccion del MVP responde a una pregunta concreta: **cual es el minimo neces
 
 ## 4. Dependencias entre Casos de Uso
 
-Los 19 casos de uso del MVP no son independientes. Forman un grafo dirigido de dependencias que condiciona el orden de implementacion. Ignorar este grafo implica construir funcionalidades que no pueden probarse ni desplegarse.
+Los 20 casos de uso del MVP no son independientes. Forman un grafo dirigido de dependencias que condiciona el orden de implementacion. Ignorar este grafo implica construir funcionalidades que no pueden probarse ni desplegarse.
 
 ### Grafo completo de dependencias
 
@@ -89,6 +89,7 @@ Los 19 casos de uso del MVP no son independientes. Forman un grafo dirigido de d
 UC-001 (Provision tenant) ---- FUNDACIONAL
   |
   +---> UC-002 (Autenticacion) ---- PREREQUISITO UNIVERSAL
+  +---> UC-003 (Configuracion de tenant)
   +---> UC-004 (Roles y permisos)
   |
   +---> UC-008 (Tipos de socio) ---- CONFIGURACION BASE
@@ -154,7 +155,7 @@ Ciclo economico: UC-018 --> UC-019 --> UC-021 / UC-023 --> UC-024
 
 ---
 
-### Fase 1 (18 tareas: 12 backend + 6 frontend)
+### Fase 1 (19 tareas: 13 backend + 6 frontend)
 
 **Objetivo:** Construir los cimientos del sistema y la operativa diaria minima -- que un administrador pueda dar de alta socios y gestionar cuotas.
 
@@ -162,6 +163,7 @@ Ciclo economico: UC-018 --> UC-019 --> UC-021 / UC-023 --> UC-024
 |--------|-----------------------------------|----------------|
 | UC-001 | Provision de nuevo tenant         | Identity       |
 | UC-002 | Autenticacion multi-tenant        | Identity       |
+| UC-003 | Configuracion de tenant           | Identity       |
 | UC-008 | Configuracion de tipos de socio   | Membership     |
 | UC-010 | Gestion de ejercicios             | Membership     |
 | UC-007 | Gestion de estados del socio      | Membership     |
