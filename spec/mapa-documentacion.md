@@ -23,11 +23,11 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
               ▼              ▼              ▼
   ┌───────────────┐  ┌────────────┐  ┌────────────┐
   │ 003 RF        │  │ 004 RNF    │  │ 005 Modelo │
-  │ 221 requisitos│  │ 67 req. NF │  │ 6 BCs DDD  │
+  │ 221 requisitos│  │ 68 req. NF │  │ 6 BCs DDD  │
   │ funcionales   │  │ (agnóstico)│  │ Aggregates │
   │ [KB-002]      │  │ [KB-002,   │  │ [KB-001..  │
   │ v1.0 Validado │  │  KB-003]   │  │  KB-004]   │
-  │ 2.433 líneas  │  │ v1.2 Valid.│  │ v1.5 Valid.│
+  │ 2.433 líneas  │  │ v1.4 Valid.│  │ v1.6 Valid.│
   └───────┬───────┘  │ 1.046 lín. │  │ 1.991 lín. │
           │          └─────┬──────┘  └──────┬─────┘
           │                │                │
@@ -35,11 +35,11 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
           │          ▼
           │  ┌──────────────┐
           │  │ 006 ADRs     │
-          │  │ 12 decisiones│
+          │  │ 14 decisiones│
           │  │ arquitectura │
           │  │ [KB-004,     │
           │  │  KB-005]     │
-          │  │ v1.0 Verif.  │
+          │  │ v1.1 Verif.  │
           │  │ 1.038 líneas │
           │  └──────┬───────┘
           │         │
@@ -86,7 +86,7 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
   │ 77 casos de   │
   │ uso detallados│
   │ [KB-009]      │
-  │ v2.6 (activo) │
+  │ v2.7 (activo) │
   │ 15.390 líneas │
   └───────┬───────┘
           │
@@ -122,10 +122,10 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
 | Código     | Documento | Formato                                                               | Total items |
 | ---------- | --------- | --------------------------------------------------------------------- | ----------- |
 | `NxRFyy`   | 003       | N{sección}RF{secuencial} - ej: `N3RF01`, `N4RF17`                     | 221         |
-| `RNF-xxx`  | 004       | RNF-{001..066}                                                        | 66          |
+| `RNF-xxx`  | 004       | RNF-{001..068}                                                        | 68          |
 | `BC-Name`  | 005       | BC-{Identity\|Membership\|Treasury\|Events\|Communication\|Documents} | 6           |
-| `ADR-xxx`  | 006       | ADR-{001..012}                                                        | 12          |
-| `RNFT-xxx` | 008       | RNFT-{001..061} - mapeo 1:1 con RNF-xxx                               | ~40+        |
+| `ADR-xxx`  | 006       | ADR-{001..014}                                                        | 14          |
+| `RNFT-xxx` | 008       | RNFT-{001..068} - mapeo 1:1 con RNF-xxx                               | ~40+        |
 | `US-xxx`   | 009       | US-{001..202}                                                         | 202         |
 | `UC-xxx`   | 010       | UC-{001..076} + UC-005b                                               | 77          |
 | `ENT-xxx`  | 012       | ENT-{001..041}                                                        | 41          |
@@ -378,9 +378,9 @@ N3RF01       RNF-006      BC-Memb.     US-009       UC-006         ENT-009      
 | Total documentos      | 10 archivos .md                           |
 | Total líneas          | 37.257                                    |
 | Total RFs             | 221                                       |
-| Total RNFs            | 66                                        |
+| Total RNFs            | 68                                        |
 | Total RNFTs           | ~40+                                      |
-| Total ADRs            | 12                                        |
+| Total ADRs            | 14                                        |
 | Total BCs             | 6 (3 Core + 3 Supporting) + transversales |
 | Total User Stories    | 202 (80 Must / 110 Should / 12 Could)     |
 | Total Casos de Uso    | 77                                        |

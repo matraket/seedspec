@@ -41,9 +41,9 @@ Cada documento responde a una pregunta distinta sobre el mismo sistema:
 | #   | Documento                                                     | Contenido                                            | Líneas |
 | :-- | :------------------------------------------------------------ | :--------------------------------------------------- | -----: |
 | 003 | [Requisitos Funcionales](003_requisitos-funcionales.md)       | 221 RFs organizados en 12 secciones temáticas        |  2.433 |
-| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 67 RNFs agnósticos de tecnología                     |  1.046 |
+| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 68 RNFs agnósticos de tecnología                     |  1.046 |
 | 005 | [Bounded Contexts y Modelo de Dominio](005_modelo-dominio.md) | 6 BCs con aggregates, entities y value objects (DDD) |  1.991 |
-| 006 | [Architectural Decision Records](006_adrs.md)                 | 12 ADRs con contexto, decisión y consecuencias       |  1.038 |
+| 006 | [Architectural Decision Records](006_adrs.md)                 | 14 ADRs con contexto, decisión y consecuencias       |  1.038 |
 | 007 | [Stack Tecnológico](007_stack.md)                             | Selección y justificación de tecnologías             |    838 |
 | 008 | [Requisitos No Funcionales Técnicos](008_rnf-tecnicos.md)     | Concreción técnica de los RNFs (mapeo 1:1)           |  1.565 |
 | 009 | [User Stories y Criterios de Aceptación](009_user-stories.md) | 202 US con priorización MoSCoW                       |  7.726 |
@@ -66,10 +66,10 @@ Cada elemento tiene un identificador único que permite referenciarlo desde cual
 | Código     | Documento | Formato                                  | Total |
 | :--------- | :-------: | :--------------------------------------- | ----: |
 | `NxRFyy`   |    003    | N{sección}RF{secuencial} - ej: `N3RF01`  |   221 |
-| `RNF-xxx`  |    004    | RNF-{001..066}                           |    66 |
+| `RNF-xxx`  |    004    | RNF-{001..068}                           |    68 |
 | `BC-Name`  |    005    | BC-{Identity, Membership, Treasury, ...} |     6 |
-| `ADR-xxx`  |    006    | ADR-{001..012}                           |    12 |
-| `RNFT-xxx` |    008    | RNFT-{001..061}                          |   40+ |
+| `ADR-xxx`  |    006    | ADR-{001..014}                           |    14 |
+| `RNFT-xxx` |    008    | RNFT-{001..068}                          |   40+ |
 | `US-xxx`   |    009    | US-{001..202}                            |   202 |
 | `UC-xxx`   |    010    | UC-{001..076}                            |    76 |
 
@@ -148,9 +148,9 @@ graph LR
 | Documentos                |                      8 + 3 auxiliares |
 | Líneas totales            |                               ~32.600 |
 | Requisitos funcionales    |                                   221 |
-| Requisitos no funcionales |                                    66 |
+| Requisitos no funcionales |                                    68 |
 | Bounded Contexts          |             6 (3 Core + 3 Supporting) |
-| ADRs                      |                                    12 |
+| ADRs                      |                                    14 |
 | User Stories              | 202 (80 Must · 110 Should · 12 Could) |
 | Casos de uso              |                                    76 |
 | Referencias cruzadas      |                                ~1.800 |

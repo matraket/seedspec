@@ -1,11 +1,11 @@
 # Requisitos No Funcionales Base (Agnósticos de Tecnología)
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.2  
-**Fecha:** Febrero 2026  
+**Versión:** 1.4  
+**Fecha:** Abril 2026  
 **Inputs:** KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales)  
 **Estado:** Validado  
-**Total RNFs:** 67
+**Total RNFs:** 68
 
 ---
 
@@ -1068,13 +1068,34 @@
 
 ---
 
+### RNF-068: Invalidación Inmediata de Access Tokens Post-Logout
+
+**Descripción:** El sistema DEBE invalidar los access tokens de forma inmediata tras el logout. Todo access token cuyo JTI esté registrado en la blacklist DEBE ser rechazado en CUALQUIER petición autenticada posterior. La verificación de blacklist DEBE ejecutarse en CADA petición autenticada, después de la validación de firma JWT y antes de la comprobación de permisos.
+
+**Criterios de aceptación:**
+
+- **Rendimiento**: El lookup de blacklist en cada request autenticado DEBE completarse en < 1ms (operación GET por clave en store de alta velocidad, e.g. Redis)
+- **Seguridad**: Un access token invalidado (JTI presente en blacklist) NO DEBE poder usarse para ninguna operación autenticada del sistema
+- **Seguridad**: El flujo de logout DEBE almacenar el JTI del access token en la blacklist con TTL igual al tiempo restante hasta expiración del token (`token.exp - now()`), sin excederlo
+- **Disponibilidad / fail-closed**: Si el servicio de blacklist no está disponible, los requests autenticados DEBEN rechazarse con HTTP 503 — la seguridad prevalece sobre la disponibilidad
+- **Retención**: Las entradas de blacklist DEBEN auto-eliminarse por TTL nativo al expirar el token original; no se requiere limpieza manual ni jobs de mantenimiento
+- **Orden de verificación**: La verificación de blacklist DEBE ejecutarse DESPUÉS de la validación de firma JWT y ANTES de la verificación de permisos (RBAC)
+
+**Nota:** El endpoint de logout (`POST /auth/logout`) está exento de la verificación de blacklist por decisión arquitectónica (ADR-014) para permitir el comportamiento best-effort definido en UC-002 FE-4.
+
+**Trazabilidad RF:** N2RF01, N2RF02
+**Trazabilidad ADR:** ADR-006, ADR-014
+**Prioridad:** Alta
+
+---
+
 ## Trazabilidad
 
 ### Matriz RNF → Sección RF
 
 | Categoría RNF  | RFs Relacionados                                                                   |
 | -------------- | ---------------------------------------------------------------------------------- |
-| Seguridad      | N2 (Acceso), N10RF13-14 (Autenticación), N4RF09 (Datos bancarios), N7 (Documentos) |
+| Seguridad      | N2 (Acceso), N10RF13-14 (Autenticación), N4RF09 (Datos bancarios), N7 (Documentos), N2RF01/02 (RNF-068 Blacklist tokens) |
 | Rendimiento    | N4RF02/17 (Masivas), N8 (Import/Export), N9 (Dashboard), N10 (Portal)              |
 | RGPD           | N11 completo, N3RF01 (Datos personales), N10RF11 (Consentimientos)                 |
 | Disponibilidad | N2RF01 (Multi-tenant SaaS), Transversal                                            |
@@ -1109,6 +1130,7 @@
 - RNF-050, RNF-051 (Skeleton screens, progressive rendering)
 - RNF-057, RNF-058, RNF-061 (Documentación, tests unitarios, logging)
 - RNF-067 (Entrega garantizada de Integration Events)
+- RNF-068 (Invalidación inmediata de access tokens post-logout)
 
 ### Importantes (Should Have)
 
@@ -1131,6 +1153,9 @@
 
 ## Changelog
 
+- v1.4 (Abr 2026):
+  - RNF-068: Invalidación Inmediata de Access Tokens Post-Logout (blacklist JTI, fail-closed, TTL nativo, ADR-014)
+  - Total: 68 RNFs
 - v1.3 (Mar 2026):
   - RNF-067: Entrega Garantizada de Integration Events (Outbox Pattern, at-least-once delivery, OutboxProcessor)
   - Total: 67 RNFs

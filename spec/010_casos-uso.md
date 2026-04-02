@@ -1,8 +1,8 @@
 # Casos de Uso
 
 **Proyecto:** Associated - ERP para Colectividades Españolas  
-**Versión:** 2.6  
-**Fecha:** Febrero 2026  
+**Versión:** 2.7  
+**Fecha:** Abril 2026  
 **Total:** 77 Casos de Uso derivados de 225 User Stories (ver nota en Resumen Ejecutivo)
 
 ---
@@ -359,6 +359,7 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
    - Genera Access Token JWT (15 min) con claims:
      ```json
      {
+       "jti": "uuid-v4",
        "sub": "user_uuid",
        "tenant_id": "tenant_uuid",
        "rol": "Tesorero",
@@ -391,6 +392,19 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
   - Sistema preselecciona el último tenant utilizado
   - Usuario puede cambiar o confirmar
 
+**FA-4: Logout con invalidación de access token**
+
+- El usuario solicita logout (`POST /api/v1/auth/logout` — EP-005)
+- El sistema valida el JWT del request (firma + expiración)
+- El sistema extrae el `jti` y `exp` del access token
+- El sistema calcula el TTL restante: `ttl = exp - now()`
+- El sistema almacena el JTI en la blacklist Redis con el TTL calculado:
+  - Key: `blacklist:{jti}`, value: `"1"`, TTL: `ttl`
+- El sistema invalida el refresh token en DB-Main (marca como revocado)
+- Se emite el evento de dominio `TokenBlacklisted` (audit-only, no es Integration Event — ver KB-005 §9.5)
+- El sistema responde con HTTP 204 No Content
+- Refs: ADR-014, RNF-068
+
 #### Flujos de Excepción
 
 **FE-1: Credenciales inválidas**
@@ -412,6 +426,22 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
   - Sistema muestra: "Su cuenta no está asociada a ninguna colectividad"
   - Ofrece contacto con soporte
 
+**FE-4: Blacklist no disponible durante logout**
+
+- En FA-4, si el servicio de blacklist (Redis) no está disponible al momento del logout:
+  - El refresh token se invalida igualmente en DB-Main (siempre se ejecuta)
+  - Se registra un log de warning con el contexto del fallo (userId, jti, motivo)
+  - Se responde HTTP 204 al cliente (el logout "parcial" es preferible a fallar — el access token expirará naturalmente en ≤15 min)
+  - Nota: a diferencia de FE-5, en logout se aplica best-effort para la blacklist pero se completa la operación
+  - Refs: ADR-014, RNF-068
+
+**FE-5: Verificación de blacklist falla en request autenticado**
+
+- Si el servicio de blacklist (Redis) no está disponible al verificar un request autenticado entrante:
+  - El sistema rechaza el request con HTTP 503 Service Unavailable (fail-closed, según ADR-014)
+  - Se registra un log de error con el contexto del fallo (endpoint solicitado, userId del JWT, motivo)
+  - Refs: ADR-014 (estrategia fail-closed), RNF-068
+
 #### Eventos de Dominio
 
 **Eventos Publicados:**
@@ -424,6 +454,8 @@ Autenticación de usuario con acceso a múltiples tenants, selección de context
 
 _Este UC no consume eventos de otros BCs_
 
+_Nota: El flujo FA-4 (logout) emite además el Domain Event `TokenBlacklisted` (ver sección 8.4 de KB-005). No se incluye en esta tabla por ser Domain Event sin consumidores inter-BC._
+
 #### Interacciones entre BCs
 
 - **BC-Identity:** Genera JWT con claims de usuario (userId, tenantId, rol, permissions)
@@ -433,11 +465,17 @@ _Este UC no consume eventos de otros BCs_
 **Éxito:**
 
 - Sesión de usuario creada con JWT válido (Access Token + Refresh Token)
-- JWT contiene claims críticos: `sub` (user_id), `tenant_id`, `rol`, `permissions`
+- JWT contiene claims críticos: `jti` (UUID v4), `sub` (user_id), `tenant_id`, `rol`, `permissions`
 - Usuario puede acceder a recursos del tenant seleccionado
 - Evento de dominio `UserAuthenticated` emitido
 - Registro de acceso creado en auditoría (IP, user agent, timestamp)
 - Refresh Token almacenado con expiración de 7 días
+
+**Éxito (Logout — FA-4):**
+
+- El access token queda invalidado inmediatamente (JTI en blacklist Redis con TTL ≤ 15 min)
+- El refresh token queda revocado en DB-Main
+- Evento de dominio `TokenBlacklisted` emitido
 
 **Fallo:**
 
@@ -453,6 +491,11 @@ _Este UC no consume eventos de otros BCs_
 - No usar WHERE tenant_id en queries (la conexión ya está aislada por BD)
 - Implementar rate limiting en endpoint de login (RNFT-011)
 - Refresh Token permite renovar Access Token sin re-login hasta 7 días
+- La verificación de blacklist se ejecuta en la cadena de guards: ThrottlerGuard → JwtAuthGuard → BlacklistCheck → PermissionsGuard → Handler
+- **Excepción:** El endpoint de logout (`POST /auth/logout` — EP-005) está exento del BlacklistCheck. Si no lo estuviera, una caída de Redis impediría ejecutar el handler de logout (503 por fail-closed), haciendo imposible el comportamiento best-effort de FE-4. JwtAuthGuard sigue validando la firma del token.
+- El BlacklistCheck puede integrarse dentro del JwtAuthGuard o implementarse como guard independiente (ver ADR-014)
+- En logout, la invalidación del refresh token en DB-Main se ejecuta siempre, independientemente del resultado de la blacklist en Redis (ver FE-4)
+- Refs: ADR-014 (Blacklist de Access Tokens en Redis), RNF-068 (Invalidación Inmediata de Access Tokens Post-Logout)
 
 ---
 
@@ -15914,6 +15957,21 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
 ---
 
 ## Changelog
+
+### **v2.7 (Abril 2026):**
+
+- UC-002: Extensión blacklist de access tokens (ADR-014, RNF-068)
+  - Añadidos flujos FA-4 (logout con invalidación), FE-4 (Redis no disponible en logout), FE-5 (Redis no disponible en request)
+  - Añadido claim `jti` a JWT claims del paso 7
+  - `TokenBlacklisted` reclasificado como Domain Event (audit-only, KB-005 §9.5) y movido a descripción de FA-4
+
+### **v2.6 (Marzo 2026):**
+
+- Correcciones de consistencia (revisión adversarial)
+  - Refresh token canonizado a 7 días + excepción Remember Me 30d documentada
+  - US-006 reasignada: creado UC-005b (Consulta y exportación de auditoría)
+  - UC-003 incorporado a Fase 1 del MVP
+  - Totales de US reconciliados entre KB-009 y KB-010; phantom US-IDs eliminados
 
 ### **v2.5 (09 Febrero 2026):**
 

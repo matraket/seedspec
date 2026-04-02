@@ -1,8 +1,8 @@
 # Inventario de Endpoints
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas
-**Versión:** 1.0
-**Fecha:** Marzo 2026
+**Versión:** 1.1
+**Fecha:** Abril 2026
 **Inputs:** KB-010 (Casos de Uso), KB-012 (Modelo de Datos), KB-006 (ADRs)
 **Total Endpoints:** 123
 
@@ -249,7 +249,8 @@ N/A
 **Autenticación:** JWT
 **Permisos:** N/A (JWT-only)
 **Caso de Uso:** UC-002 (Autenticación multi-tenant)
-**Entidades:** ENT-002
+**Entidades:** ENT-002, ENT-005
+**Descripción:** Cierra la sesión del usuario invalidando tanto el refresh token en DB-Main como el access token en la blacklist Redis. El JTI del access token se extrae del JWT entrante y se almacena en Redis con TTL igual al tiempo restante hasta su expiración, garantizando invalidación inmediata (ADR-014, RNF-068).
 
 #### Request Body
 
@@ -266,6 +267,11 @@ Sin cuerpo de respuesta.
 | Status | Código | Condición               |
 | ------ | ------ | ----------------------- |
 | 401    | -      | JWT inválido o expirado |
+
+#### Notas
+
+- En caso de fallo del servicio de blacklist (Redis), el logout se completa parcialmente: el refresh token se revoca en DB-Main y se responde 204, pero el access token no se invalida inmediatamente (expirará naturalmente en ≤15 min). Ver FE-4 de UC-002.
+- El access token del request se usa para extraer el `jti` y `exp` — no se requieren campos adicionales en el body para la operación de blacklist.
 
 ---
 
@@ -4033,7 +4039,7 @@ Content-Disposition: attachment; filename="dashboard-2025-06-15.pdf"
 | EP-002 | POST /api/v1/tenants                                                           | ENT-001, ENT-002                   | BC-Identity   |
 | EP-003 | POST /api/v1/auth/login                                                        | ENT-002, ENT-003                   | BC-Identity   |
 | EP-004 | POST /api/v1/auth/refresh                                                      | ENT-002                            | BC-Identity   |
-| EP-005 | POST /api/v1/auth/logout                                                       | ENT-002                            | BC-Identity   |
+| EP-005 | POST /api/v1/auth/logout                                                       | ENT-002, ENT-005                   | BC-Identity   |
 | EP-006 | POST /api/v1/auth/switch-tenant                                                | ENT-001, ENT-002, ENT-003          | BC-Identity   |
 | EP-007 | GET /api/v1/auth/me                                                            | ENT-002, ENT-003                   | BC-Identity   |
 | EP-008 | POST /api/v1/member-types                                                      | ENT-007                            | BC-Membership |
@@ -4149,3 +4155,14 @@ Content-Disposition: attachment; filename="dashboard-2025-06-15.pdf"
 | Fase 3       | 4         | Pendientes    |
 | Fuera de MVP | 28        | Placeholders  |
 | **Total**    | **123**   |               |
+
+---
+
+## Changelog
+
+- v1.1 (Abr 2026): Actualización trazabilidad EP-005
+  - EP-005 (POST /auth/logout): añadido ENT-005 (`refresh_tokens`) a matriz EP → ENT
+  - EP-005 descripción actualizada con flujo de blacklist Redis
+  - Sección Notas añadida (comportamiento degradado FE-4, extracción jti)
+- v1.0 (Mar 2026): Versión inicial
+  - 123 endpoints documentados con trazabilidad EP → UC/ENT

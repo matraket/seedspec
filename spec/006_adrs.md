@@ -1,11 +1,11 @@
 # Architectural Decision Records (ADRs)
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.0  
-**Fecha:** Febrero 2026  
+**Versión:** 1.1  
+**Fecha:** Abril 2026  
 **Inputs:** KB-004 (RNF Base), KB-005 (Modelo de Dominio)  
 **Estado:** Verificado  
-**Total ADRs:** 13
+**Total ADRs:** 14
 
 ---
 
@@ -91,6 +91,12 @@
     - [Decisión](#decisión-12)
     - [Consecuencias](#consecuencias-12)
     - [Trazabilidad](#trazabilidad-12)
+  - [ADR-014: Blacklist de Access Tokens en Redis](#adr-014-blacklist-de-access-tokens-en-redis)
+    - [Estado](#estado-13)
+    - [Contexto](#contexto-13)
+    - [Decisión](#decisión-13)
+    - [Consecuencias](#consecuencias-13)
+    - [Trazabilidad](#trazabilidad-13)
   - [Trazabilidad General](#trazabilidad-general)
     - [Matriz ADR → RNF](#matriz-adr--rnf)
     - [Matriz ADR → BC](#matriz-adr--bc)
@@ -556,14 +562,14 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 │  2. Request autenticado                                     │
 │     └─► Validar JWT signature + expiration                  │
 │     └─► Extraer tenantId del token (o header)               │
-│     └─► Verificar sesión no invalidada (opcional, caché)    │
+│     └─► Verificar blacklist Redis (no revocado — ADR-014)   │
 │                                                             │
 │  3. Refresh token                                           │
 │     └─► Validar refresh_token en DB                         │
 │     └─► Generar nuevo access_token                          │
 │                                                             │
 │  4. Logout                                                  │
-│     └─► Invalidar sesión en DB                              │
+│     └─► Invalidar sesión en DB + blacklist Redis (ADR-014)  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -572,6 +578,7 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 
 ```json
 {
+  "jti": "uuid-v4",
   "sub": "usuario-uuid",
   "email": "user@example.com",
   "tenants": ["tenant-1-uuid", "tenant-2-uuid"],
@@ -587,14 +594,14 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 **Positivas:**
 
 - Stateless para la mayoría de requests (JWT válido = acceso)
-- Invalidación posible vía blacklist/check de sesión
+- Invalidación posible vía blacklist/check de sesión (ver ADR-014: a partir de esa decisión, la verificación de blacklist es obligatoria en cada request autenticado)
 - Soporte multi-tenant nativo en claims
 - Escalable (no requiere sesión en servidor para cada request)
 
 **Negativas:**
 
 - Complejidad adicional vs sessions tradicionales
-- Tokens pueden ser usados hasta expiración si no se verifica blacklist
+- Tokens pueden ser usados hasta expiración si no se verifica blacklist (ver ADR-014: la blacklist es ahora obligatoria, eliminando este gap)
 - Refresh token requiere almacenamiento seguro en cliente
 
 **Métodos de autenticación soportados:**
@@ -611,6 +618,7 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 | RNF-002    | Gestión de sesiones, expiración         |
 | RNF-005    | Tokens transmitidos sobre HTTPS         |
 | N2RF02     | Acceso unificado multi-entidad          |
+| ADR-014    | Blacklist de access tokens — complementa invalidación post-logout |
 
 ---
 
@@ -1207,6 +1215,114 @@ Actualizar la tabla de transiciones de UC-007 para incluirla.
 
 ---
 
+## ADR-014: Blacklist de Access Tokens en Redis
+
+### Estado
+
+**Aceptado**
+
+### Contexto
+
+ADR-006 establece autenticación JWT stateless con access token de 15 minutos de TTL y refresh tokens almacenados en base de datos. El flujo de logout invalida la sesión en DB (refresh token), pero el access token sigue siendo válido hasta su expiración natural — un gap de seguridad de hasta 15 minutos donde un token robado o comprometido continúa otorgando acceso.
+
+Redis 7.x ya forma parte del stack tecnológico (spec 007 §4.3) para caching de sesiones server-side (RNFT-002) y Bull Queue (RNFT-018), por lo que no introduce nueva infraestructura.
+
+Se necesita invalidación inmediata del access token tras logout sin comprometer la naturaleza stateless del JWT para la mayoría de requests.
+
+**Alternativas consideradas:**
+
+1. **No hacer nada** — aceptar el gap de 15 minutos. Insuficiente para requisitos de seguridad (RNF-001, RNF-002)
+2. **Reducir TTL del access token** (ej. 2 min) — mitiga pero no elimina el gap, incrementa significativamente los refresh requests y la carga sobre DB-Main
+3. **Blacklist en Redis** — lookup O(1) por request, TTL nativo auto-limpia entradas expiradas, Redis ya está en el stack
+4. **Blacklist en PostgreSQL** — funcional pero latencia mayor (~2-5ms vs <1ms), sin TTL nativo (requiere job de limpieza manual), tabla crece sin control si falla la limpieza
+
+### Decisión
+
+**Adoptamos blacklist de access tokens en Redis** usando el claim `jti` (JWT ID) como clave de invalidación.
+
+**Estructura en Redis:**
+
+```
+Key:   blacklist:{jti}
+Value: "1"
+TTL:   token.exp - now()   (auto-expiración alineada con el token)
+```
+
+**Flujo de logout actualizado:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  FLUJO LOGOUT (actualizado)                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. Cliente envía POST /auth/logout                         │
+│     (JWT en header, refreshToken en body)                   │
+│     └─► Extraer JTI y EXP del token                         │
+│     └─► Redis SET blacklist:{jti} "1" EX (exp - now)        │
+│     └─► Invalidar refresh_token en DB-Main                  │
+│     └─► Responder 204 No Content                            │
+│                                                             │
+│  2. Request autenticado (cadena de guards)                  │
+│     └─► ThrottlerGuard (rate limiting)                      │
+│     └─► JwtAuthGuard (validar firma + expiración)           │
+│     └─► BlacklistCheck (Redis GET blacklist:{jti})          │
+│         ├─► Key existe → 401 Unauthorized                   │
+│         └─► Key no existe → continuar                       │
+│     └─► PermissionsGuard (RBAC)                             │
+│     └─► Handler                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Excepción:** El endpoint de logout (`POST /auth/logout` — EP-005) está exento del BlacklistCheck. Justificación: (1) el usuario está creando una entrada en blacklist, no siendo verificado contra ella; (2) FE-4 de UC-002 requiere que el logout funcione en modo best-effort si Redis no está disponible; (3) JwtAuthGuard ya valida la firma del token.
+
+**Comportamiento con Redis caído: fail-closed.** Si el BlacklistCheck no puede conectar con Redis para verificar la blacklist, el request se rechaza con 503 Service Unavailable. Justificación: seguridad > disponibilidad para flujos de autenticación. Un atacante no debe poder explotar una caída de Redis para usar tokens invalidados.
+
+**Comportamiento con Redis caído durante logout: best-effort.** Si Redis no está disponible al momento del logout, el refresh token se revoca igualmente en DB-Main y se responde 204. El access token expirará naturalmente en ≤15 minutos. Se registra un log de warning. Ver UC-002 FE-4.
+
+**Implementación del BlacklistCheck:**
+
+- Puede integrarse dentro del `JwtAuthGuard` existente (tras validar firma) o como guard independiente en la cadena
+- La decisión de guard único vs separado se deja al implementador; lo relevante es que el check ocurra DESPUÉS de validar firma y ANTES de verificar permisos
+
+**Requisito sobre el claim `jti`:**
+
+- Todo access token generado DEBE incluir el claim `jti` (UUID v4) — actualizar la generación de tokens de ADR-006 para garantizarlo
+
+### Consecuencias
+
+**Positivas:**
+
+- Invalidación inmediata de access tokens tras logout (gap = 0)
+- Auto-limpieza por TTL nativo de Redis: sin tablas que crezcan, sin jobs de mantenimiento
+- Reutiliza infraestructura Redis existente (caching de sesiones, Bull Queue)
+- Impacto de rendimiento mínimo: Redis GET < 1ms por request
+- La mayoría de requests (tokens válidos, no en blacklist) siguen siendo stateless en la práctica — el check es un simple cache miss
+
+**Negativas:**
+
+- Introduce componente stateful en el flujo JWT, acotado a una operación Redis GET por request
+- Dependencia de Redis para autenticación: si Redis cae, los requests autenticados fallan (fail-closed)
+- Requiere que el claim `jti` esté presente en todos los access tokens (cambio en generación de tokens)
+
+**Mitigaciones:**
+
+- Redis en modo Sentinel o Cluster para alta disponibilidad
+- Health check de Redis en el endpoint `/health` para monitorización proactiva
+- Circuit breaker opcional entre el guard y Redis para degradación controlada (si se relaja fail-closed en el futuro)
+
+### Trazabilidad
+
+| Referencia | Descripción                                                         |
+| ---------- | ------------------------------------------------------------------- |
+| RNF-001    | Autenticación segura — invalidación inmediata cierra gap de 15 min  |
+| RNF-002    | Gestión de sesiones — logout efectivo con blacklist                  |
+| ADR-006    | Estrategia de autenticación JWT — este ADR complementa el flujo     |
+| RNF-068    | Invalidación Inmediata de Access Tokens Post-Logout                 |
+| UC-002     | Autenticación multi-tenant — flujo de logout (FA-4, FE-4, FE-5)    |
+
+---
+
 ## Trazabilidad General
 
 ### Matriz ADR → RNF
@@ -1226,6 +1342,7 @@ Actualizar la tabla de transiciones de UC-007 para incluirla.
 | ADR-011 | RNF-009, RNF-022          |
 | ADR-012 | RNF-058, RNF-059, RNF-060 |
 | ADR-013 | —                         |
+| ADR-014 | RNF-001, RNF-002, RNF-068 |
 
 ### Matriz ADR → BC
 
@@ -1244,11 +1361,15 @@ Actualizar la tabla de transiciones de UC-007 para incluirla.
 | ADR-011 | BC-Documents                             |
 | ADR-012 | Todos                                    |
 | ADR-013 | BC-Membership                            |
+| ADR-014 | BC-Identity                              |
 
 ---
 
 ## Changelog
 
+- v1.1 (Abr 2026):
+  - ADR-013: Transición SUSPENDED → NONPAYMENT_LEAVE (baja automática por morosidad)
+  - ADR-014: Blacklist de access tokens en Redis para invalidación inmediata tras logout
 - v1.0 (Feb 2026): Versión inicial
   - 12 ADRs cubriendo arquitectura, persistencia, comunicación, seguridad
   - Decisiones alineadas con RNF-004 (multi-tenant) como eje central

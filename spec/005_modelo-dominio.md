@@ -1,8 +1,8 @@
 # Bounded Contexts y Modelo de Dominio
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.5  
-**Fecha:** Febrero 2026  
+**Versión:** 1.6  
+**Fecha:** Abril 2026  
 **Inputs:** KB-001 (Propuesta TFM), KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales), KB-004 (RNF Base)  
 **Estado:** Validado  
 **Total BCs:** 6 (3 Core + 3 Supporting) + 1 Extensión Transversal
@@ -1550,6 +1550,25 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 
 **Tabla Prisma:** ENT-002 (`users`), ENT-005 (`refresh_tokens`)
 
+#### Estructura Redis: Token Blacklist
+
+Estructura de datos gestionada por BC-Identity en Redis (no en PostgreSQL). No tiene representación como tabla Prisma (ENT-XXX) ya que Redis es almacenamiento volátil con auto-expiración.
+
+```
+Key:    blacklist:{jti}     ← JTI (UUID v4) del access token invalidado
+Value:  "1"                 ← Valor minimal, solo indica presencia
+TTL:    token.exp - now()   ← Auto-expiración alineada con el token (máx. 900s)
+```
+
+**Operaciones:**
+- **SET** (en logout — FA-4 de UC-002): `SET blacklist:{jti} "1" EX {ttl}`
+- **GET** (en cada request autenticado — BlacklistCheck): `GET blacklist:{jti}` → existe = rechazar, no existe = continuar
+- **DEL** (automático): Redis elimina la key al expirar el TTL
+
+**Cardinalidad estimada:** En el peor caso, una entrada por cada access token invalidado activo (tokens con TTL ≤ 900s). La estructura se auto-limpia continuamente.
+
+**Trazabilidad:** ADR-014, RNF-068, UC-002 (FA-4, FE-4, FE-5)
+
 #### 8.2.2 Aggregate: Tenant
 
 ```
@@ -1644,6 +1663,7 @@ Gestiona la autenticación de usuarios, autorización basada en roles y la estru
 | `UserAuthenticated`    | Login exitoso                | userId, tenantId, email, rol, ipAddress, userAgent, timestamp                | -                               | Domain      |
 | `AuthenticationFailed` | Login fallido                | email, intentos, ip                                                          | -                               | Domain      |
 | `TenantProvisioned`    | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif | BC-Communication (bienvenida)   | Integration |
+| `TokenBlacklisted`     | Logout con blacklist Redis   | userId, tenantId, jti, ttlSeconds, timestamp                                 | -                               | Domain      |
 
 ### 8.5 Trazabilidad RF
 
@@ -1987,6 +2007,9 @@ Esta sección clarifica la distinción entre **Integration Events** para integra
 
 ## Changelog
 
+- v1.6 (Abr 2026): Estructura Redis Token Blacklist y evento TokenBlacklisted
+  - **BC-Identity:** Añadido `TokenBlacklisted` como Domain Event (audit-only) en tabla 8.4
+  - **BC-Identity:** Documentada estructura Redis Token Blacklist en sección 8.2.1 (ADR-014, RNF-068)
 - v1.5 (Feb 2026): Clasificación de Domain Events vs Integration Events
   - **Nueva sección 9.5:** Event Nomenclature - Integration Events vs Domain Events
     - Definición formal de Integration Events (cross-BC integration)

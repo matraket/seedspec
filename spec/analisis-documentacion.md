@@ -15,9 +15,9 @@ Esquema de Numeración: NxRFyy (ej: N2RF01, N3RF34)
 ```
 Archivo: 004_rnf-base.md
 Líneas: 1,052
-Versión: 1.2
-Propósito: Define 66 Requisitos No Funcionales agnósticos de tecnología
-Esquema de Numeración: RNF-xxx (ej: RNF-001, RNF-066)
+Versión: 1.4
+Propósito: Define 68 Requisitos No Funcionales agnósticos de tecnología
+Esquema de Numeración: RNF-xxx (ej: RNF-001, RNF-068)
 ```
 
 ────────────────────────────────────────
@@ -25,7 +25,7 @@ Esquema de Numeración: RNF-xxx (ej: RNF-001, RNF-066)
 ```
 Archivo: 005_modelo-dominio.md
 Líneas: 2,047
-Versión: 1.5
+Versión: 1.6
 Propósito: Mapea 6 Bounded Contexts del DDD con Aggregates, Entities y Value Objects
 Esquema de Numeración: BC-NombreBc (ej: BC-Identity, BC-Membership)
 ```
@@ -35,9 +35,9 @@ Esquema de Numeración: BC-NombreBc (ej: BC-Identity, BC-Membership)
 ```
 Archivo: 006_adrs.md
 Líneas: 1,041
-Versión: 1.0
-Propósito: Define 12 Decisiones Arquitectónicas alineadas a ADRs
-Esquema de Numeración: ADR-xxx (ej: ADR-001, ADR-012)
+Versión: 1.1
+Propósito: Define 14 Decisiones Arquitectónicas alineadas a ADRs
+Esquema de Numeración: ADR-xxx (ej: ADR-001, ADR-014)
 ```
 
 ────────────────────────────────────────
@@ -45,7 +45,7 @@ Esquema de Numeración: ADR-xxx (ej: ADR-001, ADR-012)
 ```
 Archivo: 007_stack.md
 Líneas: 815
-Versión: 1.0
+Versión: 1.1
 Propósito: Especifica stack tecnológico seleccionado (NestJS, React, PostgreSQL, etc)
 Esquema de Numeración: (Referencia a RNF/ADR)
 ```
@@ -55,9 +55,9 @@ Esquema de Numeración: (Referencia a RNF/ADR)
 ```
 Archivo: 008_rnf-tecnicos.md
 Líneas: 1,567
-Versión: 1.0
+Versión: 1.1
 Propósito: Concreta RNFs base con implementaciones técnicas específicas
-Esquema de Numeración: RNFT-xxx (ej: RNFT-001, RNFT-061)
+Esquema de Numeración: RNFT-xxx (ej: RNFT-001, RNFT-068)
 ```
 
 ────────────────────────────────────────
@@ -75,7 +75,7 @@ Esquema de Numeración: US-xxx (ej: US-001, US-202)
 ```
 Archivo: 010_casos-uso.md
 Líneas: 15,390
-Versión: 2.6
+Versión: 2.7
 Propósito: Define 77 Casos de Uso agrupando User Stories con flujos y eventos
 Esquema de Numeración: UC-xxx (ej: UC-001, UC-076 más UC-005b)
 ```
@@ -132,19 +132,19 @@ Requisitos Funcionales (RF) - 003_requisitos-funcionales.md
 
 Requisitos No Funcionales Base (RNF) - 004_rnf-base.md
 
-- Formato: RNF-xxx (RNF-001 a RNF-067)
+- Formato: RNF-xxx (RNF-001 a RNF-068)
 - Categorías: Seguridad, Rendimiento, RGPD, Disponibilidad, Usabilidad, Mantenibilidad
-- Total: 67 RNFs agnósticos de tecnología
+- Total: 68 RNFs agnósticos de tecnología
 
 Requisitos No Funcionales Técnicos (RNFT) - 008_rnf-tecnicos.md
 
-- Formato: RNFT-xxx (ej: RNFT-001, RNFT-061)
+- Formato: RNFT-xxx (ej: RNFT-001, RNFT-068)
 - Relación 1:1 con RNF Base (RNFT-001 implementa RNF-001, etc.)
 - Incluye configuraciones específicas: NestJS, Prisma, React, PostgreSQL
 
 Architectural Decision Records (ADR) - 006_adrs.md
 
-- Formato: ADR-xxx (ADR-001 a ADR-012)
+- Formato: ADR-xxx (ADR-001 a ADR-014)
 - Secciones:
   a. ADR-001: Monolito Modular
   b. ADR-002: Multi-Tenant por Base de Datos
@@ -158,6 +158,8 @@ Architectural Decision Records (ADR) - 006_adrs.md
   j. ADR-010: API REST
   k. ADR-011: Almacenamiento ficheros
   l. ADR-012: Estrategia Testing
+  m. ADR-013: Transición de estado SUSPENDED → NONPAYMENT_LEAVE
+  n. ADR-014: Token Blacklist para invalidación de access tokens
 
 User Stories (US) - 009_user-stories.md
 
@@ -218,12 +220,12 @@ KB-002 (Análisis de Necesidades)
     ↓
     ├→ 003_requisitos-funcionales.md (221 RFs: N2RF01-N13RF04)
     │       ↓
-    │       ├→ 004_rnf-base.md (67 RNFs con "Trazabilidad RF: NxRFyy")
+    │       ├→ 004_rnf-base.md (68 RNFs con "Trazabilidad RF: NxRFyy")
     │       │       ↓
     │       │       ├→ 008_rnf-tecnicos.md (RNFTs 1:1 mapping)
     │       │       │       ↓
     │       │       │       └→ 007_stack.md (Tecnologías concretas)
-    │       │       └→ 006_adrs.md (12 ADRs, cada uno con "Trazabilidad: RNF-xxx")
+    │       │       └→ 006_adrs.md (14 ADRs, cada uno con "Trazabilidad: RNF-xxx")
     │       │
     │       └→ 005_modelo-dominio.md (6 BCs con "Matriz BC→RF")
     │               ↓
@@ -253,7 +255,7 @@ Tipos de Referencias Encontradas
 │ ADR a    │ ADR-001 referencia RNF-020, RNF-057   │ 006_adrs.md → 004_rnf-base.md                    │ 25 refs         │
 │ RNF      │                                       │                                                  │                 │
 ├──────────┼───────────────────────────────────────┼──────────────────────────────────────────────────┼─────────────────┤
-│ ADR a BC │ ADR-001 afecta "Todos" los BCs        │ 006_adrs.md → 005_modelo-dominio.md              │ 12 refs         │
+│ ADR a BC │ ADR-001 afecta "Todos" los BCs        │ 006_adrs.md → 005_modelo-dominio.md              │ ~14 refs        │
 ├──────────┼───────────────────────────────────────┼──────────────────────────────────────────────────┼─────────────────┤
 │ RF a BC  │ "BC-Identity mapea N2RF01-N2RF08"     │ 005_modelo-dominio.md →                          │ 84 refs         │
 │          │                                       │ 003_requisitos-funcionales.md                    │                 │
@@ -336,13 +338,13 @@ Matriz de Impacto (Cambios en Upstream afectan Downstream)
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 RF         │ ~1-3 RNFs (promedio)  │ 221 RFs × 1.3 ≈ 287 impactos            │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
-│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 67 RNFs × 3 ≈ 201 impactos              │
+│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 68 RNFs × 3 ≈ 204 impactos              │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 BC         │ ~8 RFs + 15 USs       │ 6 BCs × 23 ≈ 138 impactos               │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 US         │ 1 UC + 1+ RFs         │ 202 USs mapeadas 1:N a UCs              │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
-│ 1 ADR        │ 12 BCs + ~10 RNFs     │ 12 ADRs × 12 = 144 impactos potenciales │
+│ 1 ADR        │ 12 BCs + ~10 RNFs     │ 14 ADRs × 12 = 168 impactos potenciales │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 ENT        │ ~2-3 EPs (promedio)   │ 40 ENTs × 3 ≈ 120 impactos             │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
@@ -583,11 +585,11 @@ Ejemplo:
 ├──────────────────────────────────┼────────────────────────────────────────┤
 │ Total RFs                        │ 221                                    │
 ├──────────────────────────────────┼────────────────────────────────────────┤
-│ Total RNFs                       │ 66                                     │
+│ Total RNFs                       │ 68                                     │
 ├──────────────────────────────────┼────────────────────────────────────────┤
 │ Total RNFTs                      │ 40+ (mínimo)                           │
 ├──────────────────────────────────┼────────────────────────────────────────┤
-│ Total ADRs                       │ 12                                     │
+│ Total ADRs                       │ 14                                     │
 ├──────────────────────────────────┼────────────────────────────────────────┤
 │ Total BCs                        │ 6 core/supporting + 1 transversal      │
 ├──────────────────────────────────┼────────────────────────────────────────┤
