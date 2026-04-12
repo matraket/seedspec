@@ -1,22 +1,24 @@
 # Requisitos No Funcionales Base (Agnósticos de Tecnología)
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.4  
+**Versión:** 1.5  
 **Fecha:** Abril 2026  
 **Inputs:** KB-002 (Análisis de Necesidades), KB-003 (Requisitos Funcionales)  
 **Estado:** Validado  
-**Total RNFs:** 68
+**Total RNFs:** 69
 
 ---
 
 ## Índice de Secciones
 
-1. [Seguridad](#1-seguridad) (14 RNFs)
+1. [Seguridad](#1-seguridad) (15 RNFs)
 2. [Rendimiento](#2-rendimiento) (10 RNFs)
 3. [RGPD y Cumplimiento Normativo](#3-rgpd-y-cumplimiento-normativo) (12 RNFs)
 4. [Disponibilidad y Continuidad](#4-disponibilidad-y-continuidad) (8 RNFs)
 5. [Usabilidad y Experiencia de Usuario](#5-usabilidad-y-experiencia-de-usuario) (12 RNFs)
 6. [Mantenibilidad y Operaciones](#6-mantenibilidad-y-operaciones) (11 RNFs)
+
+**Nota sobre RNF-069:** este RNF está ubicado al final del documento (después de RNF-068) para respetar el orden cronológico de incorporación, aunque conceptualmente pertenece al eje de Seguridad (aislamiento cross-tenant). Se cuenta en la categoría "Seguridad" a efectos del total.
 
 ---
 
@@ -1089,13 +1091,33 @@
 
 ---
 
+### RNF-069: Consistencia Cross-Tab del Tenant Activo
+
+**Descripción:** Cuando el tenant activo de un usuario cambia en una pestaña del navegador (vía `POST /auth/switch-tenant`, logout, o re-login en otro tenant), todas las demás pestañas abiertas de la misma aplicación en el mismo origin DEBEN detectar la inconsistencia de contexto y ofrecer al usuario una acción explícita para resolverla. La UI NO DEBE seguir operando silenciosamente con un contexto de tenant stale tras un cambio producido en otra pestaña.
+
+**Justificación:** En un escenario multi-pestaña, si la pestaña A tiene el tenant X abierto y la pestaña B ejecuta un switch al tenant Y, el JWT compartido vía almacenamiento del navegador queda apuntando al tenant Y. La pestaña A —con UI renderizada como tenant X— haría su próxima request con un token de tenant Y, cargando datos de Y sobre la UI de X. Esta inconsistencia puede exponer datos cross-tenant si no se resuelve.
+
+**Criterios de aceptación:**
+
+- La UI DEBE detectar cambios del tenant activo iniciados en otras pestañas del mismo origin.
+- Al detectar inconsistencia, la UI DEBE bloquear operaciones nuevas en la pestaña stale y SHALL ofrecer al usuario al menos dos acciones explícitas: (a) recargar la pestaña con el nuevo contexto de tenant, o (b) cerrar sesión.
+- La notificación NO DEBE ser descartable (sin dismiss): el usuario debe tomar una acción explícita para resolver la inconsistencia.
+- La pestaña stale NO DEBE ejecutar requests autenticadas con el contexto viejo una vez detectada la divergencia.
+- El mecanismo concreto de detección cross-tab (BroadcastChannel, storage events, polling server-side, etc.) queda a criterio del implementador frontend — este RNF sólo prescribe el comportamiento funcional observable.
+
+**Trazabilidad RF:** N2RF02 (Acceso unificado multi-entidad)
+**Trazabilidad ADR:** ADR-006 (amendment Abr 2026 — tenantId singular, switch-tenant)
+**Prioridad:** Alta
+
+---
+
 ## Trazabilidad
 
 ### Matriz RNF → Sección RF
 
 | Categoría RNF  | RFs Relacionados                                                                   |
 | -------------- | ---------------------------------------------------------------------------------- |
-| Seguridad      | N2 (Acceso), N10RF13-14 (Autenticación), N4RF09 (Datos bancarios), N7 (Documentos), N2RF01/02 (RNF-068 Blacklist tokens) |
+| Seguridad      | N2 (Acceso), N10RF13-14 (Autenticación), N4RF09 (Datos bancarios), N7 (Documentos), N2RF01/02 (RNF-068 Blacklist tokens, RNF-069 cross-tab consistency) |
 | Rendimiento    | N4RF02/17 (Masivas), N8 (Import/Export), N9 (Dashboard), N10 (Portal)              |
 | RGPD           | N11 completo, N3RF01 (Datos personales), N10RF11 (Consentimientos)                 |
 | Disponibilidad | N2RF01 (Multi-tenant SaaS), Transversal                                            |
@@ -1131,6 +1153,7 @@
 - RNF-057, RNF-058, RNF-061 (Documentación, tests unitarios, logging)
 - RNF-067 (Entrega garantizada de Integration Events)
 - RNF-068 (Invalidación inmediata de access tokens post-logout)
+- RNF-069 (Consistencia cross-tab del tenant activo)
 
 ### Importantes (Should Have)
 
@@ -1153,6 +1176,9 @@
 
 ## Changelog
 
+- v1.5 (Abr 2026) — Login multi-tenant + switch-tenant:
+  - RNF-069: Consistencia Cross-Tab del Tenant Activo. Cierra la fuga potencial cross-tenant cuando un switch-tenant ocurre en una pestaña y otras pestañas quedan con contexto stale. Alineado con ADR-006 amendment Abr 2026.
+  - Total: 69 RNFs
 - v1.4 (Abr 2026):
   - RNF-068: Invalidación Inmediata de Access Tokens Post-Logout (blacklist JTI, fail-closed, TTL nativo, ADR-014)
   - Total: 68 RNFs

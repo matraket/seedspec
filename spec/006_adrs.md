@@ -1,11 +1,11 @@
 # Architectural Decision Records (ADRs)
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.1  
+**Versión:** 1.2  
 **Fecha:** Abril 2026  
 **Inputs:** KB-004 (RNF Base), KB-005 (Modelo de Dominio)  
 **Estado:** Verificado  
-**Total ADRs:** 14
+**Total ADRs:** 14 (ADR-006 y ADR-014 amendados en v1.2 — login multi-tenant + switch-tenant)
 
 ---
 
@@ -532,7 +532,7 @@ El dominio de Associated tiene:
 
 ### Estado
 
-**Aceptado**
+**Aceptado** — amendment abril 2026 (login multi-tenant + switch-tenant)
 
 ### Contexto
 
@@ -554,21 +554,27 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 │                    FLUJO AUTENTICACIÓN                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  1. Login (email + password)                                │
+│  1. Login (email + password [+ tenantId opcional])          │
 │     └─► Validar credenciales en DB-Main                     │
+│     └─► Resolver tenant activo (ver amendment Abr 2026)     │
 │     └─► Generar access_token (JWT, 15min) + refresh_token   │
 │     └─► Guardar sesión en DB (para invalidación)            │
 │                                                             │
 │  2. Request autenticado                                     │
 │     └─► Validar JWT signature + expiration                  │
-│     └─► Extraer tenantId del token (o header)               │
+│     └─► Extraer tenantId EXCLUSIVAMENTE del claim del JWT   │
 │     └─► Verificar blacklist Redis (no revocado — ADR-014)   │
 │                                                             │
 │  3. Refresh token                                           │
 │     └─► Validar refresh_token en DB                         │
 │     └─► Generar nuevo access_token                          │
 │                                                             │
-│  4. Logout                                                  │
+│  4. Switch-tenant (cambio de contexto sin re-login)         │
+│     └─► Emitir nuevo JWT con tenantId del nuevo tenant      │
+│     └─► Blacklist del JWT anterior en Redis (ADR-014)       │
+│     └─► Emitir Domain Event TenantSwitchedEvent (UC-002)    │
+│                                                             │
+│  5. Logout                                                  │
 │     └─► Invalidar sesión en DB + blacklist Redis (ADR-014)  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -581,13 +587,15 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
   "jti": "uuid-v4",
   "sub": "usuario-uuid",
   "email": "user@example.com",
-  "tenants": ["tenant-1-uuid", "tenant-2-uuid"],
-  "current_tenant": "tenant-1-uuid",
-  "roles": ["TESORERO"],
+  "tenantId": "tenant-uuid",
+  "rol": "TREASURER",
+  "permissions": ["treasury:fees:read", "..."],
   "exp": 1234567890,
   "iat": 1234567890
 }
 ```
+
+> **Nota (amendment Abr 2026):** El JWT lleva un único claim `tenantId` (singular) con el UUID del tenant activo para esa sesión. La **lista completa de tenants** a los que pertenece el usuario NO viaja en el JWT: se entrega en el response del login (`tenants[]`) y se cachea client-side para poblar el selector de tenants. Ver amendment más abajo.
 
 ### Consecuencias
 
@@ -595,7 +603,7 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 
 - Stateless para la mayoría de requests (JWT válido = acceso)
 - Invalidación posible vía blacklist/check de sesión (ver ADR-014: a partir de esa decisión, la verificación de blacklist es obligatoria en cada request autenticado)
-- Soporte multi-tenant nativo en claims
+- Claim `tenantId` singular = fuente única de verdad del tenant activo (amendment Abr 2026)
 - Escalable (no requiere sesión en servidor para cada request)
 
 **Negativas:**
@@ -603,12 +611,49 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 - Complejidad adicional vs sessions tradicionales
 - Tokens pueden ser usados hasta expiración si no se verifica blacklist (ver ADR-014: la blacklist es ahora obligatoria, eliminando este gap)
 - Refresh token requiere almacenamiento seguro en cliente
+- Cambiar de tenant requiere emitir un nuevo JWT (no basta con mutar un claim client-side)
 
 **Métodos de autenticación soportados:**
 
 1. Email + contraseña (RNF-001)
-2. Magic link por email (RNF-001)
+2. Magic link por email (RNF-001) — implementación diferida (ver US-175, priorizada como Should)
 3. (Futuro) OAuth2 con Google/Microsoft
+
+### Amendment Abril 2026 — Login multi-tenant + switch-tenant
+
+Esta amendment cierra el deadlock del flujo multi-tenant (usuario pertenece a varios tenants → requiere selector de tenant → el switch-tenant necesita JWT previo para autorizar, y el login sin `tenantId` NO entrega tokens hoy) y elimina la fuga potencial de datos cross-tenant por ambigüedad sobre qué claim / header define el tenant activo.
+
+#### Reglas
+
+1. **`tenantId` singular como única fuente de verdad.** El JWT lleva UN ÚNICO claim `tenantId` con el UUID del tenant activo de esa sesión. Toda request protegida deriva su scope de tenant EXCLUSIVAMENTE de ese claim. No hay claims `tenants[]` ni `current_tenant` en el JWT.
+
+2. **Header `X-Tenant-Id` deprecado como mecanismo de resolución.** El header `X-Tenant-Id` NO DEBE usarse para seleccionar el tenant activo, enrutar a la conexión Prisma per-tenant ni influir en la lógica de autorización. Puede seguir presente en requests o logs únicamente con fines de **observabilidad** (comparación diagnóstica vs. el claim del JWT, detección de inconsistencias), pero ningún componente productivo DEBE leerlo para tomar decisiones de scope.
+
+3. **`tenants[]` viaja en el response del login, no en el JWT.** Cuando el usuario se autentica con éxito a un tenant y posee múltiples memberships, el response de `POST /auth/login` incluye adicionalmente el campo `tenants: TenantMembershipSummary[]` con la lista completa de sus memberships. El frontend cachea esta lista client-side para poblar el selector de tenant. La lista NO se envía en ningún claim JWT.
+
+4. **`POST /auth/login` acepta `tenantId?` opcional.** No se añaden endpoints nuevos. El campo acepta un UUID de tenant al que el usuario pertenece:
+   - Usuario single-tenant: `tenantId` se ignora si se envía; login emite tokens directamente.
+   - Usuario multi-tenant **con** `tenantId` válido: login emite tokens para ese tenant e incluye `tenants[]` en la respuesta.
+   - Usuario multi-tenant **sin** `tenantId`: login responde `requiresTenantSelection: true` + `tenants[]` **sin tokens** (el frontend muestra el selector y repite `POST /auth/login` con `tenantId` para obtener tokens).
+
+5. **Cambio de tenant = nuevo JWT vía `POST /auth/switch-tenant`.** Requiere `Authorization: Bearer` del tenant actual. Emite un nuevo access + refresh token con `tenantId` distinto y **blacklistea el access token anterior** en Redis (ADR-014). Se emite el Domain Event `TenantSwitchedEvent` (ver UC-002).
+
+6. **Preselección del último tenant usado.** Se resuelve client-side vía `localStorage`. No hay persistencia server-side del "último tenant" en esta iteración.
+
+7. **Consistencia cross-tab.** Cuando un `switch-tenant` ocurre en una pestaña y otras pestañas del mismo origin quedan con contexto stale, la UI DEBE ofrecer al usuario una acción explícita para resolver la inconsistencia (RNF-069). Mecanismo de implementación queda a criterio del frontend.
+
+#### Efecto en la verificación de requests
+
+```
+Request autenticado → JwtAuthGuard valida firma + expiración
+                    → Extrae tenantId SÓLO del claim JWT
+                    → BlacklistCheck (Redis) — ADR-014
+                    → TenantMiddleware enruta a Prisma per-tenant con el tenantId del claim
+                    → PermissionsGuard (RBAC)
+                    → Handler
+```
+
+Si el `tenantId` del claim no resuelve a un tenant válido / el usuario no tiene membership activa, el request se rechaza con 403. Cualquier presencia de `X-Tenant-Id` no influye — puede loguearse para diagnóstico (p. ej. detectar caches viejas en el frontend).
 
 ### Trazabilidad
 
@@ -617,8 +662,10 @@ Los usuarios pueden pertenecer a múltiples tenants (N2RF02). La autenticación 
 | RNF-001    | Autenticación segura, múltiples métodos |
 | RNF-002    | Gestión de sesiones, expiración         |
 | RNF-005    | Tokens transmitidos sobre HTTPS         |
+| RNF-069    | Consistencia cross-tab del tenant activo (amendment Abr 2026) |
 | N2RF02     | Acceso unificado multi-entidad          |
-| ADR-014    | Blacklist de access tokens — complementa invalidación post-logout |
+| ADR-014    | Blacklist de access tokens — complementa invalidación post-logout y switch-tenant |
+| UC-002     | Autenticación multi-tenant — login, switch-tenant, logout |
 
 ---
 
@@ -961,7 +1008,7 @@ La aplicación necesita exponer funcionalidad a clientes web (SPA) y móvil (PWA
 
 - Recursos en plural: `/api/v1/members`, `/api/v1/events`
 - Versionado en URL: `/api/v1/...`
-- Tenant en header: `X-Tenant-Id: {uuid}`
+- Tenant: resuelto EXCLUSIVAMENTE del claim `tenantId` del JWT por el `TenantMiddleware`. El header `X-Tenant-Id` NO se usa para resolución de tenant ni para enrutar la conexión Prisma per-tenant. Puede estar presente en requests únicamente como dato de observabilidad (p. ej. detectar inconsistencias cache-cliente vs. JWT). Ver ADR-006 amendment Abr 2026.
 - Auth en header: `Authorization: Bearer {jwt}`
 - Respuestas JSON con envelope consistente
 - Códigos HTTP estándar
@@ -1280,6 +1327,8 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 
 **Comportamiento con Redis caído durante logout: best-effort.** Si Redis no está disponible al momento del logout, el refresh token se revoca igualmente en DB-Main y se responde 204. El access token expirará naturalmente en ≤15 minutos. Se registra un log de warning. Ver UC-002 FE-4.
 
+**Comportamiento con Redis caído durante switch-tenant: fail-closed (amendment Abr 2026).** Si Redis no está disponible al intentar blacklistear el token anterior durante un `POST /auth/switch-tenant`, el endpoint DEBE responder HTTP 503 con código `BLACKLIST_UNAVAILABLE` SIN emitir nuevos tokens y SIN completar el switch. Justificación: a diferencia del logout, el token anterior en switch-tenant NO se revoca en DB-Main — sólo existe como sesión activa invalidada en Redis. Si el SET en Redis no puede garantizarse, el token anterior quedaría vigente y coexistirían dos tokens simultáneamente válidos para el mismo usuario en tenants distintos (split-brain de sesión, fuga potencial cross-tenant). Ver UC-002 FE-6. Esta política extiende la política fail-closed general a los *writes* de revocación crítica; el best-effort queda reservado exclusivamente a logout, donde la revocación en DB-Main actúa como fallback suficiente.
+
 **Implementación del BlacklistCheck:**
 
 - Puede integrarse dentro del `JwtAuthGuard` existente (tras validar firma) o como guard independiente en la cadena
@@ -1319,7 +1368,7 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 | RNF-002    | Gestión de sesiones — logout efectivo con blacklist                  |
 | ADR-006    | Estrategia de autenticación JWT — este ADR complementa el flujo     |
 | RNF-068    | Invalidación Inmediata de Access Tokens Post-Logout                 |
-| UC-002     | Autenticación multi-tenant — flujo de logout (FA-4, FE-4, FE-5)    |
+| UC-002     | Autenticación multi-tenant — flujo de logout (FA-4, FE-4, FE-5) y switch-tenant (FA-2, FE-6 amendment Abr 2026) |
 
 ---
 
@@ -1334,7 +1383,7 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 | ADR-003 | RNF-057                   |
 | ADR-004 | RNF-067                   |
 | ADR-005 | RNF-004, RNF-038, RNF-066 |
-| ADR-006 | RNF-001, RNF-002, RNF-005 |
+| ADR-006 | RNF-001, RNF-002, RNF-005, RNF-069 |
 | ADR-007 | RNF-003, RNF-013          |
 | ADR-008 | RNF-007, RNF-067          |
 | ADR-009 | RNF-058-060               |
@@ -1367,6 +1416,10 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 
 ## Changelog
 
+- v1.2 (Abr 2026) — Login multi-tenant + switch-tenant:
+  - **ADR-006 (amendment)**: claim JWT singular `tenantId` como única fuente de verdad; header `X-Tenant-Id` deprecado como mecanismo de resolución (sólo observabilidad); `POST /auth/login` acepta `tenantId?` opcional; `tenants[]` viaja en el response del login, no en el JWT; cambio de tenant = nuevo JWT + blacklist del anterior + emisión de `TenantSwitchedEvent`; preselección de último tenant client-side (localStorage); referencia a RNF-069 (cross-tab consistency).
+  - **ADR-010**: convención REST actualizada — el tenant se resuelve EXCLUSIVAMENTE del claim JWT, no del header `X-Tenant-Id`.
+  - **ADR-014 (amendment)**: política fail-closed extendida a `POST /auth/switch-tenant` (HTTP 503 `BLACKLIST_UNAVAILABLE` si Redis no disponible al escribir el blacklist del token anterior). Best-effort queda reservado a logout.
 - v1.1 (Abr 2026):
   - ADR-013: Transición SUSPENDED → NONPAYMENT_LEAVE (baja automática por morosidad)
   - ADR-014: Blacklist de access tokens en Redis para invalidación inmediata tras logout

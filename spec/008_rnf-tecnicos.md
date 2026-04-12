@@ -1,7 +1,7 @@
 # Requisitos No Funcionales Técnicos
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.1  
+**Versión:** 1.2  
 **Fecha:** Abril 2026  
 **Inputs:** KB-004 (RNF Base), KB-007 (Stack Tecnológico)  
 **Estado:** Borrador
@@ -306,22 +306,42 @@ export class PrismaTenantService {
 
 **Middleware de tenant:**
 
+El `tenantId` se extrae EXCLUSIVAMENTE del claim JWT ya validado por `JwtAuthGuard` (amendment ADR-006 Abr 2026). El header `X-Tenant-Id` NO se lee para resolver el tenant activo; si está presente, puede registrarse como dato de observabilidad (detección de drift cache-cliente vs. JWT) pero NUNCA debe influir en la lógica de scope ni en la conexión Prisma per-tenant.
+
 ```typescript
 // tenant.middleware.ts
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    const tenantId = req.headers['x-tenant-id'] as string;
+  private readonly logger = new Logger(TenantMiddleware.name);
 
-    if (!tenantId) {
-      throw new BadRequestException('X-Tenant-Id header required');
+  use(req: Request, res: Response, next: NextFunction) {
+    // JwtAuthGuard ya validó el token y pobló req.user con los claims
+    const user = req['user'] as { userId: string; tenantId: string } | undefined;
+
+    if (!user?.tenantId) {
+      // No hay JWT válido: los endpoints públicos no deberían pasar por aquí;
+      // los protegidos fallarán antes en JwtAuthGuard.
+      return next();
     }
 
-    req['tenantId'] = tenantId;
+    req['tenantId'] = user.tenantId;
+
+    // Observabilidad: si el cliente envió X-Tenant-Id y no coincide con el JWT,
+    // lo logueamos pero NO influye en la decisión. Útil para detectar caches
+    // client-side desactualizadas tras un switch-tenant.
+    const headerTenant = req.headers['x-tenant-id'];
+    if (headerTenant && headerTenant !== user.tenantId) {
+      this.logger.warn(
+        `X-Tenant-Id drift: header=${headerTenant} jwt=${user.tenantId} userId=${user.userId}`,
+      );
+    }
+
     next();
   }
 }
 ```
+
+**Nota (amendment Abr 2026):** La versión previa de este middleware leía `X-Tenant-Id` del header y lanzaba `BadRequestException` si faltaba. Esa implementación queda DEPRECADA por la amendment de ADR-006 Abr 2026: el tenant activo es exclusivamente el claim `tenantId` del JWT.
 
 **Configuración PostgreSQL por tenant:**
 
@@ -1319,14 +1339,19 @@ export default defineConfig({
 
 **Swagger en NestJS:**
 
+El tenant activo se deriva EXCLUSIVAMENTE del claim `tenantId` del JWT Bearer (amendment ADR-006 Abr 2026). El header `X-Tenant-Id` NO se registra como security scheme en OpenAPI: no es requerido para la autenticación ni la autorización. Documentar la API sin él evita confundir a consumidores (clientes generados, SDKs, integraciones externas).
+
 ```typescript
 // main.ts
 const config = new DocumentBuilder()
   .setTitle('Associated API')
-  .setDescription('API del ERP para colectividades')
+  .setDescription(
+    'API del ERP para colectividades. ' +
+    'El tenant activo se resuelve desde el claim `tenantId` del JWT Bearer; ' +
+    'no se requiere header X-Tenant-Id.',
+  )
   .setVersion('1.0')
   .addBearerAuth()
-  .addApiKey({ type: 'apiKey', name: 'X-Tenant-Id', in: 'header' })
   .build();
 
 const document = SwaggerModule.createDocument(app, config);
@@ -1338,17 +1363,20 @@ SwaggerModule.setup('api/docs', app, document);
 ```typescript
 @ApiTags('Members')
 @ApiBearerAuth()
-@ApiHeader({ name: 'X-Tenant-Id', required: true })
 @Controller('members')
 export class MembersController {
 
   @Get()
-  @ApiOperation({ summary: 'Listar members del tenant' })
+  @ApiOperation({
+    summary: 'Listar members del tenant activo (derivado del JWT)',
+  })
   @ApiResponse({ status: 200, type: [MemberDto] })
   @ApiQuery({ name: 'page', required: false, type: Number })
   findAll(@Query() query: ListMembersQuery) { ... }
 }
 ```
+
+**Nota (amendment Abr 2026):** Las versiones previas de este snippet registraban `X-Tenant-Id` como `apiKey` header en el `DocumentBuilder` y como `@ApiHeader({ name: 'X-Tenant-Id', required: true })` en los controllers. Esas declaraciones quedan DEPRECADAS por la amendment de ADR-006 Abr 2026 y deben eliminarse: el header ya no es mecanismo de resolución de tenant.
 
 **Generación de tipos para frontend:**
 
@@ -1652,6 +1680,66 @@ prisma/
 
 ---
 
+### 6.X RNFT-069: Consistencia Cross-Tab del Tenant Activo (frontend)
+
+**RNF Base:** RNF-069 (Consistencia Cross-Tab del Tenant Activo)
+
+**Contexto:** Cuando un switch-tenant ocurre en una pestaña, las demás pestañas del mismo origin con la aplicación abierta quedan con `tenantId` stale. El JWT compartido vía `localStorage`/`sessionStorage` pasa a ser del nuevo tenant pero la UI sigue renderizada con el contexto viejo. La próxima request autenticada de la pestaña stale cargaría datos del nuevo tenant sobre la UI del viejo (riesgo de fuga cross-tenant visible al usuario).
+
+**Implementación de referencia (React + auth provider):**
+
+El frontend detecta cambios del tenant activo entre pestañas vía `BroadcastChannel('auth')` y renderiza un banner persistente de resolución que bloquea la operación hasta que el usuario tome una acción explícita.
+
+```typescript
+// auth-provider.tsx (extracto conceptual)
+const channel = new BroadcastChannel('auth');
+
+// Al completar un switch-tenant o logout:
+function onTenantChanged(newTenantId: string | null, newTenantName?: string) {
+  channel.postMessage({
+    type: 'tenant-changed',
+    tenantId: newTenantId,
+    tenantName: newTenantName,
+    at: Date.now(),
+  });
+}
+
+// Al recibir notificación de otra pestaña:
+channel.onmessage = (event) => {
+  const { type, tenantId: incomingTenantId, tenantName } = event.data;
+  if (type !== 'tenant-changed') return;
+
+  const currentTenantId = getActiveTenantIdFromState();
+  if (incomingTenantId !== currentTenantId) {
+    // Banner persistente, sin dismiss
+    showTenantDriftBanner({
+      message: `El tenant activo cambió a ${tenantName} en otra pestaña.`,
+      actions: [
+        { label: `Recargar en ${tenantName}`, onClick: () => window.location.reload() },
+        { label: 'Cerrar sesión',              onClick: () => logout() },
+      ],
+      dismissable: false,
+    });
+    // Bloquear requests nuevas mientras el banner está activo
+    apiClient.pauseOutgoingRequests();
+  }
+};
+```
+
+**Criterios de verificación:**
+
+- Test E2E con dos pestañas abiertas: switch-tenant en pestaña 1 → pestaña 2 muestra banner en <1s, banner no se puede cerrar sin acción, la siguiente request de pestaña 2 no parte hasta que el usuario resuelve.
+- Test unit del auth provider: recibir mensaje `tenant-changed` con `tenantId` distinto al actual dispara render del banner; con el mismo tenantId no hace nada.
+
+**Alternativas aceptables:**
+
+- `storage` events (`window.addEventListener('storage', ...)`) en entornos donde `BroadcastChannel` no esté disponible.
+- Polling server-side (`GET /auth/me`) como fallback para navegadores sin BroadcastChannel ni storage events.
+
+**Trazabilidad:** RNF-069, ADR-006 (amendment Abr 2026), UC-002 FA-2.
+
+---
+
 ## 7. Matriz de Trazabilidad
 
 ### 7.1 RNF Base → RNF Técnico
@@ -1686,6 +1774,7 @@ prisma/
 | RNF-061  | RNFT-061    | NestJS Logger + Sentry       |
 | RNF-066  | RNFT-066    | Prisma Migrate               |
 | RNF-068  | RNFT-068    | Redis + NestJS Guard         |
+| RNF-069  | RNFT-069    | BroadcastChannel + React auth provider |
 
 ### 7.2 Tecnología → RNFs Implementados
 
@@ -1693,7 +1782,7 @@ prisma/
 | --------------- | ------------------------------------------------------ |
 | NestJS          | RNFT-001, 002, 003, 005, 008, 016, 037, 057, 061, 068 |
 | Prisma          | RNFT-004, 006, 007, 017, 018, 019, 066                 |
-| React + Mantine | RNFT-015, 021, 045, 046, 050                           |
+| React + Mantine | RNFT-015, 021, 045, 046, 050, 069                      |
 | PostgreSQL      | RNFT-004, 019, 038                                     |
 | Redis           | RNFT-002, RNFT-018, RNFT-068                           |
 | Vitest          | RNFT-058, 059                                          |
@@ -1705,6 +1794,10 @@ prisma/
 
 ## Changelog
 
+- v1.2 (Abr 2026): Login multi-tenant + switch-tenant
+  - **RNFT-004**: `TenantMiddleware` reescrito — extrae `tenantId` EXCLUSIVAMENTE del claim JWT; el header `X-Tenant-Id` queda sólo como observabilidad (log de drift cache-cliente vs. JWT). Alineado con amendment ADR-006 Abr 2026.
+  - **RNFT-057**: OpenAPI/Swagger limpio — eliminados `.addApiKey({ name: 'X-Tenant-Id' })` y `@ApiHeader({ name: 'X-Tenant-Id', required: true })`. La documentación ya no sugiere `X-Tenant-Id` como header requerido.
+  - **RNFT-069**: nueva concreción técnica de RNF-069 — implementación de referencia con `BroadcastChannel('auth')` + banner persistente sin dismiss en el auth provider React.
 - v1.1 (Abr 2026): Blacklist de access tokens en Redis
   - RNFT-001 extendido: cadena de guards con BlacklistCheck (ADR-014)
   - RNFT-068 añadido: implementación técnica de blacklist Redis (RNF-068)

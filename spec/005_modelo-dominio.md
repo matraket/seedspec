@@ -1664,6 +1664,7 @@ TTL:    token.exp - now()   ← Auto-expiración alineada con el token (máx. 90
 | `AuthenticationFailed` | Login fallido                | email, intentos, ip                                                          | -                               | Domain      |
 | `TenantProvisioned`    | Provisión completa de tenant | tenantId, nombreColectividad, tipoColectividad, adminUserId, adminEmail, cif | BC-Communication (bienvenida)   | Integration |
 | `TokenBlacklisted`     | Logout con blacklist Redis   | userId, tenantId, jti, ttlSeconds, timestamp                                 | -                               | Domain      |
+| `TenantSwitchedEvent`  | Switch-tenant exitoso (FA-2 de UC-002) — amendment Abr 2026 | userId, fromTenantId, toTenantId, jti, timestamp | — (audit-only; disponible para auditoría/analytics futuros) | Domain      |
 
 ### 8.5 Trazabilidad RF
 
@@ -2007,6 +2008,12 @@ Esta sección clarifica la distinción entre **Integration Events** para integra
 
 ## Changelog
 
+- v1.7 (Abr 2026): Login multi-tenant + switch-tenant
+  - **BC-Identity:** Añadido `TenantSwitchedEvent` como Domain Event (audit-only) en tabla 8.4
+    - Trigger: switch-tenant exitoso (FA-2 de UC-002)
+    - Payload: `{ userId, fromTenantId, toTenantId, jti, timestamp }`
+    - Consumidores: — (audit-only; disponible para auditoría/analytics futuros — decisión D7)
+    - Alineado con ADR-006 amendment Abr 2026 (claim `tenantId` singular) y ADR-014 amendment Abr 2026 (fail-closed en switch-tenant write)
 - v1.6 (Abr 2026): Estructura Redis Token Blacklist y evento TokenBlacklisted
   - **BC-Identity:** Añadido `TokenBlacklisted` como Domain Event (audit-only) en tabla 8.4
   - **BC-Identity:** Documentada estructura Redis Token Blacklist en sección 8.2.1 (ADR-014, RNF-068)

@@ -1,7 +1,7 @@
 # Inventario de Endpoints
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas
-**Versión:** 1.1
+**Versión:** 1.2
 **Fecha:** Abril 2026
 **Inputs:** KB-010 (Casos de Uso), KB-012 (Modelo de Datos), KB-006 (ADRs)
 **Total Endpoints:** 123
@@ -179,28 +179,49 @@ N/A
 **Permisos:** N/A
 **Caso de Uso:** UC-002 (Autenticación multi-tenant)
 **Entidades:** ENT-002, ENT-003
+**Descripción:** Autenticación multi-tenant. Acepta opcionalmente `tenantId?` para resolver el tenant activo en un solo paso cuando el frontend ya lo conoce (ver amendment ADR-006 Abr 2026). Si el usuario es multi-tenant y el `tenantId` no se envía o no es válido para ese usuario, responde `requiresTenantSelection: true` + `tenants[]` SIN emitir tokens, para que el frontend muestre el selector. Si el login es exitoso y el usuario es multi-tenant, el response incluye además `tenants[]` para poblar el switcher client-side.
 
 #### Request Body
 
-| Campo    | Tipo     | Requerido | Validación                     | Descripción            |
-| -------- | -------- | --------- | ------------------------------ | ---------------------- |
-| email    | `string` | Sí        | `@IsEmail`, `@IsNotEmpty`      | Email del usuario      |
-| password | `string` | Sí        | `@IsNotEmpty`, `@MinLength(1)` | Contraseña del usuario |
+| Campo    | Tipo            | Requerido | Validación                                   | Descripción                                                                                                             |
+| -------- | --------------- | --------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| email    | `string`        | Sí        | `@IsEmail`, `@IsNotEmpty`                    | Email del usuario                                                                                                        |
+| password | `string`        | Sí        | `@IsNotEmpty`, `@MinLength(1)`               | Contraseña del usuario                                                                                                   |
+| tenantId | `string` (UUID) | No        | `@IsUUID('4')`, `@IsOptional`                | Tenant al que el usuario desea acceder. Si se omite y el usuario pertenece a múltiples tenants, la respuesta será de tipo "requires tenant selection" sin tokens (ver Response 200 — Caso C). Si el usuario es single-tenant, el campo se ignora. |
 
-#### Response 200
+#### Response 200 — Caso A/B (login exitoso con tokens)
 
-| Campo        | Tipo            | Descripción                                       |
-| ------------ | --------------- | ------------------------------------------------- |
-| accessToken  | `string`        | Token de acceso JWT                               |
-| refreshToken | `string`        | Token de refresco                                 |
-| expiresIn    | `number`        | Tiempo de expiración del access token en segundos |
-| user.id      | `string` (UUID) | ID del usuario                                    |
-| user.email   | `string`        | Email del usuario                                 |
-| user.name    | `string`        | Nombre del usuario                                |
-| tenant.id    | `string` (UUID) | ID del tenant activo                              |
-| tenant.name  | `string`        | Nombre del tenant activo                          |
-| tenant.slug  | `string`        | Slug del tenant activo                            |
-| role         | `string`        | Rol del usuario en el tenant activo               |
+Se devuelve cuando: (A) el usuario es single-tenant, o (B) el usuario es multi-tenant y envió un `tenantId` válido para su membership.
+
+| Campo                    | Tipo                           | Descripción                                                                                                   |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| accessToken              | `string`                       | Token de acceso JWT (contiene el claim `tenantId` singular — amendment ADR-006 Abr 2026)                      |
+| refreshToken             | `string`                       | Token de refresco                                                                                              |
+| expiresIn                | `number`                       | Tiempo de expiración del access token en segundos                                                              |
+| user.id                  | `string` (UUID)                | ID del usuario                                                                                                 |
+| user.email               | `string`                       | Email del usuario                                                                                              |
+| user.name                | `string`                       | Nombre del usuario                                                                                             |
+| tenant.id                | `string` (UUID)                | ID del tenant activo                                                                                           |
+| tenant.name              | `string`                       | Nombre del tenant activo                                                                                       |
+| tenant.slug              | `string`                       | Slug del tenant activo                                                                                         |
+| role                     | `string`                       | Rol del usuario en el tenant activo                                                                            |
+| tenants                  | `TenantMembershipSummary[]`    | **Presente sólo si el usuario es multi-tenant (Caso B).** Lista completa de memberships activas del usuario para poblar el switcher client-side. NO viaja en el JWT. Ausente en Caso A (single-tenant). |
+| tenants[].id             | `string` (UUID)                | ID del tenant                                                                                                  |
+| tenants[].name           | `string`                       | Nombre del tenant                                                                                              |
+| tenants[].slug           | `string`                       | Slug del tenant                                                                                                |
+| tenants[].role           | `string`                       | Rol del usuario en ese tenant                                                                                  |
+| requiresTenantSelection  | `boolean`                      | Ausente o `false` en este caso                                                                                 |
+
+#### Response 200 — Caso C (requiere selección de tenant, sin tokens)
+
+Se devuelve cuando el usuario es multi-tenant y el `tenantId` no se envió o no es válido para su usuario.
+
+| Campo                    | Tipo                           | Descripción                                                                                                   |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| requiresTenantSelection  | `boolean`                      | `true` — el frontend debe mostrar el selector y reintentar `POST /auth/login` con `tenantId`                   |
+| tenants                  | `TenantMembershipSummary[]`    | Lista completa de memberships activas del usuario                                                              |
+
+**NO se devuelven** en este caso: `accessToken`, `refreshToken`, `expiresIn`, `user`, `tenant`, `role`. La credencial ya fue validada por el servidor, pero los tokens sólo se emiten cuando el tenant activo queda determinado.
 
 #### Errores
 
@@ -281,8 +302,9 @@ Sin cuerpo de respuesta.
 **Ruta:** `/api/v1/auth/switch-tenant`
 **Autenticación:** JWT
 **Permisos:** N/A (JWT-only)
-**Caso de Uso:** UC-002 (Autenticación multi-tenant)
+**Caso de Uso:** UC-002 (Autenticación multi-tenant — FA-2)
 **Entidades:** ENT-001, ENT-002, ENT-003
+**Descripción:** Cambia el tenant activo de la sesión sin re-autenticar. Emite un nuevo access + refresh token con `tenantId` del nuevo tenant, blacklistea el access token anterior en Redis (ADR-014) y emite el Domain Event `TenantSwitchedEvent` (amendment ADR-006 Abr 2026). La escritura del blacklist es **fail-closed**: si Redis no está disponible, el endpoint devuelve HTTP 503 `BLACKLIST_UNAVAILABLE` SIN emitir tokens nuevos y SIN completar el switch (ver ADR-014 amendment Abr 2026 y UC-002 FE-6). A diferencia de EP-003, este endpoint **NO** devuelve `tenants[]`: el cliente ya los tiene cacheados desde el login y puede usar esa cache para el switcher.
 
 #### Request Body
 
@@ -290,15 +312,36 @@ Sin cuerpo de respuesta.
 | -------- | --------------- | --------- | ----------------------------- | ---------------------------- |
 | tenantId | `string` (UUID) | Sí        | `@IsUUID('4')`, `@IsNotEmpty` | ID del tenant al que cambiar |
 
-#### Response 200
+#### Response 200 (`SwitchTenantResponseDto`)
 
-Mismo esquema que EP-003 (`LoginResponseDto`): `accessToken`, `refreshToken`, `expiresIn`, `user`, `tenant`, `role`.
+Esquema propio, desacoplado de `LoginResponseDto` — NO incluye `tenants[]` ni `requiresTenantSelection`.
+
+| Campo        | Tipo            | Descripción                                                                               |
+| ------------ | --------------- | ----------------------------------------------------------------------------------------- |
+| accessToken  | `string`        | Nuevo token de acceso JWT (claim `tenantId` = nuevo tenant)                               |
+| refreshToken | `string`        | Nuevo token de refresco                                                                   |
+| expiresIn    | `number`        | Tiempo de expiración del access token en segundos                                         |
+| user.id      | `string` (UUID) | ID del usuario                                                                             |
+| user.email   | `string`        | Email del usuario                                                                          |
+| user.name    | `string`        | Nombre del usuario                                                                         |
+| tenant.id    | `string` (UUID) | ID del nuevo tenant activo                                                                |
+| tenant.name  | `string`        | Nombre del nuevo tenant activo                                                            |
+| tenant.slug  | `string`        | Slug del nuevo tenant activo                                                              |
+| role         | `string`        | Rol del usuario en el nuevo tenant                                                        |
 
 #### Errores
 
-| Status | Código | Condición                       |
-| ------ | ------ | ------------------------------- |
-| 403    | -      | Sin acceso al tenant solicitado |
+| Status | Código                  | Condición                                                                                                          |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 401    | -                       | JWT inválido o expirado                                                                                            |
+| 403    | -                       | Sin acceso al tenant solicitado                                                                                    |
+| 503    | `BLACKLIST_UNAVAILABLE` | Redis no disponible al intentar blacklistear el token anterior (fail-closed, amendment ADR-014 Abr 2026). El cliente sigue operando con su token actual y puede reintentar. |
+
+#### Notas
+
+- **Fail-closed (amendment Abr 2026):** la diferencia con logout (EP-005) es que en switch-tenant el token anterior NO se revoca en DB-Main — sólo existe en Redis. Si el SET falla, coexistirían dos tokens válidos para tenants distintos (split-brain de sesión con riesgo de fuga cross-tenant). Por eso switch es más estricto que logout. Ver UC-002 FE-6.
+- **Eventos:** emite `TenantSwitchedEvent` (Domain Event, audit-only) con payload `{ userId, fromTenantId, toTenantId, jti, timestamp }` (ver 005 §8.4).
+- **Consistencia cross-tab:** el frontend DEBE notificar a otras pestañas del mismo origin sobre el cambio y ofrecer resolución explícita (RNF-069). Mecanismo concreto fuera del contrato de este endpoint.
 
 ---
 
@@ -4160,6 +4203,9 @@ Content-Disposition: attachment; filename="dashboard-2025-06-15.pdf"
 
 ## Changelog
 
+- v1.2 (Abr 2026): Login multi-tenant + switch-tenant
+  - **EP-003 (POST /auth/login)**: añadido campo opcional `tenantId?` en request body. Response documentado con dos formas: Caso A/B (login exitoso con tokens + `tenants[]` condicional cuando el usuario es multi-tenant) y Caso C (`requiresTenantSelection: true` + `tenants[]` SIN tokens cuando el usuario es multi-tenant y no envió `tenantId`). Alineado con amendment ADR-006 Abr 2026.
+  - **EP-006 (POST /auth/switch-tenant)**: añadida descripción completa del endpoint; response desacoplado de `LoginResponseDto` (nuevo `SwitchTenantResponseDto`, no incluye `tenants[]` ni `requiresTenantSelection`); añadido error 503 `BLACKLIST_UNAVAILABLE` (fail-closed, amendment ADR-014 Abr 2026); documentada emisión de `TenantSwitchedEvent` y requerimiento RNF-069 para consistencia cross-tab.
 - v1.1 (Abr 2026): Actualización trazabilidad EP-005
   - EP-005 (POST /auth/logout): añadido ENT-005 (`refresh_tokens`) a matriz EP → ENT
   - EP-005 descripción actualizada con flujo de blacklist Redis
