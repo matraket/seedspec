@@ -4,7 +4,7 @@
 **Versión:** 1.2  
 **Fecha:** Abril 2026  
 **Inputs:** KB-004 (RNF Base), KB-007 (Stack Tecnológico)  
-**Estado:** Borrador
+**Estado:** Validado
 
 ---
 
@@ -1680,7 +1680,7 @@ prisma/
 
 ---
 
-### 6.X RNFT-069: Consistencia Cross-Tab del Tenant Activo (frontend)
+### 6.7 RNFT-069: Consistencia Cross-Tab del Tenant Activo (frontend)
 
 **RNF Base:** RNF-069 (Consistencia Cross-Tab del Tenant Activo)
 

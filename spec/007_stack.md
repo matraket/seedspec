@@ -1,8 +1,8 @@
 # Stack Tecnológico
 
 **Proyecto:** Associated - ERP Ligero para Colectividades Españolas  
-**Versión:** 1.1  
-**Fecha:** Febrero 2026  
+**Versión:** 1.2  
+**Fecha:** Abril 2026  
 **Inputs:** KB-004 (RNF Base), KB-006 (ADRs)  
 **Estado:** Borrador
 
@@ -779,7 +779,7 @@ Sentry.init({
 | PostgreSQL          | ADR-005          | RNF-004, RNF-038          |
 | Redis               | ADR-014          | RNF-002, RNF-018, RNF-068 |
 | Prisma              | ADR-002, ADR-005 | RNF-066                   |
-| React + Mantine     | ADR-010          | RNF-045, RNF-046, RNF-050 |
+| React + Mantine     | ADR-010          | RNF-045, RNF-046, RNF-050, RNF-069 |
 | React Query         | -                | RNF-015, RNF-016          |
 | MinIO/S3            | ADR-011          | RNF-009, RNF-022          |
 | Vitest + Playwright | ADR-012          | RNF-058, RNF-059, RNF-060 |
@@ -842,6 +842,7 @@ codecov: v4
 
 ## Changelog
 
+- v1.2 (Abr 2026) — Login multi-tenant + switch-tenant: propagación de amendment ADR-006 y RNF-069 (consistencia cross-tab) a matriz Tecnología→RNFs para React + Mantine (implementación con BroadcastChannel en auth provider — ver RNFT-069 en 008_rnf-tecnicos.md).
 - v1.1 (Feb 2026): Actualización de versiones del stack
   - Actualización masiva de versiones: Node.js 22, NestJS 11, React 19, PostgreSQL 18, Prisma 7, Vite 7, Docker 29, Vitest 4, Playwright 1.58, Sentry 10
   - Reemplazo de `bcrypt` por `argon2` 0.44.x para hash de contraseñas

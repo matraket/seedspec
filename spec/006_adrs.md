@@ -1368,6 +1368,7 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 | RNF-002    | Gestión de sesiones — logout efectivo con blacklist                  |
 | ADR-006    | Estrategia de autenticación JWT — este ADR complementa el flujo     |
 | RNF-068    | Invalidación Inmediata de Access Tokens Post-Logout                 |
+| RNF-069    | Consistencia Cross-Tab del Tenant Activo — complemento frontend al fail-closed backend de switch-tenant |
 | UC-002     | Autenticación multi-tenant — flujo de logout (FA-4, FE-4, FE-5) y switch-tenant (FA-2, FE-6 amendment Abr 2026) |
 
 ---
@@ -1391,7 +1392,7 @@ TTL:   token.exp - now()   (auto-expiración alineada con el token)
 | ADR-011 | RNF-009, RNF-022          |
 | ADR-012 | RNF-058, RNF-059, RNF-060 |
 | ADR-013 | —                         |
-| ADR-014 | RNF-001, RNF-002, RNF-068 |
+| ADR-014 | RNF-001, RNF-002, RNF-068, RNF-069 |
 
 ### Matriz ADR → BC
 

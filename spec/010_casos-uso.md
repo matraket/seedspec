@@ -1,9 +1,11 @@
 # Casos de Uso
 
 **Proyecto:** Associated - ERP para Colectividades Españolas  
-**Versión:** 2.7  
+**Versión:** 2.8  
 **Fecha:** Abril 2026  
-**Total:** 77 Casos de Uso derivados de 225 User Stories (ver nota en Resumen Ejecutivo)
+**Inputs:** KB-005 (Modelo de Dominio), KB-009 (User Stories)  
+**Estado:** Validado  
+**Total:** 77 Casos de Uso derivados de 202 User Stories (KB-009; ver Resumen Ejecutivo para matriz de trazabilidad)
 
 ---
 
@@ -67,7 +69,7 @@ Este documento define los **77 Casos de Uso** del sistema Associated, derivados 
 | **Transversal N11 (Cumplimiento)** | 5            | 15                     | Cross-cutting |
 | **Total**                          | **77**       | **224**                |               |
 
-<!-- Nota: El total de 224 User Stories en este documento difiere del total de 202 declarado en KB-009. Las cifras por BC han sido alineadas con los totales acumulados al final de cada sección del presente documento (fuente de verdad). La discrepancia con KB-009 debe resolverse reconciliando las US de cada BC. -->
+<!-- Nota de reconciliación: el conteo "224" de esta tabla es el resultado acumulado de contar cada US en cada BC/sección donde aparece referenciada; por el mapeo N:M US↔UC y por el fan-out de US transversales (N10/N11 se contabilizan tanto en BC específico como en Transversal), una US puede aparecer en más de una fila. El total canónico de User Stories únicas es **202** (ver KB-009 y header de este documento). El valor 224 es un artefacto estadístico de esta matriz de distribución; no representa User Stories distintas. KB-009 es la fuente de verdad. -->
 
 ### Criterios de Agrupación Aplicados
 
@@ -16035,6 +16037,12 @@ Las User Stories se consolidaron en Casos de Uso siguiendo estos criterios:
 ---
 
 ## Changelog
+
+### **v2.8 (Abril 2026):**
+
+- Login multi-tenant + switch-tenant:
+  - **UC-002 reescrito completo**: Flujo Normal con tres casos de resolución (A: single-tenant, B: multi-tenant con tenantId, C: multi-tenant sin tenantId → requiresTenantSelection); LoginRequestDto con `tenantId?` opcional; LoginResponseDto con `tenants[]` condicional; FA-2 switch-tenant con blacklist del token anterior y emisión de `TenantSwitchedEvent`; FA-3 clarificada como client-side localStorage; nuevo FE-6 fail-closed en switch; notas de implementación sobre `tenantId` singular como fuente de verdad y `X-Tenant-Id` sólo como observabilidad. Alineado con amendment ADR-006 Abr 2026 y amendment ADR-014 Abr 2026.
+  - **UC-068**: nota de scope añadida — US-175 (magic link) DIFERIDA a cambio futuro (D8); FA-1 marcado `[DEFERRED — ver US-175]`.
 
 ### **v2.7 (Abril 2026):**
 

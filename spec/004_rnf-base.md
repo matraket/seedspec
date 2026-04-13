@@ -11,14 +11,12 @@
 
 ## Índice de Secciones
 
-1. [Seguridad](#1-seguridad) (15 RNFs)
+1. [Seguridad](#1-seguridad) (14 RNFs)
 2. [Rendimiento](#2-rendimiento) (10 RNFs)
 3. [RGPD y Cumplimiento Normativo](#3-rgpd-y-cumplimiento-normativo) (12 RNFs)
 4. [Disponibilidad y Continuidad](#4-disponibilidad-y-continuidad) (8 RNFs)
 5. [Usabilidad y Experiencia de Usuario](#5-usabilidad-y-experiencia-de-usuario) (12 RNFs)
-6. [Mantenibilidad y Operaciones](#6-mantenibilidad-y-operaciones) (11 RNFs)
-
-**Nota sobre RNF-069:** este RNF está ubicado al final del documento (después de RNF-068) para respetar el orden cronológico de incorporación, aunque conceptualmente pertenece al eje de Seguridad (aislamiento cross-tenant). Se cuenta en la categoría "Seguridad" a efectos del total.
+6. [Mantenibilidad y Operaciones](#6-mantenibilidad-y-operaciones) (13 RNFs)
 
 ---
 
@@ -1080,13 +1078,14 @@
 - **Seguridad**: Un access token invalidado (JTI presente en blacklist) NO DEBE poder usarse para ninguna operación autenticada del sistema
 - **Seguridad**: El flujo de logout DEBE almacenar el JTI del access token en la blacklist con TTL igual al tiempo restante hasta expiración del token (`token.exp - now()`), sin excederlo
 - **Disponibilidad / fail-closed**: Si el servicio de blacklist no está disponible, los requests autenticados DEBEN rechazarse con HTTP 503 — la seguridad prevalece sobre la disponibilidad
+- **Escritura en switch-tenant — fail-closed:** Si el servicio de blacklist (Redis) no está disponible al intentar blacklistear el token anterior durante `POST /auth/switch-tenant`, la operación DEBE rechazarse con HTTP 503 código `BLACKLIST_UNAVAILABLE`, SIN emitir nuevos tokens y SIN completar el switch (ver ADR-014 amendment Abr 2026 y UC-002 FE-6). A diferencia del logout (best-effort para el write de blacklist), en switch el write es fail-closed estricto para evitar split-brain de sesión.
 - **Retención**: Las entradas de blacklist DEBEN auto-eliminarse por TTL nativo al expirar el token original; no se requiere limpieza manual ni jobs de mantenimiento
 - **Orden de verificación**: La verificación de blacklist DEBE ejecutarse DESPUÉS de la validación de firma JWT y ANTES de la verificación de permisos (RBAC)
 
 **Nota:** El endpoint de logout (`POST /auth/logout`) está exento de la verificación de blacklist por decisión arquitectónica (ADR-014) para permitir el comportamiento best-effort definido en UC-002 FE-4.
 
 **Trazabilidad RF:** N2RF01, N2RF02
-**Trazabilidad ADR:** ADR-006, ADR-014
+**Trazabilidad ADR:** ADR-006 (amendment Abr 2026), ADR-014
 **Prioridad:** Alta
 
 ---

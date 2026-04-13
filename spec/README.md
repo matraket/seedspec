@@ -1,6 +1,6 @@
 # Especificación - Associated
 
-**221 requisitos · 69 RNFs · 202 user stories · 77 casos de uso · ~32.600 líneas · ~1.800 referencias cruzadas**
+**221 requisitos · 69 RNFs · 202 user stories · 77 casos de uso · ~42.800 líneas · ~1.800 referencias cruzadas**
 
 ---
 
@@ -40,14 +40,14 @@ Cada documento responde a una pregunta distinta sobre el mismo sistema:
 
 | #   | Documento                                                     | Contenido                                            | Líneas |
 | :-- | :------------------------------------------------------------ | :--------------------------------------------------- | -----: |
-| 003 | [Requisitos Funcionales](003_requisitos-funcionales.md)       | 221 RFs organizados en 12 secciones temáticas        |  2.433 |
-| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 69 RNFs agnósticos de tecnología                     |  1.046 |
-| 005 | [Bounded Contexts y Modelo de Dominio](005_modelo-dominio.md) | 6 BCs con aggregates, entities y value objects (DDD) |  1.991 |
-| 006 | [Architectural Decision Records](006_adrs.md)                 | 14 ADRs con contexto, decisión y consecuencias       |  1.038 |
-| 007 | [Stack Tecnológico](007_stack.md)                             | Selección y justificación de tecnologías             |    838 |
-| 008 | [Requisitos No Funcionales Técnicos](008_rnf-tecnicos.md)     | Concreción técnica de los RNFs (mapeo 1:1)           |  1.565 |
+| 003 | [Requisitos Funcionales](003_requisitos-funcionales.md)       | 221 RFs organizados en 12 secciones temáticas        |  2.437 |
+| 004 | [Requisitos No Funcionales Base](004_rnf-base.md)             | 69 RNFs agnósticos de tecnología                     |  1.196 |
+| 005 | [Bounded Contexts y Modelo de Dominio](005_modelo-dominio.md) | 6 BCs con aggregates, entities y value objects (DDD) |  2.103 |
+| 006 | [Architectural Decision Records](006_adrs.md)                 | 14 ADRs con contexto, decisión y consecuencias       |  1.429 |
+| 007 | [Stack Tecnológico](007_stack.md)                             | Selección y justificación de tecnologías             |    862 |
+| 008 | [Requisitos No Funcionales Técnicos](008_rnf-tecnicos.md)     | Concreción técnica de los RNFs (mapeo 1:1)           |  1.809 |
 | 009 | [User Stories y Criterios de Aceptación](009_user-stories.md) | 202 US con priorización MoSCoW                       |  7.726 |
-| 010 | [Casos de Uso](010_casos-uso.md)                              | 77 UCs con happy path, alternativas y excepciones    | 15.315 |
+| 010 | [Casos de Uso](010_casos-uso.md)                              | 77 UCs con happy path, alternativas y excepciones    | 16.649 |
 
 ### Documentos auxiliares
 
@@ -69,9 +69,9 @@ Cada elemento tiene un identificador único que permite referenciarlo desde cual
 | `RNF-xxx`  |    004    | RNF-{001..069}                           |    69 |
 | `BC-Name`  |    005    | BC-{Identity, Membership, Treasury, ...} |     6 |
 | `ADR-xxx`  |    006    | ADR-{001..014}                           |    14 |
-| `RNFT-xxx` |    008    | RNFT-{001..068}                          |   40+ |
+| `RNFT-xxx` |    008    | RNFT-{001..069}                          |   41+ |
 | `US-xxx`   |    009    | US-{001..202}                            |   202 |
-| `UC-xxx`   |    010    | UC-{001..076}                            |    76 |
+| `UC-xxx`   |    010    | UC-{001..076 + UC-005b}                  |    77 |
 
 ---
 
@@ -146,13 +146,13 @@ graph LR
 | Métrica                   |                                 Valor |
 | :------------------------ | ------------------------------------: |
 | Documentos                |                      8 + 3 auxiliares |
-| Líneas totales            |                               ~32.600 |
+| Líneas totales            |                               ~42.800 |
 | Requisitos funcionales    |                                   221 |
 | Requisitos no funcionales |                                    69 |
 | Bounded Contexts          |             6 (3 Core + 3 Supporting) |
 | ADRs                      |          14 (ADR-006 y ADR-014 amendados Abr 2026) |
 | User Stories              | 202 (80 Must · 110 Should · 12 Could) |
-| Casos de uso              |                                    76 |
+| Casos de uso              |                                    77 |
 | Referencias cruzadas      |                                ~1.800 |
 | Matrices de trazabilidad  |                          5 explícitas |
 
@@ -160,12 +160,15 @@ graph LR
 
 ```mermaid
 pie title Líneas por documento
-    "010 · Casos de Uso" : 15315
+    "010 · Casos de Uso" : 16649
     "009 · User Stories" : 7726
-    "003 · Requisitos Funcionales" : 2433
-    "005 · Modelo de Dominio" : 1991
-    "008 · RNF Técnicos" : 1565
-    "004 · RNF Base" : 1046
-    "006 · ADRs" : 1038
-    "007 · Stack" : 838
+    "013 · Inventario Endpoints" : 4214
+    "003 · Requisitos Funcionales" : 2437
+    "005 · Modelo de Dominio" : 2103
+    "008 · RNF Técnicos" : 1809
+    "006 · ADRs" : 1429
+    "004 · RNF Base" : 1196
+    "012 · Modelo de Datos" : 1146
+    "007 · Stack Tecnológico" : 862
+    "011 · MVP Strategy" : 782
 ```

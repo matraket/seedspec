@@ -122,10 +122,10 @@ Cada documento declara sus "Inputs" (KBs previos). La documentación se expande 
 | Código     | Documento | Formato                                                               | Total items |
 | ---------- | --------- | --------------------------------------------------------------------- | ----------- |
 | `NxRFyy`   | 003       | N{sección}RF{secuencial} - ej: `N3RF01`, `N4RF17`                     | 221         |
-| `RNF-xxx`  | 004       | RNF-{001..068}                                                        | 68          |
+| `RNF-xxx`  | 004       | RNF-{001..069}                                                        | 69          |
 | `BC-Name`  | 005       | BC-{Identity\|Membership\|Treasury\|Events\|Communication\|Documents} | 6           |
 | `ADR-xxx`  | 006       | ADR-{001..014}                                                        | 14          |
-| `RNFT-xxx` | 008       | RNFT-{001..068} - mapeo 1:1 con RNF-xxx                               | ~40+        |
+| `RNFT-xxx` | 008       | RNFT-{001..069} - mapeo 1:1 con RNF-xxx                               | ~41+        |
 | `US-xxx`   | 009       | US-{001..202}                                                         | 202         |
 | `UC-xxx`   | 010       | UC-{001..076} + UC-005b                                               | 77          |
 | `ENT-xxx`  | 012       | ENT-{001..041}                                                        | 41          |
@@ -376,10 +376,10 @@ N3RF01       RNF-006      BC-Memb.     US-009       UC-006         ENT-009      
 | Métrica               | Valor                                     |
 | --------------------- | ----------------------------------------- |
 | Total documentos      | 10 archivos .md                           |
-| Total líneas          | 37.257                                    |
+| Total líneas          | ~42.800                                   |
 | Total RFs             | 221                                       |
-| Total RNFs            | 68                                        |
-| Total RNFTs           | ~40+                                      |
+| Total RNFs            | 69                                        |
+| Total RNFTs           | ~41+                                      |
 | Total ADRs            | 14                                        |
 | Total BCs             | 6 (3 Core + 3 Supporting) + transversales |
 | Total User Stories    | 202 (80 Must / 110 Should / 12 Could)     |

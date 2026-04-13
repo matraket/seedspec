@@ -15,9 +15,9 @@ Esquema de Numeración: NxRFyy (ej: N2RF01, N3RF34)
 ```
 Archivo: 004_rnf-base.md
 Líneas: 1,052
-Versión: 1.4
-Propósito: Define 68 Requisitos No Funcionales agnósticos de tecnología
-Esquema de Numeración: RNF-xxx (ej: RNF-001, RNF-068)
+Versión: 1.5
+Propósito: Define 69 Requisitos No Funcionales agnósticos de tecnología
+Esquema de Numeración: RNF-xxx (ej: RNF-001, RNF-069)
 ```
 
 ────────────────────────────────────────
@@ -57,7 +57,7 @@ Archivo: 008_rnf-tecnicos.md
 Líneas: 1,567
 Versión: 1.1
 Propósito: Concreta RNFs base con implementaciones técnicas específicas
-Esquema de Numeración: RNFT-xxx (ej: RNFT-001, RNFT-068)
+Esquema de Numeración: RNFT-xxx (ej: RNFT-001, RNFT-069)
 ```
 
 ────────────────────────────────────────
@@ -132,13 +132,13 @@ Requisitos Funcionales (RF) - 003_requisitos-funcionales.md
 
 Requisitos No Funcionales Base (RNF) - 004_rnf-base.md
 
-- Formato: RNF-xxx (RNF-001 a RNF-068)
+- Formato: RNF-xxx (RNF-001 a RNF-069)
 - Categorías: Seguridad, Rendimiento, RGPD, Disponibilidad, Usabilidad, Mantenibilidad
-- Total: 68 RNFs agnósticos de tecnología
+- Total: 69 RNFs agnósticos de tecnología
 
 Requisitos No Funcionales Técnicos (RNFT) - 008_rnf-tecnicos.md
 
-- Formato: RNFT-xxx (ej: RNFT-001, RNFT-068)
+- Formato: RNFT-xxx (ej: RNFT-001, RNFT-069)
 - Relación 1:1 con RNF Base (RNFT-001 implementa RNF-001, etc.)
 - Incluye configuraciones específicas: NestJS, Prisma, React, PostgreSQL
 
@@ -220,7 +220,7 @@ KB-002 (Análisis de Necesidades)
     ↓
     ├→ 003_requisitos-funcionales.md (221 RFs: N2RF01-N13RF04)
     │       ↓
-    │       ├→ 004_rnf-base.md (68 RNFs con "Trazabilidad RF: NxRFyy")
+    │       ├→ 004_rnf-base.md (69 RNFs con "Trazabilidad RF: NxRFyy")
     │       │       ↓
     │       │       ├→ 008_rnf-tecnicos.md (RNFTs 1:1 mapping)
     │       │       │       ↓
@@ -338,7 +338,7 @@ Matriz de Impacto (Cambios en Upstream afectan Downstream)
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 RF         │ ~1-3 RNFs (promedio)  │ 221 RFs × 1.3 ≈ 287 impactos            │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
-│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 68 RNFs × 3 ≈ 204 impactos              │
+│ 1 RNF        │ ~2-4 RNFTs + 1-2 ADRs │ 69 RNFs × 3 ≈ 207 impactos              │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤
 │ 1 BC         │ ~8 RFs + 15 USs       │ 6 BCs × 23 ≈ 138 impactos               │
 ├──────────────┼───────────────────────┼─────────────────────────────────────────┤

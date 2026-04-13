@@ -203,6 +203,21 @@ Scenario: Roles independientes por tenant
   Then tiene permisos de gestión económica
   When cambia a "Cofradía B"
   Then solo tiene acceso de lectura a sus propios datos
+
+Scenario: Login multi-tenant sin tenantId previo — requiere selección
+  Given un usuario registrado en múltiples colectividades
+  When introduce credenciales válidas sin especificar una colectividad
+  Then el sistema responde con requiresTenantSelection: true y la lista de sus colectividades
+  And no se emiten tokens hasta que el usuario seleccione una colectividad
+  And tras la selección, el frontend repite el login incluyendo el tenantId elegido
+
+Scenario: Cambio de colectividad falla si el servicio de blacklist no responde
+  Given un usuario autenticado en "Peña El Tambor"
+  And el servicio de blacklist (Redis) no está disponible
+  When intenta cambiar a "Cofradía del Cristo"
+  Then el sistema rechaza la operación con HTTP 503 BLACKLIST_UNAVAILABLE
+  And el usuario sigue operando con su sesión actual en "Peña El Tambor"
+  And puede reintentar el cambio cuando el servicio se recupere
 ```
 
 ---
@@ -6826,6 +6841,8 @@ Scenario: Recuperación de contraseña
 #### US-175: Acceso con enlace mágico
 **RF Origen:** N10RF14  
 **Prioridad:** Should
+
+> **Nota de scope (Abr 2026):** Esta US está **DIFERIDA** — la implementación del magic link authentication queda fuera del scope del cambio "login multi-tenant + switch-tenant" y se abordará en un cambio futuro independiente (decisión D8). Ver UC-068 FA-1 marcado `[DEFERRED]` en 010_casos-uso.md.
 
 > Como **socio**,  
 > quiero acceder sin recordar contraseña,  
